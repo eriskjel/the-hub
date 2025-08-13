@@ -1,0 +1,7 @@
+.git
+node_modules
+pnpm-debug.log
+.next
+dist
+.DS_Store
+.idea

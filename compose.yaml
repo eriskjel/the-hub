@@ -1,0 +1,44 @@
+name: the-hub
+
+services:
+  api:
+    build:
+      context: ./services/backend
+      target: dev
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,docker
+    volumes:
+      - ./services/backend:/app
+      - m2:/root/.m2
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      target: dev
+    working_dir: /repo
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE: http://localhost:8080
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      CI: "true"
+      PNPM_STORE_DIR: /root/.pnpm-store
+    volumes:
+      - .:/repo
+      - pnpm_store:/root/.pnpm-store
+    command: >
+      sh -lc "
+        pnpm -w install --frozen-lockfile &&
+        pnpm --filter ./apps/web install --frozen-lockfile &&
+        pnpm --filter ./apps/web dev -p 3000 --hostname 0.0.0.0
+      "
+    depends_on:
+      - api
+
+volumes:
+  m2:
+  pnpm_store:
