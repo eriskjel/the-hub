@@ -16,13 +16,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # Install pnpm and run pnpm install automatically
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.14.0
+      # ↓ Enable corepack and explicitly activate a pnpm version
+      - run: corepack enable
+      - run: corepack prepare pnpm@10.14.0 --activate
 
-      # The 'pnpm install --frozen-lockfile' will now work as pnpm is in PATH
       - run: pnpm install --frozen-lockfile
-
-      # Run Prettier only in the frontend
       - run: pnpm -C apps/web run format:check
