@@ -1,4 +1,3 @@
-# .github/workflows/prettier.yml
 name: Prettier (web)
 
 on:
@@ -17,12 +16,12 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # Install the pnpm version from the packageManager (pnpm@10.14.0)
+      # Install pnpm and run pnpm install automatically
       - uses: pnpm/action-setup@v4
         with:
-          run_install: false
+          version: 10.14.0
 
-      # Install from monorepo root (lockfile is at root)
+      # The 'pnpm install --frozen-lockfile' will now work as pnpm is in PATH
       - run: pnpm install --frozen-lockfile
 
       # Run Prettier only in the frontend
