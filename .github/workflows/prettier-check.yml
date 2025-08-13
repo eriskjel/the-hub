@@ -1,4 +1,3 @@
-# .github/workflows/prettier.yml
 name: Prettier (web)
 
 on:
@@ -11,18 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Node + pnpm cache based on the ROOT lockfile
+      # Enable corepack BEFORE setting up Node
+      - run: corepack enable
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      # Make pnpm available
-      - run: corepack enable
+      # Prepare pnpm version after Node setup
+      - run: corepack prepare pnpm@10.14.0 --activate
 
-      # Install ALL workspace deps from the root (uses pnpm-lock.yaml at root)
       - run: pnpm install --frozen-lockfile
-
-      # Run the prettier check in apps/web (uses web's devDeps + config)
       - run: pnpm -C apps/web run format:check
