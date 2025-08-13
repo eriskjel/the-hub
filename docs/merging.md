@@ -1,11 +1,10 @@
 # Merging Strategy & Git Workflow
 
 ## Overview
-We use two primary merge methods:
-- **Squash & merge** (default)
-- **Merge commit (no fast-forward)** for large/multi-dev features
+We use one primary merge method:
+- **Squash & merge** (default for all PRs)
 
-We do **not** allow "Rebase & merge" on the remote. Rebasing is only done locally.
+We do **not** allow "Rebase & merge" on the remote. Rebasing is only done locally for keeping feature branches up-to-date.
 
 ---
 
@@ -13,7 +12,7 @@ We do **not** allow "Rebase & merge" on the remote. Rebasing is only done locall
 
 ### Merge Options
 - Enable: **Squash merging**
-- Enable: **Create a merge commit**
+- Disable: **Create a merge commit**
 - Disable: **Rebase and merge**
 - Optional: Auto-delete head branches after merge
 
@@ -23,20 +22,27 @@ We do **not** allow "Rebase & merge" on the remote. Rebasing is only done locall
 - Require status checks to pass before merging
 - Require branches to be up-to-date before merging
 - Require conversation resolution before merging
-- Do not require linear history
+- Require linear history
 - Restrict who can push to `main`
 
 ---
 
 ## Local Git Defaults
 ```
-git config --global rerere.enabled true
-git config --global pull.ff only
+git config pull.ff only               # no accidental merge commits on pull
+git config pull.rebase true           # rebase your local feature branches on pull
+git config branch.main.rebase false   # main uses FF-only on pull
+git config rerere.enabled true        # reuse conflict resolutions
+
 ```
 
 ## Default Path — Small/Normal PRs (Squash & merge)
 1. Branch from main:
-```git switch -c feature/short-desc```
+```
+git switch main
+git fetch origin && git pull
+git switch -c short-desc
+```
 2. Keep fresh while coding (solo branch):
 ``git fetch origin && git rebase origin/main``
 3. Open PR → CI green → Squash & merge.
@@ -49,4 +55,10 @@ feat: add avatar upload
     validates mime & size
 
     updates profile page UI
+```
+5. After merge:
+```
+git switch main
+git fetch origin && git pull
+git branch -d short-desc
 ```
