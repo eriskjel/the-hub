@@ -2,7 +2,7 @@ import Link from "next/link";
 
 type HeaderProps = {
   variant?: "transparent" | "solid";
-  mode?: "fixed" | "sticky"; // NEW
+  mode?: "fixed" | "sticky";
 };
 
 export default function Header({ variant = "solid", mode = "sticky" }: HeaderProps) {
