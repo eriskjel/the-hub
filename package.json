@@ -1,0 +1,10 @@
+{
+  "name": "the-hub",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "dev": "pnpm -F web dev",
+    "build": "pnpm -F web build",
+    "lint": "pnpm -F web lint"
+  }
+}
