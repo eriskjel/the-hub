@@ -1,4 +1,4 @@
-name: Prettier Check
+name: Prettier (web)
 
 on:
   pull_request:
@@ -7,10 +7,20 @@ on:
 jobs:
   prettier:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web   # <- only check the frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - run: corepack enable          # <- makes pnpm available
+
       - run: pnpm install --frozen-lockfile
-      - run: npx prettier --check .
+      - run: pnpm run format:check
+
