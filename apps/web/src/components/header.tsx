@@ -42,7 +42,9 @@ function NavAuth({ isLoggedIn }: NavAuthProps) {
     return (
       <li>
         <form action={logout}>
-          <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">Logg ut</button>
+          <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
+            Logg ut
+          </button>
         </form>
       </li>
     );
