@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { ReactElement, ReactNode, useCallback, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { getBaseUrl } from "@/utils/url";
 
 const ERROR_MESSAGES = {
   "invalid-credentials": "Feil e-post eller passord.",
@@ -21,16 +22,6 @@ function getErrorMessage(code: string | null): string | null {
   return code in ERROR_MESSAGES ? ERROR_MESSAGES[code as AuthErrorCode] : DEFAULT_ERROR_MESSAGE;
 }
 
-function getSiteURL() {
-  let url: string =
-    process?.env?.NEXT_PUBLIC_SITE_URL ??
-    process?.env?.NEXT_PUBLIC_VERCEL_URL ??
-    "http://localhost:3000";
-  if (!url.startsWith("http")) url = `https://${url}`;
-  if (!url.endsWith("/")) url += "/";
-  return url;
-}
-
 export default function LoginForm(): ReactElement {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get("error");
@@ -38,11 +29,10 @@ export default function LoginForm(): ReactElement {
   const supabase = useMemo(() => createClient(), []);
 
   const handleGithub = useCallback(async () => {
-    const base = getSiteURL();
+    const base: string = getBaseUrl();
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        // After GitHub → Supabase, redirect back to your app to exchange the code
         redirectTo: `${base}auth/callback?next=/`,
         // Optional: request extra scopes
         // scopes: "read:user user:email",
