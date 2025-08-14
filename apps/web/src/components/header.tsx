@@ -10,7 +10,7 @@ type HeaderProps = {
 };
 
 export default async function Header({ variant = "solid", mode = "sticky" }: HeaderProps) {
-  const locale: string = await getLocale();
+  const locale = await getLocale();
   const t = await getTranslations({ locale });
   const supabase = await createClient();
   const {
