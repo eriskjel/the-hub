@@ -29,6 +29,7 @@ export default function LoginForm(): ReactElement {
     errorCode ? t(`errors.${errorKey}`) : null;
   const supabase = useMemo(() => createClient(), []);
 
+  //todo: extract to a hook
   const handleGithub = useCallback(async () => {
     const base: string = getBaseUrl();
     const next = `/${locale}/dashboard`;
@@ -38,7 +39,7 @@ export default function LoginForm(): ReactElement {
         redirectTo: `${base}auth/callback?next=${encodeURIComponent(next)}&locale=${locale}`,
       },
     });
-  }, [supabase]);
+  }, [supabase, locale]);
 
   return (
     <div className="w-full max-w-sm text-center">
