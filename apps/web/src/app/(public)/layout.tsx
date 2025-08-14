@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic";
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    <PageWrapper headerVariant="solid" headerMode="sticky" className="bg-white text-black">
+    <PageWrapper
+      headerVariant="solid"
+      headerMode="sticky"
+      className="bg-white text-black"
+      contentClassName="flex justify-center"
+    >
       {children}
     </PageWrapper>
   );
