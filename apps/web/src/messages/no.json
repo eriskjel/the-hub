@@ -5,8 +5,20 @@
     "logout": "Logg ut"
   },
   "login": {
-    "title": "Logg inn",
-    "button": "Fortsett"
+    "title": "Vennligst logg in",
+    "email": "E-post",
+    "password": "Passord",
+    "login": "Logg inn",
+    "register": "Registrer",
+    "or": "eller",
+    "github": "Fortsett med GitHub",
+    "working": "Jobber...",
+    "errors": {
+      "generic": "Noe gikk galt.",
+      "invalidCredentials": "Feil e-post eller passord.",
+      "signupFailed": "Kunne ikke opprette konto.",
+      "confirmFailed": "Bekreftelseslenken er ugyldig eller utløpt."
+    }
   },
   "dashboard": {
     "welcome": "Velkommen, {name}!"

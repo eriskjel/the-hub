@@ -1,12 +1,24 @@
 {
   "header": {
     "home": "Home",
-    "login": "Log in",
+    "login": "Sign in",
     "logout": "Log out"
   },
   "login": {
-    "title": "Log in",
-    "button": "Continue"
+    "title": "Please sign in",
+    "email": "Email",
+    "password": "Password",
+    "login": "Sign in",
+    "register": "Register",
+    "or": "or",
+    "github": "Continue with GitHub",
+    "working": "Working...",
+    "errors": {
+      "generic": "Something went wrong.",
+      "invalidCredentials": "Invalid email or password.",
+      "signupFailed": "We couldn't create your account.",
+      "confirmFailed": "The confirmation link is invalid or expired."
+    }
   },
   "dashboard": {
     "welcome": "Welcome, {name}!"
