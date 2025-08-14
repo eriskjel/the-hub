@@ -1,0 +1,14 @@
+{
+  "header": {
+    "home": "Hjem",
+    "login": "Logg inn",
+    "logout": "Logg ut"
+  },
+  "login": {
+    "title": "Logg inn",
+    "button": "Fortsett"
+  },
+  "dashboard": {
+    "welcome": "Velkommen, {name}!"
+  }
+}

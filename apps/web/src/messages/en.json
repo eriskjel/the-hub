@@ -1,0 +1,14 @@
+{
+  "header": {
+    "home": "Home",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "login": {
+    "title": "Log in",
+    "button": "Continue"
+  },
+  "dashboard": {
+    "welcome": "Welcome, {name}!"
+  }
+}
