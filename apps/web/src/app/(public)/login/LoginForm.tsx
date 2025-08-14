@@ -25,7 +25,6 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-sm text-center">
       <h1 className="mb-4 text-4xl font-bold">Logg inn</h1>
-      <p className="mb-6 text-lg">Vær så snill å logg inn då</p>
 
       {error && (
         <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">
