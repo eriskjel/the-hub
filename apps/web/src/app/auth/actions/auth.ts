@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { resolveLocale } from "@/i18n/resolve-locale";
 
 export async function login(formData: FormData) {
+  const locale = await resolveLocale();
+
   const supabase = await createClient();
 
   const email = String(formData.get("email") || "");
@@ -12,16 +15,18 @@ export async function login(formData: FormData) {
 
   // TODO: add real validation (zod/yup) & friendly error display
   const { error } = await supabase.auth.signInWithPassword({ email, password });
+
   if (error) {
-    // optional: append query params to show an error on the page
-    redirect("/login?error=invalid-credentials");
+    redirect(`/${locale}/login?error=invalid-credentials`);
   }
 
-  revalidatePath("/", "layout");
-  redirect("/");
+  revalidatePath(`/${locale}`, "layout");
+  redirect(`/${locale}/dashboard`);
 }
 
 export async function signup(formData: FormData) {
+  const locale = await resolveLocale();
+
   const supabase = await createClient();
 
   const email = String(formData.get("email") || "");
@@ -29,15 +34,18 @@ export async function signup(formData: FormData) {
 
   const { error } = await supabase.auth.signUp({ email, password });
   if (error) {
-    redirect("/login?error=signup-failed");
+    redirect(`/${locale}/login?error=signup-failed`);
   }
-  revalidatePath("/", "layout");
-  redirect("/");
+  revalidatePath(`/${locale}`, "layout");
+  redirect(`/${locale}/dashboard`);
 }
 
 export async function logout() {
+  const locale = await resolveLocale();
+
   const supabase = await createClient();
   await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/login");
+
+  revalidatePath(`/${locale}`, "layout");
+  redirect(`/${locale}/login`);
 }
