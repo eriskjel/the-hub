@@ -1,6 +1,6 @@
 "use client";
 
-import { login, signup } from "./actions";
+import { login, signup } from "@/app/auth/actions/auth";
 import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { ReactNode } from "react";

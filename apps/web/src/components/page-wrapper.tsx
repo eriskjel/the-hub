@@ -4,6 +4,7 @@ import Header from "@/components/header";
 type Props = {
   children: ReactNode;
   className?: string;
+  contentClassName?: string;
   headerVariant?: "transparent" | "solid";
   headerMode?: "fixed" | "sticky";
 };
@@ -11,6 +12,7 @@ type Props = {
 export default function PageWrapper({
   children,
   className = "",
+  contentClassName = "",
   headerVariant = "solid",
   headerMode = "fixed",
 }: Props) {
@@ -24,7 +26,11 @@ export default function PageWrapper({
   return (
     <section className={`flex w-full flex-col ${minH} ${className}`}>
       <Header variant={headerVariant} mode={headerMode} />
-      <div className={`${base} ${headerMode === "fixed" ? "flex-1 pt-16" : "flex-1"}`}>
+      <div
+        className={`${base} ${
+          headerMode === "fixed" ? "flex-1 pt-16" : "flex-1"
+        } ${contentClassName}`}
+      >
         {children}
       </div>
     </section>
