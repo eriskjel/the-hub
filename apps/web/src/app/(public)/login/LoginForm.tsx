@@ -5,35 +5,34 @@ import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { ReactNode } from "react";
 
-function SubmitButton({ children }: { children: ReactNode }) {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex-1 rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
-    >
-      {pending ? "Sender…" : children}
-    </button>
-  );
+const ERROR_MESSAGES = {
+    "invalid-credentials": "Feil e-post eller passord.",
+    "signup-failed": "Kunne ikke registrere bruker.",
+    "confirm-failed": "Bekreftelseslenken er ugyldig eller utløpt.",
+} as const;
+
+type AuthErrorCode = keyof typeof ERROR_MESSAGES;
+
+const DEFAULT_ERROR_MESSAGE = "Noe gikk galt.";
+
+function getErrorMessage(code: string | null): string | null {
+    if (!code) return null;
+    return code in ERROR_MESSAGES
+        ? ERROR_MESSAGES[code as AuthErrorCode]
+        : DEFAULT_ERROR_MESSAGE;
 }
 
 export default function LoginForm() {
-  const sp = useSearchParams();
-  const error = sp.get("error");
+  const searchParams = useSearchParams();
+  const errorCode = searchParams.get("error");
+  const errorMessage = getErrorMessage(errorCode);
 
   return (
     <div className="w-full max-w-sm text-center">
       <h1 className="mb-4 text-4xl font-bold">Logg inn</h1>
 
-      {error && (
-        <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">
-          {error === "invalid-credentials" && "Feil e-post eller passord."}
-          {error === "signup-failed" && "Kunne ikke registrere bruker."}
-          {error === "confirm-failed" && "Bekreftelseslenken er ugyldig eller utløpt."}
-          {!["invalid-credentials", "signup-failed", "confirm-failed"].includes(error) &&
-            "Noe gikk galt."}
-        </p>
+      {errorMessage && (
+        <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">{errorMessage}</p>
       )}
 
       <form action={login} className="space-y-4" autoComplete="on">
@@ -74,5 +73,18 @@ export default function LoginForm() {
         </div>
       </form>
     </div>
+  );
+}
+
+function SubmitButton({ children }: { children: ReactNode }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="flex-1 rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+    >
+      {pending ? "Sender…" : children}
+    </button>
   );
 }
