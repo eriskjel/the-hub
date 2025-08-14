@@ -2,7 +2,6 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 import PageWrapper from "@/components/page-wrapper";
-import { setRequestLocale } from "next-intl/server";
 
 // ensure no caching of protected shell
 export const dynamic = "force-dynamic";
