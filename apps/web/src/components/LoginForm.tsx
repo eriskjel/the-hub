@@ -6,50 +6,51 @@ import { useFormStatus } from "react-dom";
 import { ReactElement, ReactNode, useCallback, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getBaseUrl } from "@/utils/url";
+import { useLocale, useTranslations } from "next-intl";
 
-const ERROR_MESSAGES = {
-  "invalid-credentials": "Feil e-post eller passord.",
-  "signup-failed": "Kunne ikke registrere bruker.",
-  "confirm-failed": "Bekreftelseslenken er ugyldig eller utløpt.",
+const ERROR_KEY_BY_CODE = {
+  "invalid-credentials": "invalidCredentials",
+  "signup-failed": "signupFailed",
+  "confirm-failed": "confirmFailed",
 } as const;
 
-type AuthErrorCode = keyof typeof ERROR_MESSAGES;
-
-const DEFAULT_ERROR_MESSAGE = "Noe gikk galt.";
-
-function getErrorMessage(code: string | null): string | null {
-  if (!code) return null;
-  return code in ERROR_MESSAGES ? ERROR_MESSAGES[code as AuthErrorCode] : DEFAULT_ERROR_MESSAGE;
-}
+type ErrorCode = keyof typeof ERROR_KEY_BY_CODE;
+type ErrorKey = (typeof ERROR_KEY_BY_CODE)[ErrorCode] | "generic";
 
 export default function LoginForm(): ReactElement {
+  const locale = useLocale();
+  const t = useTranslations("login");
+
   const searchParams = useSearchParams();
-  const errorCode = searchParams.get("error");
-  const errorMessage = getErrorMessage(errorCode);
+  const errorCode = searchParams.get("error") as ErrorCode | null;
+  const errorKey: ErrorKey = (errorCode && ERROR_KEY_BY_CODE[errorCode]) ?? "generic";
+  const errorMessage =
+    // Only show if there *is* an error param; otherwise no alert
+    errorCode ? t(`errors.${errorKey}`) : null;
   const supabase = useMemo(() => createClient(), []);
 
+  //todo: extract to a hook
   const handleGithub = useCallback(async () => {
     const base: string = getBaseUrl();
+    const next = `/${locale}/dashboard`;
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${base}auth/callback?next=/`,
-        // Optional: request extra scopes
-        // scopes: "read:user user:email",
+        redirectTo: `${base}auth/callback?next=${encodeURIComponent(next)}&locale=${locale}`,
       },
     });
-  }, [supabase]);
+  }, [supabase, locale]);
 
   return (
     <div className="w-full max-w-sm text-center">
-      <h1 className="mb-4 text-4xl font-bold">Logg inn</h1>
+      <h1 className="mb-4 text-4xl font-bold">{t("title")}</h1>
 
       <ErrorAlert message={errorMessage} />
 
       <form action={login} className="space-y-4" autoComplete="on">
         <div className="space-y-1 text-left">
           <label htmlFor="email" className="block text-sm font-medium">
-            Email
+            {t("email")}
           </label>
           <input
             id="email"
@@ -62,7 +63,7 @@ export default function LoginForm(): ReactElement {
         </div>
         <div className="space-y-1 text-left">
           <label htmlFor="password" className="block text-sm font-medium">
-            Passord
+            {t("password")}
           </label>
           <input
             id="password"
@@ -74,18 +75,18 @@ export default function LoginForm(): ReactElement {
           />
         </div>
         <div className="flex gap-2">
-          <SubmitButton>Logg inn</SubmitButton>
+          <SubmitButton t={t}>{t("login")}</SubmitButton>
           <button
             formAction={signup}
             className="flex-1 cursor-pointer rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
           >
-            Registrer
+            {t("register")}
           </button>
         </div>
       </form>
       <div className="my-4 flex items-center gap-3">
         <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs text-gray-500">eller</span>
+        <span className="text-xs text-gray-500">{t("or")}</span>
         <div className="h-px flex-1 bg-gray-200" />
       </div>
 
@@ -94,13 +95,13 @@ export default function LoginForm(): ReactElement {
         onClick={handleGithub}
         className="w-full cursor-pointer rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
       >
-        Fortsett med GitHub
+        {t("github")}
       </button>
     </div>
   );
 }
 
-function SubmitButton({ children }: { children: ReactNode }) {
+function SubmitButton({ children, t }: { children: ReactNode; t: (key: string) => string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -108,7 +109,7 @@ function SubmitButton({ children }: { children: ReactNode }) {
       disabled={pending}
       className="flex-1 cursor-pointer rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
     >
-      {pending ? "Sender…" : children}
+      {pending ? t("working") : children}
     </button>
   );
 }

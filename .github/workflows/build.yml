@@ -21,7 +21,7 @@ jobs:
       # Only build if web changed (still reports a passing check when it didn't)
       - name: Detect web changes
         id: web_changes
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             apps/web/**
