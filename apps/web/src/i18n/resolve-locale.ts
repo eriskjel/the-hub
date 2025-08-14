@@ -19,15 +19,6 @@ export async function resolveLocale(): Promise<Locale> {
         if (isSupported(seg)) return seg;
       }
     }
-
-    if (ref && host) {
-      const url = new URL(ref);
-      // ensure same-origin before trusting the path
-      if (url.host === host) {
-        const seg = url.pathname.split("/")[1];
-        if (isSupported(seg)) return seg;
-      }
-    }
   } catch {
     /* ignore */
   }
