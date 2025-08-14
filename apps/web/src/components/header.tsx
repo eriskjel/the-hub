@@ -1,6 +1,8 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { logout } from "@/app/auth/actions/auth";
+import { getLocale, getTranslations } from "next-intl/server";
+import { ReactElement } from "react";
 
 type HeaderProps = {
   variant?: "transparent" | "solid";
@@ -8,6 +10,8 @@ type HeaderProps = {
 };
 
 export default async function Header({ variant = "solid", mode = "sticky" }: HeaderProps) {
+  const locale: string = await getLocale();
+  const t = await getTranslations({ locale });
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,10 +27,10 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
         <ul className="flex gap-8">
           <li>
             <Link href="/" className="hover:text-gray-300">
-              Home
+              {t("header.home")}
             </Link>
           </li>
-          <NavAuth isLoggedIn={!!user} />
+          <NavAuth isLoggedIn={!!user} t={t} />
         </ul>
       </nav>
     </header>
@@ -35,15 +39,16 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
 
 type NavAuthProps = {
   isLoggedIn: boolean;
+  t: (key: string) => string;
 };
 
-function NavAuth({ isLoggedIn }: NavAuthProps) {
+function NavAuth({ isLoggedIn, t }: NavAuthProps): ReactElement {
   if (isLoggedIn) {
     return (
       <li>
         <form action={logout}>
           <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
-            Logg ut
+            {t("header.logout")}
           </button>
         </form>
       </li>
@@ -53,7 +58,7 @@ function NavAuth({ isLoggedIn }: NavAuthProps) {
   return (
     <li>
       <Link href="/login" className="hover:text-gray-300">
-        Logg inn
+        {t("header.login")}
       </Link>
     </li>
   );
