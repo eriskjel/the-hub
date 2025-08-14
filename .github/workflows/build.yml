@@ -1,0 +1,57 @@
+name: CI Build
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: build (web)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Only build if web changed (still reports a passing check when it didn't)
+      - name: Detect web changes
+        id: web_changes
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            apps/web/**
+
+      - run: corepack enable
+        if: steps.web_changes.outputs.any_changed == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.web_changes.outputs.any_changed == 'true'
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: corepack prepare pnpm@10.14.0 --activate
+        if: steps.web_changes.outputs.any_changed == 'true'
+
+      - name: Install deps (web)
+        if: steps.web_changes.outputs.any_changed == 'true'
+        run: pnpm -C apps/web install --frozen-lockfile
+
+      - name: Build (web)
+        if: steps.web_changes.outputs.any_changed == 'true'
+        run: pnpm -C apps/web build
+        env:
+          # set the envs your build expects
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: No web changes (noop)
+        if: steps.web_changes.outputs.any_changed != 'true'
+        run: echo "No changes in apps/web — skipping build but passing check."
