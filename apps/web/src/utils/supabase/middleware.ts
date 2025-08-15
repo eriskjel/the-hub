@@ -2,9 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    });
+    const response = NextResponse.next({ request });
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,16 +12,9 @@ export async function updateSession(request: NextRequest) {
                 getAll() {
                     return request.cookies.getAll();
                 },
-                setAll(
-                    cookiesToSet: {
-                        name: string;
-                        value: string;
-                        options: Parameters<NextResponse["cookies"]["set"]>[2];
-                    }[]
-                ) {
-                    supabaseResponse = NextResponse.next({ request });
+                setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => {
-                        supabaseResponse.cookies.set(name, value, options);
+                        response.cookies.set(name, value, options);
                     });
                 },
             },
@@ -46,10 +37,16 @@ export async function updateSession(request: NextRequest) {
         !request.nextUrl.pathname.startsWith("/auth") &&
         !request.nextUrl.pathname.startsWith("/error")
     ) {
-        // no user, potentially respond by redirecting the user to the login page
         const url = request.nextUrl.clone();
         url.pathname = "/login";
-        return NextResponse.redirect(url);
+        const redirectResponse = NextResponse.redirect(url);
+
+        // copy cookies from the original response
+        response.cookies.getAll().forEach((cookie) => {
+            redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+        });
+
+        return redirectResponse;
     }
 
     // IMPORTANT: You *must* return the supabaseResponse object as it is.
@@ -65,5 +62,5 @@ export async function updateSession(request: NextRequest) {
     // If this is not done, you may be causing the browser and server to go out
     // of sync and terminate the user's session prematurely!
 
-    return supabaseResponse;
+    return response;
 }
