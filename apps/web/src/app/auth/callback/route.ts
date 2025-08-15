@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRose";
+import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRole";
 
 export async function GET(req: NextRequest) {
     const url = new URL(req.url);

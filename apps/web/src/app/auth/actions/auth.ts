@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
-import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRose";
+import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRole";
 
 export async function login(formData: FormData) {
     const locale = await resolveLocale();
