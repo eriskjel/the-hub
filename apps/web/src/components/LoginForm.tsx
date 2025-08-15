@@ -3,10 +3,10 @@
 import { login, signup } from "@/app/auth/actions/auth";
 import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
-import { ReactElement, ReactNode, useCallback, useMemo } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { getBaseUrl } from "@/utils/url";
+import { ReactElement, ReactNode, useCallback } from "react";
+
 import { useLocale, useTranslations } from "next-intl";
+import { startGithubOAuth } from "@/utils/auth/startGithubOAuth";
 
 const ERROR_KEY_BY_CODE = {
   "invalid-credentials": "invalidCredentials",
@@ -24,22 +24,9 @@ export default function LoginForm(): ReactElement {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get("error") as ErrorCode | null;
   const errorKey: ErrorKey = (errorCode && ERROR_KEY_BY_CODE[errorCode]) ?? "generic";
-  const errorMessage =
-    // Only show if there *is* an error param; otherwise no alert
-    errorCode ? t(`errors.${errorKey}`) : null;
-  const supabase = useMemo(() => createClient(), []);
+  const errorMessage = errorCode ? t(`errors.${errorKey}`) : null;
 
-  //todo: extract to a hook
-  const handleGithub = useCallback(async () => {
-    const base: string = getBaseUrl();
-    const next = `/${locale}/dashboard`;
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${base}auth/callback?next=${encodeURIComponent(next)}&locale=${locale}`,
-      },
-    });
-  }, [supabase, locale]);
+  const handleGithub = useCallback(() => startGithubOAuth(locale), [locale]);
 
   return (
     <div className="w-full max-w-sm text-center">
@@ -84,11 +71,7 @@ export default function LoginForm(): ReactElement {
           </button>
         </div>
       </form>
-      <div className="my-4 flex items-center gap-3">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs text-gray-500">{t("or")}</span>
-        <div className="h-px flex-1 bg-gray-200" />
-      </div>
+      <Divider label={t("or")} />
 
       {/* GitHub login */}
       <button
@@ -97,6 +80,16 @@ export default function LoginForm(): ReactElement {
       >
         {t("github")}
       </button>
+    </div>
+  );
+}
+
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="my-4 flex items-center gap-3">
+      <div className="h-px flex-1 bg-gray-200" />
+      <span className="text-xs text-gray-500">{label}</span>
+      <div className="h-px flex-1 bg-gray-200" />
     </div>
   );
 }

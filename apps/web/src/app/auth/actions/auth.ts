@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
+import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRose";
 
 export async function login(formData: FormData) {
   const locale = await resolveLocale();
@@ -19,6 +20,8 @@ export async function login(formData: FormData) {
   if (error) {
     redirect(`/${locale}/login?error=invalid-credentials`);
   }
+
+  await ensureDefaultRole();
 
   revalidatePath(`/${locale}`, "layout");
   redirect(`/${locale}/dashboard`);
@@ -36,6 +39,9 @@ export async function signup(formData: FormData) {
   if (error) {
     redirect(`/${locale}/login?error=signup-failed`);
   }
+
+  await ensureDefaultRole();
+
   revalidatePath(`/${locale}`, "layout");
   redirect(`/${locale}/dashboard`);
 }
