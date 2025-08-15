@@ -7,29 +7,29 @@ import PageWrapper from "@/components/page-wrapper";
 export const dynamic = "force-dynamic";
 
 export default async function ProtectedLayout({
-  children,
-  params,
+    children,
+    params,
 }: {
-  children: ReactNode;
-  params: Promise<{ locale: string }>;
+    children: ReactNode;
+    params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
+    const { locale } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+    const supabase = await createClient();
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser();
 
-  if (error || !user) redirect(`/${locale}/login`);
+    if (error || !user) redirect(`/${locale}/login`);
 
-  return (
-    <PageWrapper
-      headerVariant="transparent"
-      headerMode="fixed"
-      className="overflow-hidden bg-gradient-to-br from-purple-600 via-blue-500 to-teal-400"
-    >
-      {children}
-    </PageWrapper>
-  );
+    return (
+        <PageWrapper
+            headerVariant="transparent"
+            headerMode="fixed"
+            className="overflow-hidden bg-gradient-to-br from-purple-600 via-blue-500 to-teal-400"
+        >
+            {children}
+        </PageWrapper>
+    );
 }
