@@ -3,12 +3,11 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { ALLOWED_ROLES, DEFAULT_ROLE, Role } from "@/config/roles";
 import type { User } from "@supabase/supabase-js";
 
-
 type UserWithRole = User & {
-    app_metadata: {
-        role?: Role;
-        [key: string]: unknown;
-    };
+  app_metadata: {
+    role?: Role;
+    [key: string]: unknown;
+  };
 };
 
 export async function ensureDefaultRole(): Promise<{
