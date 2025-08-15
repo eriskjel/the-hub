@@ -1,6 +1,15 @@
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { ALLOWED_ROLES, DEFAULT_ROLE, Role } from "@/config/roles";
+import type { User } from "@supabase/supabase-js";
+
+
+type UserWithRole = User & {
+    app_metadata: {
+        role?: Role;
+        [key: string]: unknown;
+    };
+};
 
 export async function ensureDefaultRole(): Promise<{
   ok: boolean;
@@ -15,7 +24,8 @@ export async function ensureDefaultRole(): Promise<{
   } = await supabase.auth.getUser();
   if (uerr || !user) return { ok: false, reason: "not-authenticated" };
 
-  const current = (user.app_metadata as any)?.role as Role | undefined;
+  const current = (user as UserWithRole).app_metadata.role;
+
   if (current && (ALLOWED_ROLES as readonly string[]).includes(current)) {
     return { ok: true, role: current, changed: false };
   }
