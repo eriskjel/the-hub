@@ -1,10 +1,8 @@
-export function getBaseUrl() {
-  let url =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_VERCEL_URL ??
-    "http://localhost:3000";
-
-  if (!url.startsWith("http")) url = `https://${url}`;
-  if (!url.endsWith("/")) url += "/";
-  return url;
+export function getBaseUrl(): string {
+  const url = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!url) {
+    // Fail loudly in client
+    throw new Error("NEXT_PUBLIC_SITE_URL is required");
+  }
+  return url.endsWith("/") ? url : `${url}/`;
 }
