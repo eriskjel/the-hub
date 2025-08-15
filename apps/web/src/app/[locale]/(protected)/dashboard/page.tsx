@@ -10,10 +10,17 @@ export default async function Home() {
         data: { user },
     } = await supabase.auth.getUser();
 
-    const profile: Profile | null = user
-        ? ((await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>()).data ??
-          null)
-        : null;
+    const { data: profile, error: profileError } = user
+        ? await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single<Profile>()
+        : { data: null, error: null };
+
+    if (profileError) {
+        console.warn("Failed to fetch profile:", profileError.message);
+    }
 
     const name = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
 
