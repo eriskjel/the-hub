@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { getTranslations } from "next-intl/server";
 import { Profile } from "@/types/database";
+import { getNameFromProfile } from "@/utils/nameFromProfile";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +12,7 @@ export default async function Home() {
     } = await supabase.auth.getUser();
 
     const { data: profile, error: profileError } = user
-        ? await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .single<Profile>()
+        ? await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>()
         : { data: null, error: null };
 
     if (profileError) {
@@ -33,8 +30,4 @@ export default async function Home() {
             </div>
         </div>
     );
-}
-
-function getNameFromProfile(profile: Profile | null) {
-    return profile?.full_name ?? profile?.username ?? null;
 }
