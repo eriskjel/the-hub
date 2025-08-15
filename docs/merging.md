@@ -1,8 +1,10 @@
 # Merging Strategy & Git Workflow
 
 ## Overview
-We use one primary merge method:
-- **Squash & merge** (default for all PRs)
+We use two primary merge methods depending on the PR type:
+
+- **Feature → `dev`**: **Squash & merge** (default for all feature PRs)
+- **`dev` → `main`**: **Merge commit (no fast-forward)**
 
 We do **not** allow "Rebase & merge" on the remote. Rebasing is only done locally for keeping feature branches up-to-date.
 
@@ -10,55 +12,31 @@ We do **not** allow "Rebase & merge" on the remote. Rebasing is only done locall
 
 ## Repo Settings
 
-### Merge Options
-- Enable: **Squash merging**
-- Disable: **Create a merge commit**
-- Disable: **Rebase and merge**
-- Optional: Auto-delete head branches after merge
+### Branch Protection / Rulesets
 
-### Branch Protection (main)
+**`dev`**
+- Allowed merge methods: **Squash** only
 - Require pull request before merging (1–2 reviews)
 - Dismiss stale approvals on new commits
 - Require status checks to pass before merging
-- Require branches to be up-to-date before merging
 - Require conversation resolution before merging
-- Require linear history
+
+**`main`**
+- Allowed merge methods: **Merge commit** only
+- Require pull request before merging (1–2 reviews)
+- Dismiss stale approvals on new commits
+- Require status checks to pass before merging
+- Require conversation resolution before merging
+- Require branches to be up-to-date before merging
+- Do **not** require linear history (merge commits are non-linear)
 - Restrict who can push to `main`
 
 ---
 
 ## Local Git Defaults
-```
+```bash
 git config pull.ff only               # no accidental merge commits on pull
 git config pull.rebase true           # rebase your local feature branches on pull
 git config branch.main.rebase false   # main uses FF-only on pull
+git config branch.dev.rebase false    # dev uses FF-only on pull
 git config rerere.enabled true        # reuse conflict resolutions
-
-```
-
-## Default Path — Small/Normal PRs (Squash & merge)
-1. Branch from main:
-```
-git switch main
-git fetch origin && git pull
-git switch -c short-desc
-```
-2. Keep fresh while coding (solo branch):
-``git fetch origin && git rebase origin/main``
-3. Open PR → CI green → Squash & merge.
-4. Write a clear squash commit message:
-```
-feat: add avatar upload
-
-    adds S3 presigned upload
-
-    validates mime & size
-
-    updates profile page UI
-```
-5. After merge:
-```
-git switch main
-git fetch origin && git pull
-git branch -d short-desc
-```
