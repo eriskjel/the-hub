@@ -40,4 +40,4 @@ Contributions are very welcome — just open a PR!
 
 ## 📜 License
 
-TBD (unlicensed for now).
+This project is licensed under the [MIT License].
