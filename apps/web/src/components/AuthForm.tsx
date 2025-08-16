@@ -94,7 +94,12 @@ export default function AuthForm(): ReactElement {
                 type="button"
                 className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
             >
-                <img src="/icons/github-mark-white.svg" alt="" aria-hidden="true" className="h-5 w-5" />
+                <img
+                    src="/icons/github-mark-white.svg"
+                    alt=""
+                    aria-hidden="true"
+                    className="h-5 w-5"
+                />
                 {t("github")}
             </button>
 
