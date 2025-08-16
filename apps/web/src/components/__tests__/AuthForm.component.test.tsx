@@ -10,7 +10,7 @@ globalThis.__setSearch = (q: string) => {
 };
 
 // mock next/navigation hooks used by useAuthMode()
-vi.mock("next/navigation", async (importOriginal) => {
+vi.mock("next/navigation", async () => {
     const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
     return {
         ...actual,
