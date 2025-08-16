@@ -36,15 +36,3 @@ export function buildAuthErrorUrl(base: URL, token: AuthReasonToken, locale?: st
     if (locale) u.searchParams.set("locale", locale);
     return u;
 }
-
-// --- small utils ---
-function toMsg(err: unknown): string {
-    if (err instanceof Error) {
-        return err.message.toLowerCase();
-    }
-    return "";
-}
-
-function includesAny(hay: string, needles: string[]) {
-    return needles.some((n) => hay.includes(n));
-}
