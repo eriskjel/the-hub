@@ -3,8 +3,17 @@
   "private": true,
   "packageManager": "pnpm@10.14.0",
   "scripts": {
-    "dev": "pnpm -F web dev",
-    "build": "pnpm -F web build",
-    "lint": "pnpm -F web lint"
+  "dev": "pnpm -F web dev",
+  "build": "pnpm -F web build",
+  "lint": "pnpm -F web lint",
+  "test": "pnpm -F web test",
+  "test:run": "pnpm -F web test:run",
+  "test:ui": "pnpm -F web test:ui"
+  }, 
+  "pnpm": {
+    "overrides": {
+      "vitest": "2.1.4",
+      "vite": "5.4.11"
+    }
   }
 }
