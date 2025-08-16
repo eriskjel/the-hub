@@ -24,6 +24,6 @@
         "welcome": "Velkommen, {name}!"
     },
     "monster": {
-      "title": "Monster"
+        "title": "Monster"
     }
 }
