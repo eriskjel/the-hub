@@ -53,7 +53,7 @@ describe("<AuthForm />", () => {
         });
         setSearch(""); // default to login mode
 
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
         render(<AuthForm />);
 
         // Title
@@ -99,7 +99,7 @@ describe("<AuthForm />", () => {
         });
         setSearch("mode=signup");
 
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
         render(<AuthForm />);
 
         expect(screen.getByRole("heading", { name: "Opprett konto" })).toBeInTheDocument();
@@ -111,18 +111,18 @@ describe("<AuthForm />", () => {
     it("switches to signup mode when link clicked", async () => {
         setIntl({
             locale: "no",
-            messages: { login: { noAccount: "Har du ikke en konto?", goToRegister: "Registrer deg" } },
+            messages: {
+                login: { noAccount: "Har du ikke en konto?", goToRegister: "Registrer deg" },
+            },
         });
         setSearch("");
 
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
         render(<AuthForm />);
 
         fireEvent.click(screen.getByRole("button", { name: "Registrer deg" }));
         expect(replaceMock).toHaveBeenCalledWith("/no/login?mode=signup");
     });
-
-
 
     it("does not show an error when there is no ?error param", async () => {
         setIntl({
@@ -132,7 +132,7 @@ describe("<AuthForm />", () => {
             },
         });
 
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
         render(<AuthForm />);
 
         // No known error message visible
@@ -152,7 +152,7 @@ describe("<AuthForm />", () => {
         });
         setSearch("error=totally-unknown");
 
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
         render(<AuthForm />);
 
         expect(screen.getByText("Noe gikk galt")).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("<AuthForm />", () => {
             },
         });
         setSearch("error=invalid-credentials");
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
         render(<AuthForm />);
         expect(screen.getByText("Feil brukernavn eller passord")).toBeInTheDocument();
     });
@@ -176,7 +176,7 @@ describe("<AuthForm />", () => {
 
         // Import AFTER mocks so the component uses the mocked function
         const oauth = await import("@/utils/auth/startGithubOAuth");
-        const { default: AuthForm } = await import(".././AuthForm");
+        const { default: AuthForm } = await import("../AuthForm");
 
         render(<AuthForm />);
         fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
