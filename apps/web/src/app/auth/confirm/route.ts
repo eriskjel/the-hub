@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
 import { safeNextPath } from "@/utils/auth/safeNextPath";
+import { buildAuthErrorUrl, mapVerifyError } from "@/utils/auth/authReasons";
 
 const ALLOWED_TYPES: EmailOtpType[] = [
     "signup",
@@ -19,18 +20,15 @@ export async function GET(req: NextRequest) {
     const type = url.searchParams.get("type") as EmailOtpType | null;
     const qsLocale = url.searchParams.get("locale") || "";
     const locale = qsLocale || (await resolveLocale());
+
     let next = url.searchParams.get("next") || `/${locale}/dashboard`;
     next = safeNextPath(next);
 
     if (!token_hash) {
-        return NextResponse.redirect(
-            new URL(`/auth/auth-code-error?reason=no_token&locale=${locale}`, url)
-        );
+        return NextResponse.redirect(buildAuthErrorUrl(url, "no_token", locale));
     }
     if (!type || !ALLOWED_TYPES.includes(type)) {
-        return NextResponse.redirect(
-            new URL(`/auth/auth-code-error?reason=invalid_type&locale=${locale}`, url)
-        );
+        return NextResponse.redirect(buildAuthErrorUrl(url, "invalid_type", locale));
     }
 
     try {
@@ -39,17 +37,8 @@ export async function GET(req: NextRequest) {
         if (!error) {
             return NextResponse.redirect(new URL(next, url));
         }
-        const msg = error.message || "verify_failed";
-        return NextResponse.redirect(
-            new URL(`/auth/auth-code-error?reason=${encodeURIComponent(msg)}&locale=${locale}`, url)
-        );
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "confirm_failed";
-        return NextResponse.redirect(
-            new URL(
-                `/auth/auth-code-error?reason=${encodeURIComponent(message)}&locale=${locale}`,
-                url
-            )
-        );
+        return NextResponse.redirect(buildAuthErrorUrl(url, mapVerifyError(error), locale));
+    } catch (e) {
+        return NextResponse.redirect(buildAuthErrorUrl(url, "confirm_failed", locale));
     }
 }

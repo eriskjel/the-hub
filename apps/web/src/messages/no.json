@@ -29,7 +29,15 @@
     "auth": {
         "loginFailed": "Innlogging mislyktes",
         "couldNotAuthenticate": "Kunne ikke autentisere",
-        "unknown_reason": "Ukjent grunn",
+        "no_code": "Mangler autentiseringskode",
+        "no_token": "Mangler token",
+        "invalid_type": "Ugyldig tokentype",
+        "exchange_failed": "Kunne ikke fullføre OAuth-utvekslingen",
+        "verify_failed": "Verifisering mislyktes",
+        "oauth_init_failed": "Kunne ikke starte OAuth",
+        "confirm_failed": "Bekreftelse mislyktes",
+        "callback_failed": "Callback mislyktes",
+        "unknown_reason": "Ukjent årsak",
         "goToLogin": "Gå til innlogging"
     }
 }

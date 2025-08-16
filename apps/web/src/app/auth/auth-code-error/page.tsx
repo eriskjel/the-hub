@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import Link from "next/link";
 import { resolveLocale } from "@/i18n/resolve-locale";
+import { isAuthReasonToken } from "@/utils/auth/authReasons";
 
 export default async function AuthCodeErrorPage({
     searchParams,
@@ -9,23 +10,24 @@ export default async function AuthCodeErrorPage({
 }) {
     const { reason, locale: qsLocale } = await searchParams;
 
-    // Prefer query param from the handlers; fallback to resolver
     const locale = qsLocale || (await resolveLocale());
     setRequestLocale(locale);
 
     const t = await getTranslations("auth");
-    const reasonText = reason ?? t("unknown_reason");
 
-    // TODO: Prevent leaking sensitive error information to the UI. Consider implementing a whitelist of safe error reasons and review the truncation logic for error messages.
-    const reasonForUi =
-        process.env.NODE_ENV === "development" ? reasonText.slice(0, 200) : t("unknown_reason");
+    const token = reason && isAuthReasonToken(reason) ? reason : "unknown_reason";
+
+    if (process.env.NODE_ENV === "development") {
+        // eslint-disable-next-line no-console
+        console.debug("[auth-code-error] token:", token);
+    }
 
     return (
         <main className="flex min-h-dvh items-center justify-center p-6">
             <div className="w-full max-w-md rounded-2xl border bg-white p-6">
                 <h1 className="mb-2 text-2xl font-semibold">{t("loginFailed")}</h1>
                 <p className="mb-4 text-sm text-neutral-600">
-                    {t("couldNotAuthenticate")} ({reasonForUi})
+                    {t("couldNotAuthenticate")} ({t(token)})
                 </p>
                 <Link
                     href={`/${locale}/login`}
