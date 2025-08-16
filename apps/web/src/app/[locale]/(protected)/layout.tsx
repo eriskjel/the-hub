@@ -1,7 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
-import PageWrapper from "@/components/page-wrapper";
 
 // ensure no caching of protected shell
 export const dynamic = "force-dynamic";
@@ -23,13 +22,5 @@ export default async function ProtectedLayout({
 
     if (error || !user) redirect(`/${locale}/login`);
 
-    return (
-        <PageWrapper
-            headerVariant="transparent"
-            headerMode="fixed"
-            className="overflow-hidden bg-gradient-to-br from-purple-600 via-blue-500 to-teal-400"
-        >
-            {children}
-        </PageWrapper>
-    );
+    return children;
 }
