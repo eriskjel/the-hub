@@ -16,7 +16,7 @@ export default async function AuthCodeErrorPage({
     const t = await getTranslations("auth");
     const reasonText = reason ?? t("unknown_reason");
 
-    // todo: make this more robust
+    // TODO: Prevent leaking sensitive error information to the UI. Consider implementing a whitelist of safe error reasons and review the truncation logic for error messages.
     const reasonForUi =
         process.env.NODE_ENV === "development" ? reasonText.slice(0, 200) : t("unknown_reason");
 
