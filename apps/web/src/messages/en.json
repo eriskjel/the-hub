@@ -25,5 +25,19 @@
     },
     "monster": {
         "title": "Monster"
+    },
+    "auth": {
+        "loginFailed": "Login failed",
+        "couldNotAuthenticate": "Could not authenticate",
+        "no_code": "Missing auth code",
+        "no_token": "Missing token",
+        "invalid_type": "Invalid token type",
+        "exchange_failed": "Could not complete OAuth exchange",
+        "verify_failed": "Verification failed",
+        "oauth_init_failed": "Could not start OAuth",
+        "confirm_failed": "Confirmation failed",
+        "callback_failed": "Callback failed",
+        "unknown_reason": "Unknown reason",
+        "goToLogin": "Go to login"
     }
 }

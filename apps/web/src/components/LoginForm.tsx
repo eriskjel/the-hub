@@ -76,6 +76,7 @@ export default function LoginForm(): ReactElement {
             {/* GitHub login */}
             <button
                 onClick={handleGithub}
+                type="button"
                 className="w-full cursor-pointer rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
             >
                 {t("github")}
