@@ -1,4 +1,4 @@
-import PageWrapper from "@/components/page-wrapper";
+import PageWrapper from "@/components/PageWrapper";
 import { ReactNode } from "react";
 import { setRequestLocale } from "next-intl/server";
 
