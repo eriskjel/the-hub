@@ -1,23 +1,32 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import Link from "next/link";
+import { resolveLocale } from "@/i18n/resolve-locale";
 
 export default async function AuthCodeErrorPage({
     searchParams,
 }: {
-    searchParams: { reason?: string };
+    searchParams: Promise<{ reason?: string; locale?: string }>;
 }) {
-    const t = await getTranslations("auth");
+    const { reason, locale: qsLocale } = await searchParams;
 
-    const reason = searchParams?.reason ?? t("unknown_reason");
+    // Prefer query param from the handlers; fallback to resolver
+    const locale = qsLocale || (await resolveLocale());
+    setRequestLocale(locale);
+
+    const t = await getTranslations("auth");
+    const reasonText = reason ?? t("unknown_reason");
 
     return (
         <main className="flex min-h-dvh items-center justify-center p-6">
             <div className="w-full max-w-md rounded-2xl border bg-white p-6">
                 <h1 className="mb-2 text-2xl font-semibold">{t("loginFailed")}</h1>
                 <p className="mb-4 text-sm text-neutral-600">
-                    {t("couldNotAuthenticate")} - ({reason})
+                    {t("couldNotAuthenticate")} ({reasonText})
                 </p>
-                <Link href="/no/login" className="inline-block rounded-xl border px-4 py-2">
+                <Link
+                    href={`/${locale}/login`}
+                    className="inline-block rounded-xl border px-4 py-2"
+                >
                     {t("goToLogin")}
                 </Link>
             </div>
