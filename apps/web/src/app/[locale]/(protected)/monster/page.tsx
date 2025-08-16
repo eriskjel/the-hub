@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-// hvis du senere skal hente brukerinfo fra session trenger du denne:
+// if you later need to fetch user info from session you need this:
 // export const dynamic = "force-dynamic";
 
 export default async function MonsterPage() {
