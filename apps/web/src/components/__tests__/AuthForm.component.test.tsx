@@ -11,7 +11,7 @@ afterEach(() => {
     setSearch("");
 });
 
-describe("<LoginForm />", () => {
+describe("<AuthForm />", () => {
     it("renders title, fields, and all buttons", async () => {
         setIntl({
             locale: "no",
@@ -28,8 +28,8 @@ describe("<LoginForm />", () => {
             },
         });
 
-        const { default: LoginForm } = await import("../LoginForm");
-        render(<LoginForm />);
+        const { default: AuthForm } = await import(".././AuthForm");
+        render(<AuthForm />);
 
         // Title
         expect(screen.getByRole("heading", { name: "Logg inn" })).toBeInTheDocument();
@@ -62,8 +62,8 @@ describe("<LoginForm />", () => {
             },
         });
 
-        const { default: LoginForm } = await import("../LoginForm");
-        render(<LoginForm />);
+        const { default: AuthForm } = await import(".././AuthForm");
+        render(<AuthForm />);
 
         // No known error message visible
         expect(screen.queryByText(/Feil brukernavn eller passord/i)).toBeNull();
@@ -82,8 +82,8 @@ describe("<LoginForm />", () => {
         });
         setSearch("error=totally-unknown");
 
-        const { default: LoginForm } = await import("../LoginForm");
-        render(<LoginForm />);
+        const { default: AuthForm } = await import(".././AuthForm");
+        render(<AuthForm />);
 
         expect(screen.getByText("Noe gikk galt")).toBeInTheDocument();
     });
@@ -96,8 +96,8 @@ describe("<LoginForm />", () => {
             },
         });
         setSearch("error=invalid-credentials");
-        const { default: LoginForm } = await import("../LoginForm");
-        render(<LoginForm />);
+        const { default: AuthForm } = await import(".././AuthForm");
+        render(<AuthForm />);
         expect(screen.getByText("Feil brukernavn eller passord")).toBeInTheDocument();
     });
 
@@ -106,9 +106,9 @@ describe("<LoginForm />", () => {
 
         // Import AFTER mocks so the component uses the mocked function
         const oauth = await import("@/utils/auth/startGithubOAuth");
-        const { default: LoginForm } = await import("../LoginForm");
+        const { default: AuthForm } = await import(".././AuthForm");
 
-        render(<LoginForm />);
+        render(<AuthForm />);
         fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
 
         expect(oauth.startGithubOAuth).toHaveBeenCalledWith("no");
