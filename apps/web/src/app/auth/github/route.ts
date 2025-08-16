@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
 import { safeNextPath } from "@/utils/auth/safeNextPath";
+import {getOrigin} from "@/utils/auth/getSafeOrigin";
 
 export async function GET(req: NextRequest) {
     const url = req.nextUrl;
@@ -10,13 +11,7 @@ export async function GET(req: NextRequest) {
     let next = url.searchParams.get("next") || `/${locale}/dashboard`;
     next = safeNextPath(next);
 
-    const origin = url?.origin || process.env.NEXT_PUBLIC_SITE_URL;
-    if (!origin) {
-        return new NextResponse(
-            "Server misconfiguration: missing origin (set NEXT_PUBLIC_SITE_URL)",
-            { status: 500 }
-        );
-    }
+    const origin = getOrigin(url);
 
     const redirectTo = new URL("/auth/callback", origin);
     redirectTo.searchParams.set("locale", locale);
