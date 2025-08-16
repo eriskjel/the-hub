@@ -16,16 +16,19 @@ vi.mock("next-intl", () => ({
         if (typeof val === "string") {
             return val.replace(/\{(\w+)\}/g, (_, k) => params?.[k] ?? `{${k}}`);
         }
-        // Fallback to readable key path; keeps tests stable even if messages missing
         return full;
     },
 }));
 
-/** ---------- next/navigation (search params only) ---------- */
+/** ---------- next/navigation (EXPANDED) ---------- */
 let __search = new URLSearchParams("");
+let __pathname = "/";
+let __replaceMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
     useSearchParams: () => __search,
+    usePathname: () => __pathname,
+    useRouter: () => ({ replace: __replaceMock }),
 }));
 
 /** ---------- helpers exposed to tests ---------- */
@@ -33,6 +36,13 @@ vi.mock("next/navigation", () => ({
     if (opts.locale) __intlLocale = opts.locale;
     if (opts.messages) __intlMessages = opts.messages;
 };
+
 (globalThis as any).__setSearch = (query: string) => {
     __search = new URLSearchParams(query);
 };
+
+(globalThis as any).__setPathname = (path: string) => {
+    __pathname = path;
+};
+
+(globalThis as any).__getReplaceMock = () => __replaceMock;

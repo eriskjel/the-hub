@@ -1,9 +1,10 @@
-// Define the types for custom global test helpers
 declare global {
     var __setIntl:
         | ((opts: { locale?: string; messages?: Record<string, unknown> }) => void)
         | undefined;
     var __setSearch: ((query: string) => void) | undefined;
+    var __setPathname: ((path: string) => void) | undefined;
+    var __getReplaceMock: (() => any) | undefined;
 }
 
 // Define the type for mock Next.js request objects
@@ -22,4 +23,12 @@ export function setIntl(opts: { locale?: string; messages?: Record<string, unkno
 
 export function setSearch(query: string) {
     globalThis.__setSearch?.(query);
+}
+
+export function setPathname(path: string) {
+    globalThis.__setPathname?.(path);
+}
+
+export function getReplaceMock() {
+    return globalThis.__getReplaceMock?.();
 }
