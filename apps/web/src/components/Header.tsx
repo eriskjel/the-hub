@@ -25,12 +25,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
         <header className={`${base} ${look}`}>
             <nav className="flex h-full items-center justify-center px-8">
                 <ul className="flex gap-8">
-                    <li>
-                        <Link href="/" className="hover:text-gray-300">
-                            {t("header.home")}
-                        </Link>
-                    </li>
-                    <NavAuth isLoggedIn={!!user} t={t} />
+                    <NavItems isLoggedIn={!!user} t={t} />
                 </ul>
             </nav>
         </header>
@@ -42,10 +37,17 @@ type NavAuthProps = {
     t: (key: string) => string;
 };
 
-function NavAuth({ isLoggedIn, t }: NavAuthProps): ReactElement {
+function NavItems({ isLoggedIn, t }: NavAuthProps): ReactElement {
+    const homeHref = isLoggedIn ? "/dashboard" : "/login";
+
     if (isLoggedIn) {
         return (
             <>
+                <li>
+                    <Link href={homeHref} className="hover:text-gray-300">
+                        {t("header.home")}
+                    </Link>
+                </li>
                 <li>
                     <Link href="/monster" className="hover:text-gray-300">
                         {t("monster.title")}
@@ -63,10 +65,17 @@ function NavAuth({ isLoggedIn, t }: NavAuthProps): ReactElement {
     }
 
     return (
-        <li>
-            <Link href="/login" className="hover:text-gray-300">
-                {t("header.login")}
-            </Link>
-        </li>
+        <>
+            <li>
+                <Link href={homeHref} className="hover:text-gray-300">
+                    {t("header.home")}
+                </Link>
+            </li>
+            <li>
+                <Link href="/login" className="hover:text-gray-300">
+                    {t("header.login")}
+                </Link>
+            </li>
+        </>
     );
 }
