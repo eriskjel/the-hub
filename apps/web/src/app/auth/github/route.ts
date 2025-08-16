@@ -4,13 +4,20 @@ import { resolveLocale } from "@/i18n/resolve-locale";
 import { safeNextPath } from "@/utils/auth/safeNextPath";
 
 export async function GET(req: NextRequest) {
-    const url = new URL(req.url);
+    const url = req.nextUrl;
     const qsLocale = url.searchParams.get("locale") || "";
     const locale = qsLocale || (await resolveLocale());
     let next = url.searchParams.get("next") || `/${locale}/dashboard`;
     next = safeNextPath(next);
 
-    const origin = url.origin || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const origin = url?.origin || process.env.NEXT_PUBLIC_SITE_URL;
+    if (!origin) {
+        return new NextResponse(
+            "Server misconfiguration: missing origin (set NEXT_PUBLIC_SITE_URL)",
+            { status: 500 }
+        );
+    }
+
     const redirectTo = new URL("/auth/callback", origin);
     redirectTo.searchParams.set("locale", locale);
     redirectTo.searchParams.set("next", next);
