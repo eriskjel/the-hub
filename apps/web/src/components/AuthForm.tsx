@@ -49,6 +49,7 @@ export default function AuthForm(): ReactElement {
                         name="name"
                         type="text"
                         autoComplete="name"
+                        required
                     />
                 )}
 
@@ -91,8 +92,9 @@ export default function AuthForm(): ReactElement {
             <button
                 onClick={handleGithub}
                 type="button"
-                className="w-full cursor-pointer rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
             >
+                <img src="/icons/github-mark-white.svg" alt="Github logo" className="h-5 w-5" />
                 {t("github")}
             </button>
 
