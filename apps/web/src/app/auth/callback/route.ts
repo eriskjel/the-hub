@@ -11,15 +11,24 @@ export async function GET(req: NextRequest) {
     if (!next.startsWith("/")) next = "/";
 
     if (code) {
-        const supabase = await createClient();
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-            await ensureDefaultRole();
-            // respect current origin automatically (dev/prod/proxy-safe)
-            return NextResponse.redirect(new URL(next, url));
+        try {
+            const supabase = await createClient();
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (!error) {
+                await ensureDefaultRole();
+                return NextResponse.redirect(new URL(next, url));
+            }
+            return NextResponse.redirect(
+                new URL(`/auth/auth-code-error?reason=${encodeURIComponent(error.message)}`, url)
+            );
+        } catch (e: any) {
+            return NextResponse.redirect(
+                new URL(
+                    `/auth/auth-code-error?reason=${encodeURIComponent(e?.message ?? "callback_failed")}`,
+                    url
+                )
+            );
         }
     }
-
-    // fallback on failure
-    return NextResponse.redirect(new URL("/auth/auth-code-error", url));
+    return NextResponse.redirect(new URL("/auth/auth-code-error?reason=no_code", url));
 }
