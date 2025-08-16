@@ -23,13 +23,5 @@ export default async function ProtectedLayout({
 
     if (error || !user) redirect(`/${locale}/login`);
 
-    return (
-        <PageWrapper
-            headerVariant="transparent"
-            headerMode="fixed"
-            className="overflow-hidden bg-gradient-to-br from-purple-600 via-blue-500 to-teal-400"
-        >
-            {children}
-        </PageWrapper>
-    );
+    return children;
 }

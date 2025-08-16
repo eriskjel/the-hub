@@ -22,5 +22,8 @@
     },
     "dashboard": {
         "welcome": "Velkommen, {name}!"
+    },
+    "monster": {
+        "title": "Monster"
     }
 }
