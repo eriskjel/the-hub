@@ -1,6 +1,8 @@
 // Define the types for custom global test helpers
 declare global {
-    var __setIntl: ((opts: { locale?: string; messages?: Record<string, unknown> }) => void) | undefined;
+    var __setIntl:
+        | ((opts: { locale?: string; messages?: Record<string, unknown> }) => void)
+        | undefined;
     var __setSearch: ((query: string) => void) | undefined;
 }
 
