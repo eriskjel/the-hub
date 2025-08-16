@@ -34,7 +34,7 @@ export function mapVerifyError(err: unknown): AuthReasonToken {
     return "verify_failed";
 }
 
-export function mapOauthInitError(err: unknown): AuthReasonToken {
+export function mapOauthInitError(): AuthReasonToken {
     return "oauth_init_failed";
 }
 

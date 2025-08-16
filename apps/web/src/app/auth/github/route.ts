@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     if (error || !data?.url) {
         console.error("[auth/github] oauth init error:", error);
-        return NextResponse.redirect(buildAuthErrorUrl(url, mapOauthInitError(error), locale));
+        return NextResponse.redirect(buildAuthErrorUrl(url, mapOauthInitError(), locale));
     }
     return NextResponse.redirect(data.url);
 }
