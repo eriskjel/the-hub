@@ -45,13 +45,20 @@ type NavAuthProps = {
 function NavAuth({ isLoggedIn, t }: NavAuthProps): ReactElement {
     if (isLoggedIn) {
         return (
-            <li>
-                <form action={logout}>
-                    <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
-                        {t("header.logout")}
-                    </button>
-                </form>
-            </li>
+            <>
+                <li>
+                    <Link href="/monster" className="hover:text-gray-300">
+                        {t("monster.title")}
+                    </Link>
+                </li>
+                <li>
+                    <form action={logout}>
+                        <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
+                            {t("header.logout")}
+                        </button>
+                    </form>
+                </li>
+            </>
         );
     }
 
