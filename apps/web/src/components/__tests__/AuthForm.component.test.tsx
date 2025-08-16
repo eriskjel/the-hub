@@ -1,28 +1,8 @@
-import { vi } from "vitest";
-
-// keep a handle so you can assert on it
-export const replaceMock = vi.fn();
-
-// wire a mutable search string that your existing setSearch() can control
-let __search = "";
-globalThis.__setSearch = (q: string) => {
-    __search = q;
-};
-
-// mock next/navigation hooks used by useAuthMode()
-vi.mock("next/navigation", async () => {
-    const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
-    return {
-        ...actual,
-        useRouter: () => ({ replace: replaceMock }),
-        usePathname: () => "/no/login",
-        useSearchParams: () => new URLSearchParams(__search),
-    };
-});
-
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, afterEach } from "vitest";
-import { setIntl, setSearch } from "@/tests/testUtils";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { getReplaceMock, setIntl, setPathname, setSearch } from "@/tests/testUtils";
+import noMessages from "@/messages/no.json";
+const replaceMock = getReplaceMock();
 
 // Mock the OAuth starter at top-level so it is hoisted
 vi.mock("@/utils/auth/startGithubOAuth", () => ({ startGithubOAuth: vi.fn() }));
@@ -32,154 +12,99 @@ afterEach(() => {
     replaceMock.mockReset();
     setIntl({ locale: "no", messages: {} });
     setSearch("");
+    setPathname("/");
 });
+
+async function renderAuthForm({ searchParams = "", pathname = "/no/login" } = {}) {
+    setIntl({ locale: "no", messages: noMessages });
+    setSearch(searchParams);
+    setPathname(pathname);
+
+    const { default: AuthForm } = await import("../AuthForm");
+    render(<AuthForm />);
+
+    return noMessages.login;
+}
 
 describe("<AuthForm />", () => {
     it("renders title, fields, and buttons for login mode", async () => {
-        setIntl({
-            locale: "no",
-            messages: {
-                login: {
-                    title: "Logg inn",
-                    email: "E-post",
-                    password: "Passord",
-                    login: "Logg inn",
-                    github: "GitHub",
-                    or: "eller",
-                    noAccount: "Har du ikke en konto?",
-                    goToRegister: "Registrer deg",
-                },
-            },
-        });
-        setSearch(""); // default to login mode
-
-        const { default: AuthForm } = await import("../AuthForm");
-        render(<AuthForm />);
+        const t = await renderAuthForm();
 
         // Title
-        expect(screen.getByRole("heading", { name: "Logg inn" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: t.title })).toBeInTheDocument();
 
         // Fields
-        const email = screen.getByLabelText("E-post") as HTMLInputElement;
+        const email = screen.getByLabelText(t.email) as HTMLInputElement;
         expect(email.required).toBe(true);
         expect(email.type).toBe("email");
 
-        const pw = screen.getByLabelText("Passord") as HTMLInputElement;
+        const pw = screen.getByLabelText(t.password) as HTMLInputElement;
         expect(pw.required).toBe(true);
         expect(pw.type).toBe("password");
 
         // Single submit
-        expect(screen.getByRole("button", { name: "Logg inn" })).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: t.login })).toBeInTheDocument();
         // Not present in login mode
-        expect(screen.queryByRole("button", { name: "Registrer" })).toBeNull();
+        expect(screen.queryByRole("button", { name: t.register })).toBeNull();
 
         // GitHub is present and not a submit
-        const github = screen.getByRole("button", { name: "GitHub" }) as HTMLButtonElement;
+        const github = screen.getByRole("button", { name: t.github }) as HTMLButtonElement;
         expect(github).toBeInTheDocument();
         expect(github.type).toBe("button");
 
         // Under-text link that switches to signup
-        expect(screen.getByText("Har du ikke en konto?")).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "Registrer deg" })).toBeInTheDocument();
+        expect(screen.getByText(t.noAccount)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: t.goToRegister })).toBeInTheDocument();
     });
 
     it("shows signup fields and submit when mode=signup", async () => {
-        setIntl({
-            locale: "no",
-            messages: {
-                login: {
-                    registerTitle: "Opprett konto",
-                    name: "Navn",
-                    email: "E-post",
-                    password: "Passord",
-                    confirmPassword: "Bekreft passord",
-                    register: "Registrer",
-                },
-            },
+        const t = await renderAuthForm({
+            searchParams: "mode=signup",
         });
-        setSearch("mode=signup");
 
-        const { default: AuthForm } = await import("../AuthForm");
-        render(<AuthForm />);
-
-        expect(screen.getByRole("heading", { name: "Opprett konto" })).toBeInTheDocument();
-        expect(screen.getByLabelText("Navn")).toBeInTheDocument();
-        expect(screen.getByLabelText("Bekreft passord")).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: "Registrer" })).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: t.registerTitle })).toBeInTheDocument();
+        expect(screen.getByLabelText(t.name)).toBeInTheDocument();
+        expect(screen.getByLabelText(t.confirmPassword)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: t.register })).toBeInTheDocument();
     });
 
     it("switches to signup mode when link clicked", async () => {
-        setIntl({
-            locale: "no",
-            messages: {
-                login: { noAccount: "Har du ikke en konto?", goToRegister: "Registrer deg" },
-            },
-        });
-        setSearch("");
+        const t = await renderAuthForm();
 
-        const { default: AuthForm } = await import("../AuthForm");
-        render(<AuthForm />);
-
-        fireEvent.click(screen.getByRole("button", { name: "Registrer deg" }));
+        fireEvent.click(screen.getByRole("button", { name: t.goToRegister }));
         expect(replaceMock).toHaveBeenCalledWith("/no/login?mode=signup");
     });
 
     it("does not show an error when there is no ?error param", async () => {
-        setIntl({
-            locale: "no",
-            messages: {
-                login: { title: "Logg inn", github: "GitHub" },
-            },
-        });
-
-        const { default: AuthForm } = await import("../AuthForm");
-        render(<AuthForm />);
+        await renderAuthForm();
 
         // No known error message visible
         expect(screen.queryByText(/Feil brukernavn eller passord/i)).toBeNull();
     });
 
     it("falls back to generic error on unknown error code", async () => {
-        setIntl({
-            locale: "no",
-            messages: {
-                login: {
-                    title: "Logg inn",
-                    github: "GitHub",
-                    errors: { generic: "Noe gikk galt" },
-                },
-            },
+        const t = await renderAuthForm({
+            searchParams: "error=totally-unknown",
         });
-        setSearch("error=totally-unknown");
 
-        const { default: AuthForm } = await import("../AuthForm");
-        render(<AuthForm />);
-
-        expect(screen.getByText("Noe gikk galt")).toBeInTheDocument();
+        expect(screen.getByText(t.errors.generic)).toBeInTheDocument();
     });
 
     it("shows translated error when ?error=invalid-credentials", async () => {
-        setIntl({
-            locale: "no",
-            messages: {
-                login: { errors: { invalidCredentials: "Feil brukernavn eller passord" } },
-            },
+        const t = await renderAuthForm({
+            searchParams: "error=invalid-credentials",
         });
-        setSearch("error=invalid-credentials");
-        const { default: AuthForm } = await import("../AuthForm");
-        render(<AuthForm />);
-        expect(screen.getByText("Feil brukernavn eller passord")).toBeInTheDocument();
+
+        expect(screen.getByText(t.errors.invalidCredentials)).toBeInTheDocument();
     });
 
     it("calls startGithubOAuth('no') when GitHub clicked", async () => {
-        setIntl({ locale: "no", messages: { login: { github: "GitHub" } } });
+        const t = await renderAuthForm();
 
         // Import AFTER mocks so the component uses the mocked function
         const oauth = await import("@/utils/auth/startGithubOAuth");
-        const { default: AuthForm } = await import("../AuthForm");
 
-        render(<AuthForm />);
-        fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
+        fireEvent.click(screen.getByRole("button", { name: t.github }));
 
         expect(oauth.startGithubOAuth).toHaveBeenCalledWith("no");
     });
