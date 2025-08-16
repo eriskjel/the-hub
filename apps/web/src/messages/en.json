@@ -25,5 +25,11 @@
     },
     "monster": {
         "title": "Monster"
+    },
+    "auth": {
+        "loginFailed": "Login failed",
+        "couldNotAuthenticate": "Could not authenticate",
+        "unknown_reason": "Unknown reason",
+        "goToLogin": "Go to login"
     }
 }

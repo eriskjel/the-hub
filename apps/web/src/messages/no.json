@@ -25,5 +25,11 @@
     },
     "monster": {
         "title": "Monster"
+    },
+    "auth": {
+        "loginFailed": "Innlogging mislyktes",
+        "couldNotAuthenticate": "Kunne ikke autentisere",
+        "unknown_reason": "Ukjent grunn",
+        "goToLogin": "Gå til innlogging"
     }
 }
