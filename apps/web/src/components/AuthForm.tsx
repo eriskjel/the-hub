@@ -17,8 +17,6 @@ const ERROR_KEY_BY_CODE = {
 type ErrorCode = keyof typeof ERROR_KEY_BY_CODE;
 type ErrorKey = (typeof ERROR_KEY_BY_CODE)[ErrorCode] | "generic";
 
-type Mode = "login" | "signup";
-
 export default function AuthForm(): ReactElement {
     const locale = useLocale();
     const t = useTranslations("login");
@@ -27,9 +25,6 @@ export default function AuthForm(): ReactElement {
     const errorCode = searchParams.get("error") as ErrorCode | null;
     const errorKey: ErrorKey = (errorCode && ERROR_KEY_BY_CODE[errorCode]) ?? "generic";
     const errorMessage = errorCode ? t(`errors.${errorKey}`) : null;
-
-    const modeParam = searchParams.get("mode") as Mode | null;
-    const mode: Mode = modeParam === "signup" ? "signup" : "login";
 
     const handleGithub = useCallback(() => startGithubOAuth(locale), [locale]);
 
@@ -123,7 +118,7 @@ function Field(props: {
     type: string;
     required?: boolean;
     autoComplete?: string;
-}) {
+}): ReactElement {
     const { id, label, name, type, required, autoComplete } = props;
     return (
         <div className="space-y-1 text-left">
@@ -142,7 +137,7 @@ function Field(props: {
     );
 }
 
-function Divider({ label }: { label: string }) {
+function Divider({ label }: { label: string }): ReactElement {
     return (
         <div className="my-4 flex items-center gap-3">
             <div className="h-px flex-1 bg-gray-200" />
@@ -152,7 +147,13 @@ function Divider({ label }: { label: string }) {
     );
 }
 
-function SubmitButton({ children, t }: { children: ReactNode; t: (k: string) => string }) {
+function SubmitButton({
+    children,
+    t,
+}: {
+    children: ReactNode;
+    t: (k: string) => string;
+}): ReactElement {
     const { pending } = useFormStatus();
     return (
         <button
