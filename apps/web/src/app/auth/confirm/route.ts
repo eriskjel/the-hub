@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.redirect(new URL(next, url));
         }
         return NextResponse.redirect(buildAuthErrorUrl(url, mapVerifyError(error), locale));
-    } catch (e) {
+    } catch (err: unknown) {
+        console.error("Auth callback failed:", err);
         return NextResponse.redirect(buildAuthErrorUrl(url, "confirm_failed", locale));
     }
 }
