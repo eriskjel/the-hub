@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
 import { safeNextPath } from "@/utils/auth/safeNextPath";
-import {getOrigin} from "@/utils/auth/getSafeOrigin";
+import { getOrigin } from "@/utils/auth/getSafeOrigin";
 
 export async function GET(req: NextRequest) {
     const url = req.nextUrl;

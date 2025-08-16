@@ -5,7 +5,9 @@ export function getOrigin(url: URL): string {
         try {
             const u = new URL(envOrigin);
             if (u.protocol === "http:" || u.protocol === "https:") return u.origin;
-        } catch {/* fall through */}
+        } catch {
+            /* fall through */
+        }
         throw new Error("Invalid NEXT_PUBLIC_SITE_URL (must be absolute http/https URL)");
     }
 
