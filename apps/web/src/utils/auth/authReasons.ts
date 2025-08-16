@@ -17,20 +17,11 @@ export function isAuthReasonToken(x: string): x is AuthReasonToken {
 }
 
 // --- Heuristic mappers (keep simple & conservative) ---
-export function mapExchangeError(err: unknown): AuthReasonToken {
-    const msg = toMsg(err);
-    // common PKCE/code issues
-    if (includesAny(msg, ["code verifier", "pkce", "invalid_grant", "expired"])) {
-        return "exchange_failed";
-    }
+export function mapExchangeError(_err: unknown): AuthReasonToken {
     return "exchange_failed";
 }
 
-export function mapVerifyError(err: unknown): AuthReasonToken {
-    const msg = toMsg(err);
-    if (includesAny(msg, ["expired", "invalid", "token"])) {
-        return "verify_failed";
-    }
+export function mapVerifyError(_err: unknown): AuthReasonToken {
     return "verify_failed";
 }
 
