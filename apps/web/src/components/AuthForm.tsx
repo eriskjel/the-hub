@@ -97,7 +97,7 @@ export default function AuthForm(): ReactElement {
             >
                 <Image
                     src="/icons/github-mark-white.svg"
-                    alt="" 
+                    alt=""
                     aria-hidden="true"
                     width={20}
                     height={20}
