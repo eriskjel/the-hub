@@ -21,12 +21,10 @@ export async function GET(req: NextRequest) {
             return NextResponse.redirect(
                 new URL(`/auth/auth-code-error?reason=${encodeURIComponent(error.message)}`, url)
             );
-        } catch (e: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "callback_failed";
             return NextResponse.redirect(
-                new URL(
-                    `/auth/auth-code-error?reason=${encodeURIComponent(e?.message ?? "callback_failed")}`,
-                    url
-                )
+                new URL(`/auth/auth-code-error?reason=${encodeURIComponent(message)}`, url)
             );
         }
     }
