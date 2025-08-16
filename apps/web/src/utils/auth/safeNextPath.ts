@@ -1,5 +1,4 @@
 export function safeNextPath(next: string): string {
-    if (typeof next !== "string") return "/";
     try {
         next = decodeURIComponent(next);
     } catch {
