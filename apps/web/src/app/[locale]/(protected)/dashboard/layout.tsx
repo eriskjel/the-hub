@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import PageWrapper from "@/components/page-wrapper";
+import PageWrapper from "@/components/PageWrapper";
 
 export const dynamic = "force-dynamic";
 

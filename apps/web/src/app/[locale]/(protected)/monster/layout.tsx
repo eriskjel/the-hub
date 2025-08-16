@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import PageWrapper from "@/components/page-wrapper";
+import PageWrapper from "@/components/PageWrapper";
 
 export default function MonsterLayout({ children }: { children: ReactNode }) {
     return (
