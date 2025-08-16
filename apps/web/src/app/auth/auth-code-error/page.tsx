@@ -17,11 +17,6 @@ export default async function AuthCodeErrorPage({
 
     const token = reason && isAuthReasonToken(reason) ? reason : "unknown_reason";
 
-    if (process.env.NODE_ENV === "development") {
-        // eslint-disable-next-line no-console
-        console.debug("[auth-code-error] token:", token);
-    }
-
     return (
         <main className="flex min-h-dvh items-center justify-center p-6">
             <div className="w-full max-w-md rounded-2xl border bg-white p-6">
