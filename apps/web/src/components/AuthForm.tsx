@@ -7,6 +7,7 @@ import { ReactElement, ReactNode, useCallback, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { startGithubOAuth } from "@/utils/auth/startGithubOAuth";
 import { useAuthMode } from "@/hooks/useAuthMode";
+import Image from "next/image";
 
 const ERROR_KEY_BY_CODE = {
     "invalid-credentials": "invalidCredentials",
@@ -94,10 +95,12 @@ export default function AuthForm(): ReactElement {
                 type="button"
                 className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
             >
-                <img
+                <Image
                     src="/icons/github-mark-white.svg"
-                    alt=""
+                    alt="" 
                     aria-hidden="true"
+                    width={20}
+                    height={20}
                     className="h-5 w-5"
                 />
                 {t("github")}

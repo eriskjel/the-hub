@@ -17,15 +17,15 @@ export function isAuthReasonToken(x: string): x is AuthReasonToken {
 }
 
 // --- Heuristic mappers (keep simple & conservative) ---
-export function mapExchangeError(_err: unknown): AuthReasonToken {
+export function mapExchangeError(_err?: unknown): AuthReasonToken {
     return "exchange_failed";
 }
 
-export function mapVerifyError(_err: unknown): AuthReasonToken {
+export function mapVerifyError(_err?: unknown): AuthReasonToken {
     return "verify_failed";
 }
 
-export function mapOauthInitError(): AuthReasonToken {
+export function mapOauthInitError(_err?: unknown): AuthReasonToken {
     return "oauth_init_failed";
 }
 

@@ -4,7 +4,7 @@ declare global {
         | undefined;
     var __setSearch: ((query: string) => void) | undefined;
     var __setPathname: ((path: string) => void) | undefined;
-    var __getReplaceMock: (() => any) | undefined;
+    var __getReplaceMock: (() => unknown) | undefined;
 }
 
 // Define the type for mock Next.js request objects
