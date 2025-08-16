@@ -48,11 +48,12 @@ export function buildAuthErrorUrl(base: URL, token: AuthReasonToken, locale?: st
 
 // --- small utils ---
 function toMsg(err: unknown): string {
-    if (err && typeof err === "object" && "message" in err && err.message) {
-        return String((err as any).message).toLowerCase();
+    if (err instanceof Error) {
+        return err.message.toLowerCase();
     }
     return "";
 }
+
 function includesAny(hay: string, needles: string[]) {
     return needles.some((n) => hay.includes(n));
 }
