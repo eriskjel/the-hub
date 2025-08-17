@@ -65,10 +65,7 @@ export async function getWidgetsSafe(): Promise<WidgetsResult> {
         return { widgets, rows };
     } catch (e) {
         const msg = e instanceof Error ? e.message : "Failed to load widgets";
-        const offline =
-            /(timed\s*out|connection\s*failed|backend_unreachable|fetch\s*failed|network|ECONN|ENOTFOUND|EAI_AGAIN|5\d\d)/i.test(
-                msg
-            );
+        const offline: boolean = isOfflineError(msg);
 
         const cached = await readCachedWidgets();
         if (cached) {
@@ -76,4 +73,13 @@ export async function getWidgetsSafe(): Promise<WidgetsResult> {
         }
         return { widgets: [], error: msg, stale: false, offline };
     }
+}
+
+function isOfflineError(msg: string): boolean {
+    // Matches common network and backend errors indicating offline or unreachable backend.
+    // Patterns include: timeout, connection failed, backend unreachable, fetch failed, network errors,
+    // and typical Node.js error codes (ECONN, ENOTFOUND, EAI_AGAIN, 5xx HTTP status).
+    return /(timed\s*out|connection\s*failed|backend_unreachable|fetch\s*failed|network|ECONN|ENOTFOUND|EAI_AGAIN|5\d\d)/i.test(
+        msg
+    );
 }
