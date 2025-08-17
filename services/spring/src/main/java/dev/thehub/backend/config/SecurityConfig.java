@@ -25,7 +25,6 @@ public class SecurityConfig {
         conv.setJwtGrantedAuthoritiesConverter(jwt -> {
             @SuppressWarnings("unchecked")
             var meta = (Map<String, Object>) jwt.getClaims().getOrDefault("app_metadata", Map.of());
-            @SuppressWarnings("unchecked")
             var roles = (List<?>) meta.getOrDefault("roles", List.of());
             return roles.stream()
                     .map(Object::toString)
