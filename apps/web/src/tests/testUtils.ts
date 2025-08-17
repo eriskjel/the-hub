@@ -14,12 +14,19 @@ declare global {
     var __supabase:
         | {
               setAuthHandlers: (handlers: {
-                  signUp?: (args: any) => Promise<{ data?: any; error?: any }>;
-                  signInWithPassword?: (args: any) => Promise<{ data?: any; error?: any }>;
-                  signOut?: () => Promise<{ error?: any }>;
-                  getUser?: () => Promise<{ data: { user: any | null }; error?: any }>;
+                  signUp?: (args: {
+                      email: string;
+                      password: string;
+                      options?: { data?: { name?: string } };
+                  }) => Promise<{ data?: unknown; error?: unknown }>;
+                  signInWithPassword?: (args: {
+                      email: string;
+                      password: string;
+                  }) => Promise<{ data?: unknown; error?: unknown }>;
+                  signOut?: () => Promise<{ error?: unknown }>;
+                  getUser?: () => Promise<{ data: { user: unknown | null }; error?: unknown }>;
               }) => void;
-              seedTable: (table: string, data: any) => void;
+              seedTable: (table: string, data: unknown) => void;
               resetTables: () => void;
               getMocks: () => {
                   redirect: Mock;
@@ -42,5 +49,14 @@ export function setPathname(path: string) {
     globalThis.__setPathname?.(path);
 }
 export function getReplaceMock(): Mock {
-    return globalThis.__getReplaceMock?.() as unknown as Mock;
+    return globalThis.__getReplaceMock?.() as Mock;
+}
+
+export function getRevalidatePathMock(): Mock {
+    return globalThis.__getRevalidatePathMock?.() as Mock;
+}
+
+type SupabaseMocksShape = NonNullable<typeof globalThis.__supabase>;
+export function supabase(): SupabaseMocksShape {
+    return globalThis.__supabase as SupabaseMocksShape;
 }

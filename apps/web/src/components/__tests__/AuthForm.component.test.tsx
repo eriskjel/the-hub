@@ -1,6 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getReplaceMock, setIntl, setPathname, setSearch } from "@/tests/testUtils";
+import {
+    getReplaceMock,
+    getRevalidatePathMock,
+    setIntl,
+    setPathname,
+    setSearch,
+    supabase,
+} from "@/tests/testUtils";
 import noMessages from "@/messages/no.json";
 const replaceMock = getReplaceMock();
 
@@ -137,9 +144,16 @@ describe("<AuthForm />", () => {
 });
 
 describe("signup action", () => {
+    type SignUpArgs = {
+        email: string;
+        password: string;
+        options?: { data?: { name?: string } };
+    };
+
+    type RedirectErr = Error & { __isRedirect?: boolean };
     it("passes full name to supabase metadata and redirects to dashboard", async () => {
-        (globalThis as any).__supabase.setAuthHandlers({
-            signUp: async (args: any) => {
+        supabase().setAuthHandlers({
+            signUp: async (args: SignUpArgs) => {
                 const { email, password, options } = args;
                 expect(email).toBe("alice@example.com");
                 expect(password).toBe("secret123");
@@ -157,18 +171,18 @@ describe("signup action", () => {
         try {
             await signup(form);
             throw new Error("expected redirect");
-        } catch (e: any) {
-            // our redirect mock throws
-            expect(e.__isRedirect).toBe(true);
-            expect(e.message).toContain("/dashboard");
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("/dashboard"); // or "?error=signup-failed"
         }
 
-        const { revalidatePath } = (globalThis as any).__supabase.getMocks();
+        const revalidatePath = getRevalidatePathMock();
         expect(revalidatePath).toHaveBeenCalled();
     });
 
     it("redirects to error on signup failure", async () => {
-        (globalThis as any).__supabase.setAuthHandlers({
+        supabase().setAuthHandlers({
             signUp: async () => ({ error: { message: "boom" } }),
         });
 
@@ -181,9 +195,10 @@ describe("signup action", () => {
         try {
             await signup(form);
             throw new Error("expected redirect");
-        } catch (e: any) {
-            expect(e.__isRedirect).toBe(true);
-            expect(e.message).toContain("?error=signup-failed"); // now passes
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("?error=signup-failed"); // now passes
         }
     });
 
