@@ -10,9 +10,13 @@ type State<D = unknown> =
     | { status: "error"; error: string; retryCount: number }
     | { status: "success"; data: D; stale?: boolean };
 
-const MAX_RETRIES = 3;
-const BASE_RETRY_DELAY = 1000;
+// Polling + retry constants
+export const DEFAULT_WIDGET_DATA_INTERVAL_MS = 30_000 as const;
+const MIN_POLL_INTERVAL_MS = 1_000 as const;
+const MAX_RETRIES = 3 as const;
+const BASE_RETRY_DELAY = 1_000 as const;
 
+// warn-once helper
 const lastWarn = new Map<string, number>();
 const warnOnce = (key: string, msg: string) => {
     const now = Date.now();
@@ -22,15 +26,19 @@ const warnOnce = (key: string, msg: string) => {
     }
 };
 
-export function useWidgetData(widget: AnyWidget, intervalMs = 30_000) {
+export function useWidgetData<D = unknown>(
+    widget: AnyWidget,
+    intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS
+) {
     const kind = widget.kind;
-    const entry = kind === "server-pings" ? registry["server-pings"] : undefined;
+    const entry = registry[kind as keyof typeof registry];
 
-    const [state, setState] = useState<State>({ status: "loading" });
+    const [state, setState] = useState<State<D>>({ status: "loading" });
     const inFlightRef = useRef(false);
     const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mountedRef = useRef(true);
 
+    // Namespace cache per widget instance
     const cacheKey = `hub:widget:${kind}:${widget.instanceId}`;
 
     const saveCache = useCallback(
@@ -38,16 +46,18 @@ export function useWidgetData(widget: AnyWidget, intervalMs = 30_000) {
             try {
                 const payload = JSON.stringify({ ts: Date.now(), data });
                 localStorage.setItem(cacheKey, payload);
-            } catch {}
+            } catch {
+                // ignore quota/serialization errors
+            }
         },
         [cacheKey]
     );
 
-    const loadCache = useCallback(<D>(): { ts: number; data: D } | null => {
+    const loadCache = useCallback(<T>(): { ts: number; data: T } | null => {
         try {
             const raw = localStorage.getItem(cacheKey);
             if (!raw) return null;
-            return JSON.parse(raw) as { ts: number; data: D };
+            return JSON.parse(raw) as { ts: number; data: T };
         } catch {
             return null;
         }
@@ -57,7 +67,7 @@ export function useWidgetData(widget: AnyWidget, intervalMs = 30_000) {
         async (retryCount = 0) => {
             const key = `${kind}:${widget.instanceId}`;
 
-            if (!entry) {
+            if (!entry || typeof entry.fetch !== "function") {
                 setState({
                     status: "error",
                     error: `Widget type "${kind}" is not supported`,
@@ -69,14 +79,14 @@ export function useWidgetData(widget: AnyWidget, intervalMs = 30_000) {
             inFlightRef.current = true;
 
             try {
-                const data = await entry.fetch(widget.instanceId);
+                const data = (await entry.fetch(widget.instanceId)) as D;
                 if (mountedRef.current) {
                     setState({ status: "success", data, stale: false });
                     saveCache(data);
                 }
             } catch (err) {
                 if (err instanceof DegradedError) {
-                    const cached = loadCache();
+                    const cached = loadCache<D>();
                     if (cached && mountedRef.current) {
                         setState({ status: "success", data: cached.data, stale: true });
                         warnOnce(key, `[widget:${key}] degraded; using cached data`);
@@ -105,11 +115,13 @@ export function useWidgetData(widget: AnyWidget, intervalMs = 30_000) {
                 warnOnce(key, `[widget:${key}] fetch failed: ${msg}`);
 
                 if (retryCount < MAX_RETRIES && mountedRef.current) {
-                    const delay = BASE_RETRY_DELAY * 2 ** retryCount;
+                    // Exponential backoff with slight jitter to de-sync retries
+                    const jitter = 1 + Math.random() * 0.2; // +0–20%
+                    const delay = Math.floor(BASE_RETRY_DELAY * 2 ** retryCount * jitter);
                     if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
                     retryTimeoutRef.current = setTimeout(() => load(retryCount + 1), delay);
                 } else if (mountedRef.current) {
-                    const cached = loadCache();
+                    const cached = loadCache<D>();
                     if (cached) {
                         setState({ status: "success", data: cached.data, stale: true });
                     } else {
@@ -130,12 +142,20 @@ export function useWidgetData(widget: AnyWidget, intervalMs = 30_000) {
     useEffect(() => {
         mountedRef.current = true;
 
-        const cached = loadCache();
+        // Seed with any cached data to avoid empty UI
+        const cached = loadCache<D>();
         if (cached) setState({ status: "success", data: cached.data, stale: true });
 
+        // Kick off first load
         load();
 
-        const intervalId = intervalMs > 0 ? setInterval(() => load(), intervalMs) : null;
+        // Guard against negative/NaN intervals and hard-clamp a minimum
+        const pollEvery = Math.max(
+            MIN_POLL_INTERVAL_MS,
+            Number.isFinite(intervalMs) ? Math.floor(intervalMs) : DEFAULT_WIDGET_DATA_INTERVAL_MS
+        );
+        const intervalId = pollEvery > 0 ? setInterval(() => load(), pollEvery) : null;
+
         return () => {
             mountedRef.current = false;
             if (intervalId) clearInterval(intervalId);
