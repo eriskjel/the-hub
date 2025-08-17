@@ -8,20 +8,20 @@ import { useTranslations } from "next-intl";
 // export const dynamic = "force-dynamic";
 
 type Monster = {
-      name: string;
-      image: string;
+    name: string;
+    image: string;
 };
 
 const monsters: Monster[] = [
-      { name: "Original", image: "/monsters/original.png" },
-      { name: "Ultra White", image: "/monsters/ultra_white.png" },
-      { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png" },
-      { name: "Original Zero", image: "/monsters/original_zero.png" },
-      { name: "Peachy Keen", image: "/monsters/peachy_keen.png" },
-      { name: "Rio Punch", image: "/monsters/rio_punch.png" },
-      { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png" },
-      { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png" },
-      { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png" },
+    { name: "Original", image: "/monsters/original.png" },
+    { name: "Ultra White", image: "/monsters/ultra_white.png" },
+    { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png" },
+    { name: "Original Zero", image: "/monsters/original_zero.png" },
+    { name: "Peachy Keen", image: "/monsters/peachy_keen.png" },
+    { name: "Rio Punch", image: "/monsters/rio_punch.png" },
+    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png" },
+    { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png" },
+    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png" },
 ];
 
 const ITEM_WIDTH = 160;
@@ -30,42 +30,38 @@ const SPIN_ROUNDS = 3;
 const ANIMATION_DURATION = 4000;
 
 function getRandomMonster(): Monster {
-      return monsters[Math.floor(Math.random() * monsters.length)];
+    return monsters[Math.floor(Math.random() * monsters.length)];
 }
 
 export default function MonsterPage() {
-      const [selected, setSelected] = useState<Monster | null>(null);
-      const [rolling, setRolling] = useState(false);
-      const [offset, setOffset] = useState(0);
-      const t = useTranslations("monster");
+    const [selected, setSelected] = useState<Monster | null>(null);
+    const [rolling, setRolling] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const t = useTranslations("monster");
 
-      const handleOpen = () => {
-            if (rolling) return;
+    const handleOpen = () => {
+        if (rolling) return;
 
-            setRolling(true);
-            const chosen = getRandomMonster();
-            setSelected(chosen);
+        setRolling(true);
+        const chosen = getRandomMonster();
+        setSelected(chosen);
 
-            const chosenIndex = monsters.findIndex((m) => m.name === chosen.name);
-            const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
+        const chosenIndex = monsters.findIndex((m) => m.name === chosen.name);
+        const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
 
-            const finalOffset =
-                  (monsters.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
+        const finalOffset =
+            (monsters.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
 
-            setOffset(finalOffset);
+        setOffset(finalOffset);
 
-            setTimeout(() => setRolling(false), ANIMATION_DURATION);
-      };
+        setTimeout(() => setRolling(false), ANIMATION_DURATION);
+    };
 
-      const repeatedMonsters = Array(SPIN_ROUNDS + 2)
-        
+    const repeatedMonsters = Array(SPIN_ROUNDS + 2)
         .fill(monsters)
-        
+
         .flat();
 
-    return (
-        <div className="flex h-full flex-col items-center justify-center gap-6 text-center text-white">
-            <h1 className="text-5xl font-bold">{t("title")}</h1>
     return (
         <div className="flex h-full flex-col items-center justify-center gap-6 text-center text-white">
             <h1 className="text-5xl font-bold">{t("title")}</h1>
