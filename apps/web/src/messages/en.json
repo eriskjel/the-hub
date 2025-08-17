@@ -33,6 +33,7 @@
         "welcome": "Welcome, {name}!"
     },
     "monster": {
+        "pageTitle": "Monster",
         "title": "What Monster Will You Drink Today?",
         "button_text": "Get Monster",
         "rolling": "Opening..."
