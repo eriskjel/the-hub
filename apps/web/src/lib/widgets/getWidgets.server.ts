@@ -114,7 +114,7 @@ function normalizeCachedToRows(payload: {
                 title: o.title as string,
                 grid: o.grid as WidgetListItem["grid"],
                 // settings can be absent in slim; toAnyWidget provides safe defaults per kind
-                settings: (o as any).settings as unknown,
+                settings: (o.settings ?? undefined) as unknown,
             });
         }
     }
