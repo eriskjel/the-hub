@@ -32,10 +32,24 @@ export async function signup(formData: FormData) {
 
     const supabase = await createClient();
 
-    const email = String(formData.get("email") || "");
+    const fullName = String(formData.get("name") || "").trim();
+    const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "");
+    const confirmPassword = String(formData.get("confirmPassword") || "");
 
-    const { error } = await supabase.auth.signUp({ email, password });
+    if (!fullName || !email || !password) {
+        redirect(`/${locale}/login?error=signup-failed`);
+    }
+    if (password !== confirmPassword) {
+        redirect(`/${locale}/login?error=confirm-failed`);
+    }
+
+    const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name: fullName } },
+    });
+
     if (error) {
         redirect(`/${locale}/login?error=signup-failed`);
     }

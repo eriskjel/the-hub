@@ -1,8 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getReplaceMock, setIntl, setPathname, setSearch } from "@/tests/testUtils";
+import {
+    getReplaceMock,
+    getRevalidatePathMock,
+    setIntl,
+    setPathname,
+    setSearch,
+    supabase,
+} from "@/tests/testUtils";
 import noMessages from "@/messages/no.json";
 const replaceMock = getReplaceMock();
+
+import { signup } from "@/app/auth/actions/auth";
 
 // Mock the OAuth starter at top-level so it is hoisted
 vi.mock("@/utils/auth/startGithubOAuth", () => ({ startGithubOAuth: vi.fn() }));
@@ -107,5 +116,95 @@ describe("<AuthForm />", () => {
         fireEvent.click(screen.getByRole("button", { name: t.github }));
 
         expect(oauth.startGithubOAuth).toHaveBeenCalledWith("no");
+    });
+
+    it("shows translated error when ?error=signup-failed (signup mode)", async () => {
+        const t = await renderAuthForm({ searchParams: "mode=signup&error=signup-failed" });
+        expect(screen.getByText(t.errors.signupFailed)).toBeInTheDocument();
+    });
+
+    it("shows translated error when ?error=confirm-failed (signup mode)", async () => {
+        const t = await renderAuthForm({ searchParams: "mode=signup&error=confirm-failed" });
+        expect(screen.getByText(t.errors.confirmFailed)).toBeInTheDocument();
+    });
+
+    it("uses current-password in login mode", async () => {
+        const t = await renderAuthForm({ searchParams: "" });
+        const pw = screen.getByLabelText(t.password);
+        expect(pw).toHaveAttribute("autocomplete", "current-password");
+    });
+
+    it("uses new-password in signup mode", async () => {
+        const t = await renderAuthForm({ searchParams: "mode=signup" });
+        const pw = screen.getByLabelText(t.password);
+        expect(pw).toHaveAttribute("autocomplete", "new-password");
+        const confirm = screen.getByLabelText(t.confirmPassword);
+        expect(confirm).toHaveAttribute("autocomplete", "new-password");
+    });
+});
+
+describe("signup action", () => {
+    type SignUpArgs = {
+        email: string;
+        password: string;
+        options?: { data?: { name?: string } };
+    };
+
+    type RedirectErr = Error & { __isRedirect?: boolean };
+    it("passes full name to supabase metadata and redirects to dashboard", async () => {
+        supabase().setAuthHandlers({
+            signUp: async (args: SignUpArgs) => {
+                const { email, password, options } = args;
+                expect(email).toBe("alice@example.com");
+                expect(password).toBe("secret123");
+                expect(options?.data).toEqual({ name: "Alice Example" });
+                return { data: { user: { id: "u1" } }, error: null };
+            },
+        });
+
+        const form = new FormData();
+        form.set("name", "Alice Example");
+        form.set("email", "alice@example.com");
+        form.set("password", "secret123");
+        form.set("confirmPassword", "secret123");
+
+        try {
+            await signup(form);
+            throw new Error("expected redirect");
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("/dashboard"); // or "?error=signup-failed"
+        }
+
+        const revalidatePath = getRevalidatePathMock();
+        expect(revalidatePath).toHaveBeenCalled();
+    });
+
+    it("redirects to error on signup failure", async () => {
+        supabase().setAuthHandlers({
+            signUp: async () => ({ error: { message: "boom" } }),
+        });
+
+        const form = new FormData();
+        form.set("name", "Bob");
+        form.set("email", "bob@example.com");
+        form.set("password", "x");
+        form.set("confirmPassword", "x");
+
+        try {
+            await signup(form);
+            throw new Error("expected redirect");
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("?error=signup-failed"); // now passes
+        }
+    });
+
+    it("requires name and confirmPassword in signup mode", async () => {
+        const t = await renderAuthForm({ searchParams: "mode=signup" });
+        expect(screen.getByLabelText(t.name)).toBeRequired();
+        expect(screen.getByLabelText(t.confirmPassword)).toBeRequired();
     });
 });
