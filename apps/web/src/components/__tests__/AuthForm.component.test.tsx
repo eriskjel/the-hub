@@ -3,18 +3,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
     getReplaceMock,
     getRevalidatePathMock,
+    getRedirectMock,
     setIntl,
     setPathname,
     setSearch,
     supabase,
 } from "@/tests/testUtils";
 import noMessages from "@/messages/no.json";
-const replaceMock = getReplaceMock();
-
 import { signup } from "@/app/auth/actions/auth";
+const replaceMock = getReplaceMock();
 
 // Mock the OAuth starter at top-level so it is hoisted
 vi.mock("@/utils/auth/startGithubOAuth", () => ({ startGithubOAuth: vi.fn() }));
+
+vi.mock("@/app/auth/actions/ensureDefaultRole", () => ({
+    ensureDefaultRole: vi.fn().mockResolvedValue(undefined),
+}));
 
 afterEach(() => {
     vi.clearAllMocks();
@@ -147,17 +151,21 @@ describe("signup action", () => {
     type SignUpArgs = {
         email: string;
         password: string;
-        options?: { data?: { name?: string } };
+        options?: { data?: { name?: string; full_name?: string } };
     };
 
     type RedirectErr = Error & { __isRedirect?: boolean };
+
     it("passes full name to supabase metadata and redirects to dashboard", async () => {
         supabase().setAuthHandlers({
             signUp: async (args: SignUpArgs) => {
                 const { email, password, options } = args;
                 expect(email).toBe("alice@example.com");
                 expect(password).toBe("secret123");
-                expect(options?.data).toEqual({ name: "Alice Example" });
+                // allow extra keys; assert the ones we care about
+                expect(options?.data).toEqual(
+                    expect.objectContaining({ name: "Alice Example", full_name: "Alice Example" })
+                );
                 return { data: { user: { id: "u1" } }, error: null };
             },
         });
@@ -168,14 +176,12 @@ describe("signup action", () => {
         form.set("password", "secret123");
         form.set("confirmPassword", "secret123");
 
-        try {
-            await signup(form);
-            throw new Error("expected redirect");
-        } catch (e: unknown) {
-            const err = e as RedirectErr;
-            expect(err.__isRedirect).toBe(true);
-            expect(err.message).toContain("/dashboard"); // or "?error=signup-failed"
-        }
+        // Call and swallow if redirect mock throws
+        await signup(form).catch(() => {});
+
+        const redirectMock = getRedirectMock();
+        expect(redirectMock).toHaveBeenCalledTimes(1);
+        expect(redirectMock.mock.calls[0][0]).toContain("/dashboard");
 
         const revalidatePath = getRevalidatePathMock();
         expect(revalidatePath).toHaveBeenCalled();
