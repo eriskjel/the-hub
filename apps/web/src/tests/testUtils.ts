@@ -60,3 +60,7 @@ type SupabaseMocksShape = NonNullable<typeof globalThis.__supabase>;
 export function supabase(): SupabaseMocksShape {
     return globalThis.__supabase as SupabaseMocksShape;
 }
+
+export function getRedirectMock(): Mock {
+    return (globalThis as any).__getRedirectMock?.() as Mock;
+}
