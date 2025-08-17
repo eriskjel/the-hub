@@ -58,7 +58,7 @@ public class PingsController {
                     targets = List.of(node.get("target").asText());
                 } else if (node.hasNonNull("targets")) {
                     List<String> parsed = json.convertValue(node.get("targets"),
-                            new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+                            new TypeReference<List<String>>() {});
                     var safe = parsed.stream()
                             .filter(u -> u.startsWith("http://") || u.startsWith("https://"))
                             .toList();
