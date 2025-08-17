@@ -33,7 +33,10 @@
         "welcome": "Velkommen, {name}!"
     },
     "monster": {
-        "title": "Monster"
+        "pageTitle": "Monster",
+        "title": "Hvilken Monster skal du drikke i dag?",
+        "button_text": "Få Monster",
+        "rolling": "Åpner..."
     },
     "auth": {
         "loginFailed": "Innlogging mislyktes",

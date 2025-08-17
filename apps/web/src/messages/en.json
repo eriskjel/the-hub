@@ -33,7 +33,10 @@
         "welcome": "Welcome, {name}!"
     },
     "monster": {
-        "title": "Monster"
+        "pageTitle": "Monster",
+        "title": "What Monster Will You Drink Today?",
+        "button_text": "Get Monster",
+        "rolling": "Opening..."
     },
     "auth": {
         "loginFailed": "Login failed",

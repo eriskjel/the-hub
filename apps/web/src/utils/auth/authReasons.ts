@@ -18,14 +18,17 @@ export function isAuthReasonToken(x: string): x is AuthReasonToken {
 
 // --- Heuristic mappers (keep simple & conservative) ---
 export function mapExchangeError(_err?: unknown): AuthReasonToken {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return "exchange_failed";
 }
 
 export function mapVerifyError(_err?: unknown): AuthReasonToken {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return "verify_failed";
 }
 
 export function mapOauthInitError(_err?: unknown): AuthReasonToken {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return "oauth_init_failed";
 }
 
