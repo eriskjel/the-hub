@@ -30,12 +30,18 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
 function isServerPingsSettings(s: unknown): s is ServerPingsSettings {
     if (typeof s !== "object" || s === null) return false;
     const o = s as Record<string, unknown>;
+
+    // Case 1: single target
     const hasTarget = typeof o["target"] === "string";
+
+    // Case 2: multiple targets, all strings
     const hasTargets =
-        Array.isArray(o["targets"]) &&
-        (o["targets"] as unknown[]).every((t) => typeof t === "string");
-    const targetsUndef = !("targets" in o) || o["targets"] === undefined;
-    return hasTarget || hasTargets || targetsUndef;
+        Array.isArray(o["targets"]) && o["targets"].every((t) => typeof t === "string");
+
+    // Case 3: optional property (no targets specified at all)
+    const targetsOptional = !("targets" in o) || o["targets"] === undefined;
+
+    return hasTarget || hasTargets || targetsOptional;
 }
 
 function isPiHealthSettings(s: unknown): s is PiHealthSettings {
