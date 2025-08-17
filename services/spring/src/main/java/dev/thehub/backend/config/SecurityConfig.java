@@ -23,16 +23,40 @@ public class SecurityConfig {
     JwtAuthenticationConverter jwtAuthConverter() {
         var conv = new JwtAuthenticationConverter();
         conv.setJwtGrantedAuthoritiesConverter(jwt -> {
+            var claims = jwt.getClaims();
+
             @SuppressWarnings("unchecked")
-            var meta = (Map<String, Object>) jwt.getClaims().getOrDefault("app_metadata", Map.of());
-            var roles = (List<?>) meta.getOrDefault("roles", List.of());
-            return roles.stream()
-                    .map(Object::toString)
-                    .map(r -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + r.toUpperCase()))
-                    .collect(Collectors.toList());
+            var appMeta = (Map<String, Object>) claims.getOrDefault("app_metadata", Map.of());
+
+            var out = new java.util.LinkedHashSet<String>();
+
+            // roles: ["admin", "editor"]
+            var rolesObj = appMeta.get("roles");
+            if (rolesObj instanceof java.util.Collection<?> col) {
+                col.forEach(x -> { if (x != null) out.add(x.toString()); });
+            }
+
+            // role: "user"
+            var roleObj = appMeta.get("role");
+            if (roleObj != null) out.add(roleObj.toString());
+
+            // Optional: also accept a top-level "role"/"roles" if your IdP ever puts them there
+            var topRoles = claims.get("roles");
+            if (topRoles instanceof java.util.Collection<?> col2) col2.forEach(x -> out.add(x.toString()));
+            var topRole = claims.get("role");
+            if (topRole != null) out.add(topRole.toString());
+
+            return out.stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(String::toUpperCase)                   // "admin" -> "ADMIN"
+                    .map(r -> "ROLE_" + r)                      // Spring role prefix
+                    .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                    .collect(java.util.stream.Collectors.toList());
         });
         return conv;
     }
+
 
 
     @Bean
