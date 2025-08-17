@@ -9,6 +9,7 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: dev,docker
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
     volumes:
       - ./services/backend:/app
       - m2:/root/.m2
