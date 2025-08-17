@@ -12,7 +12,7 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override public void addCorsMappings(CorsRegistry reg) {
                 reg.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:3000", "https:skjellevik.online")
+                        .allowedOrigins("http://localhost:3000", "https://skjellevik.online")
                         .allowedMethods("GET","POST","PUT","DELETE","OPTIONS")
                         .allowCredentials(true);
             }
