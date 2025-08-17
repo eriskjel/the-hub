@@ -50,7 +50,7 @@ function NavItems({ isLoggedIn, t }: NavAuthProps): ReactElement {
                 </li>
                 <li>
                     <Link href="/monster" className="hover:text-gray-300">
-                        {t("monster.title")}
+                        {t("monster.pageTitle")}
                     </Link>
                 </li>
                 <li>
