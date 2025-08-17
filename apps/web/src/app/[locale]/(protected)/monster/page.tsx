@@ -73,13 +73,6 @@ export default function MonsterPage() {
             >
                 {rolling ? t("rolling") : t("button_text")}
             </button>
-            <button
-                className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
-                onClick={handleOpen}
-                disabled={selected !== null || rolling}
-            >
-                {rolling ? t("rolling") : t("button_text")}
-            </button>
 
             {/* Case-opening strip */}
             <div className="relative mx-auto flex h-48 w-[640px] overflow-hidden rounded-lg border-4 border-green-600 bg-black">
