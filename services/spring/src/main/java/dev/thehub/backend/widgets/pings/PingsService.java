@@ -32,7 +32,8 @@ public class PingsService {
             return new PingResult(url, code, ms, OffsetDateTime.now().toString());
         } catch (Exception e) {
             long ms = (System.nanoTime() - t0) / 1_000_000;
-            return new PingResult(url, 0, ms, OffsetDateTime.now().toString());
+            // Use -1 to indicate a network/connection error (non-HTTP condition)
+            return new PingResult(url, -1, ms, OffsetDateTime.now().toString());
         }
     }
 
