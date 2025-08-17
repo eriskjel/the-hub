@@ -36,31 +36,48 @@ declare global {
         | undefined;
 }
 
+// Create a type that includes your global extensions
+type GlobalWithMocks = typeof globalThis & {
+    __setIntl?: (opts: { locale?: string; messages?: Record<string, unknown> }) => void;
+    __setSearch?: (query: string) => void;
+    __setPathname?: (path: string) => void;
+    __getReplaceMock?: () => Mock;
+    __getRedirectMock?: () => Mock & ((url: string) => never);
+    __getRevalidatePathMock?: () => Mock;
+    __supabase?: NonNullable<typeof globalThis.__supabase>;
+};
+
+const global = globalThis as GlobalWithMocks;
+
 export function mkReq(url: string) {
     return { url, nextUrl: new URL(url) };
 }
+
 export function setIntl(opts: { locale?: string; messages?: Record<string, unknown> }) {
-    globalThis.__setIntl?.(opts);
+    global.__setIntl?.(opts);
 }
+
 export function setSearch(query: string) {
-    globalThis.__setSearch?.(query);
+    global.__setSearch?.(query);
 }
+
 export function setPathname(path: string) {
-    globalThis.__setPathname?.(path);
+    global.__setPathname?.(path);
 }
+
 export function getReplaceMock(): Mock {
-    return globalThis.__getReplaceMock?.() as Mock;
+    return global.__getReplaceMock?.() as Mock;
 }
 
 export function getRevalidatePathMock(): Mock {
-    return globalThis.__getRevalidatePathMock?.() as Mock;
+    return global.__getRevalidatePathMock?.() as Mock;
 }
 
 type SupabaseMocksShape = NonNullable<typeof globalThis.__supabase>;
 export function supabase(): SupabaseMocksShape {
-    return globalThis.__supabase as SupabaseMocksShape;
+    return global.__supabase as SupabaseMocksShape;
 }
 
 export function getRedirectMock(): Mock {
-    return (globalThis as any).__getRedirectMock?.() as Mock;
+    return global.__getRedirectMock?.() as Mock;
 }
