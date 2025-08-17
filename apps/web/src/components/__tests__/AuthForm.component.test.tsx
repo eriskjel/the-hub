@@ -10,6 +10,7 @@ import {
     supabase,
 } from "@/tests/testUtils";
 import noMessages from "@/messages/no.json";
+import { signup } from "@/app/auth/actions/auth";
 const replaceMock = getReplaceMock();
 
 // Mock the OAuth starter at top-level so it is hoisted
@@ -169,8 +170,6 @@ describe("signup action", () => {
             },
         });
 
-        const { signup } = await import("@/app/auth/actions/auth");
-
         const form = new FormData();
         form.set("name", "Alice Example");
         form.set("email", "alice@example.com");
@@ -198,8 +197,6 @@ describe("signup action", () => {
         form.set("email", "bob@example.com");
         form.set("password", "x");
         form.set("confirmPassword", "x");
-
-        const { signup } = await import("@/app/auth/actions/auth");
 
         try {
             await signup(form);
