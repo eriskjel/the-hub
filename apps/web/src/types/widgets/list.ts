@@ -24,16 +24,22 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
         const settings = isPiHealthSettings(row.settings) ? row.settings : { deviceId: "" };
         return { ...row, kind: "pi-health", settings };
     }
-    // fallback: keep as-is; adjust if you start supporting more kinds
     return row as unknown as AnyWidget;
 }
 
 function isServerPingsSettings(s: unknown): s is ServerPingsSettings {
-    if (!s || typeof s !== "object") return false;
-    const o = s as any;
-    return typeof o.target === "string" || Array.isArray(o.targets) || o.targets === undefined;
+    if (typeof s !== "object" || s === null) return false;
+    const o = s as Record<string, unknown>;
+    const hasTarget = typeof o["target"] === "string";
+    const hasTargets =
+        Array.isArray(o["targets"]) &&
+        (o["targets"] as unknown[]).every((t) => typeof t === "string");
+    const targetsUndef = !("targets" in o) || o["targets"] === undefined;
+    return hasTarget || hasTargets || targetsUndef;
 }
 
 function isPiHealthSettings(s: unknown): s is PiHealthSettings {
-    return !!s && typeof (s as any).deviceId === "string";
+    if (typeof s !== "object" || s === null) return false;
+    const o = s as Record<string, unknown>;
+    return typeof o["deviceId"] === "string";
 }
