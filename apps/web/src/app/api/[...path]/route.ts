@@ -5,20 +5,22 @@ import { createClient } from "@/utils/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BACKEND = process.env.BACKEND_URL!;
-
-async function handler(
-    req: NextRequest,
-    ctx: { params: Promise<{ path: string[] }> } // <-- Promise here
-) {
-    const { path: pathParts } = await ctx.params; // <-- await it
+async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+    const backend = process.env.BACKEND_URL;
+    if (!backend) {
+        return NextResponse.json(
+            { error: "Server misconfiguration: BACKEND_URL environment variable is not set." },
+            { status: 500 }
+        );
+    }
+    const { path: pathParts } = await ctx.params;
     const rawPath = pathParts.join("/");
 
     // If someone calls /api/backend/widgets/..., they probably meant /api/widgets/...
     // Normalize to ensure Spring gets /api/... (prevents the 404 "static resource" error)
     const apiPath = rawPath.startsWith("api/") ? rawPath : `api/${rawPath}`;
 
-    const targetUrl = `${BACKEND}/${apiPath}${req.nextUrl.search}`;
+    const targetUrl = `${backend}/${apiPath}${req.nextUrl.search}`;
 
     // 1) Try auth cookie(s)
     const cookieStore = await cookies();

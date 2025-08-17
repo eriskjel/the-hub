@@ -15,7 +15,7 @@ export default function ServerPingsView({ data }: { data: PingsData }): ReactEle
                         key={row.url}
                         className="flex items-center justify-between rounded-lg bg-neutral-800 px-3 py-2"
                     >
-                        <span className="max-w-[60%] truncate">{row.url}</span>
+                        <span className="max-w-[70%] truncate text-sm">{row.url}</span>
                         <span className="text-sm tabular-nums">
                             <span
                                 className={`mr-3 ${row.status >= 200 && row.status < 400 ? "text-green-400" : "text-red-400"}`}

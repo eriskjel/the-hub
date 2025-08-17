@@ -19,14 +19,29 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const backend = process.env.BACKEND_URL!;
-    const res = await fetch(
-        `${backend}/api/widgets/server-pings?instanceId=${encodeURIComponent(instanceId)}`,
-        {
-            headers: { Authorization: `Bearer ${token}` },
-            cache: "no-store",
-        }
-    );
+    const backend = process.env.BACKEND_URL;
+    if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
+
+    let res: Response;
+    const ac = new AbortController();
+    const timeout = setTimeout(() => ac.abort(), 2500);
+    try {
+        res = await fetch(
+            `${backend}/api/widgets/server-pings?instanceId=${encodeURIComponent(instanceId)}`,
+            {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: "no-store",
+                signal: ac.signal,
+            }
+        );
+    } catch {
+        return NextResponse.json(
+            { status: "degraded", error: "backend_unreachable" },
+            { status: 503 }
+        );
+    } finally {
+        clearTimeout(timeout);
+    }
 
     const text = await res.text();
     return new NextResponse(text, {

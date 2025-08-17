@@ -4,9 +4,10 @@ import { fetchJson } from "@/lib/widgets/fetchJson";
 import type { ServerPingsWidget } from "@/types/widgets/types";
 import type { PingsData } from "@/types/widgets/data";
 import ServerPingsView from "@/components/widgets/ServerPingsView";
+import { ReactElement } from "react";
 
 type Fetcher<D> = (instanceId: string) => Promise<D>;
-type Renderer<D, W> = (props: { data: D; widget?: W }) => React.ReactElement;
+type Renderer<D, W> = (props: { data: D; widget?: W }) => ReactElement;
 type RegistryEntry<D, W> = { fetch: Fetcher<D>; Component: Renderer<D, W> };
 
 type RegistryMap = {
@@ -16,7 +17,7 @@ type RegistryMap = {
 
 export const registry: Partial<RegistryMap> = {
     "server-pings": {
-        fetch: (id) => fetchJson<PingsData>(`/api/backend/server-pings?instanceId=${id}`),
+        fetch: (id) => fetchJson<PingsData>(`/api/server-pings?instanceId=${id}`),
         Component: ServerPingsView,
     },
 };
