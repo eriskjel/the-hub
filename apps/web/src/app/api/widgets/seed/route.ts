@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {WidgetListItem} from "@/types/widgets/list";
+import { WidgetListItem } from "@/types/widgets/list";
 
 const CACHE_KEY = "widgets_cache";
 const CACHE_TTL_S = 60 * 60 * 24 * 7;
@@ -32,16 +32,12 @@ export async function POST(req: NextRequest) {
     }
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
-    res.cookies.set(
-        CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), slim: payload, v: 1 }),
-        {
-            httpOnly: true,
-            sameSite: "lax",
-            path: "/",
-            maxAge: CACHE_TTL_S,
-            secure: process.env.NODE_ENV === "production",
-        }
-    );
+    res.cookies.set(CACHE_KEY, JSON.stringify({ ts: Date.now(), slim: payload, v: 1 }), {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: CACHE_TTL_S,
+        secure: process.env.NODE_ENV === "production",
+    });
     return res;
 }
