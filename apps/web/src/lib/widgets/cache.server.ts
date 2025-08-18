@@ -4,38 +4,79 @@ import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adap
 
 export const WIDGETS_CACHE_KEY = "widgets_cache";
 
+/**
+ * Shape persisted in the cookie. We support two payload forms:
+ *  - "rows": full array of WidgetListItem-like objects
+ *  - "slim": minimal array (id, instanceId, kind, title, grid)
+ *    (settings may be omitted for "slim")
+ */
+type WidgetsCachePayload = {
+    ts: number; // epoch millis of when the cookie was written
+    rows?: unknown; // optional full rows
+    slim?: unknown; // optional slim form (preferred)
+};
+
+/** Narrow an unknown value into a minimal "slim" row */
+function isSlimRow(x: unknown): x is {
+    id: string;
+    instanceId: string;
+    kind: WidgetListItem["kind"];
+    title: string;
+    grid: WidgetListItem["grid"];
+    settings?: unknown;
+} {
+    if (typeof x !== "object" || x === null) return false;
+
+    const obj = x as Record<string, unknown>; // clearer than "o"
+    return (
+        typeof obj.id === "string" &&
+        typeof obj.instanceId === "string" &&
+        typeof obj.kind === "string" &&
+        typeof obj.title === "string" &&
+        typeof obj.grid === "object" &&
+        obj.grid !== null
+    );
+}
+
+/**
+ * Convert parsed cookie JSON into strongly-typed rows.
+ * Accepts either "slim" or "rows" arrays; ignores invalid entries.
+ * Returns null if nothing usable is found.
+ */
 export function normalizeCachedToRows(payload: {
     rows?: unknown;
     slim?: unknown;
 }): WidgetListItem[] | null {
-    const arr = (Array.isArray(payload.slim) ? payload.slim : payload.rows) as unknown[];
-    if (!Array.isArray(arr)) return null;
+    const candidate = Array.isArray(payload.slim)
+        ? (payload.slim as unknown[])
+        : Array.isArray(payload.rows)
+          ? (payload.rows as unknown[])
+          : null;
+
+    if (!candidate) return null;
 
     const rows: WidgetListItem[] = [];
-    for (const w of arr) {
-        if (!w || typeof w !== "object") continue;
-        const o = w as Record<string, unknown>;
-        if (
-            typeof o.id === "string" &&
-            typeof o.instanceId === "string" &&
-            typeof o.kind === "string" &&
-            typeof o.title === "string" &&
-            typeof o.grid === "object" &&
-            o.grid !== null
-        ) {
-            rows.push({
-                id: o.id,
-                instanceId: o.instanceId,
-                kind: o.kind as WidgetListItem["kind"],
-                title: o.title as string,
-                grid: o.grid as WidgetListItem["grid"],
-                settings: (o.settings ?? undefined) as unknown,
-            });
-        }
+    for (const item of candidate) {
+        if (!isSlimRow(item)) continue;
+
+        rows.push({
+            id: item.id,
+            instanceId: item.instanceId,
+            kind: item.kind,
+            title: item.title,
+            grid: item.grid,
+            // settings can be absent in "slim"; the consumer (toAnyWidget) will fill defaults per kind
+            settings: item.settings ?? undefined,
+        });
     }
+
     return rows.length ? rows : null;
 }
 
+/**
+ * Read and parse the widgets cache cookie.
+ * Returns typed rows and computed age (ms) if valid, otherwise null.
+ */
 export async function readWidgetsCookie(): Promise<{
     rows: WidgetListItem[];
     ageMs: number;
@@ -45,8 +86,8 @@ export async function readWidgetsCookie(): Promise<{
     if (!raw) return null;
 
     try {
-        const parsed = JSON.parse(raw) as { ts: number; rows?: unknown; slim?: unknown };
-        const rows: WidgetListItem[] | null = normalizeCachedToRows(parsed);
+        const parsed = JSON.parse(raw) as WidgetsCachePayload;
+        const rows = normalizeCachedToRows(parsed);
         if (!rows) return null;
         return { rows, ageMs: Date.now() - parsed.ts };
     } catch {
