@@ -22,7 +22,6 @@ jobs:
           files: |
             apps/web/**
             packages/**
-            services/**
             pnpm-lock.yaml
             package.json
             pnpm-workspace.yaml

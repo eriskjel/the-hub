@@ -15,7 +15,12 @@ RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
 
 # --- prod runtime ---
 FROM eclipse-temurin:21-jre AS prod
+# add curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+ENV SPRING_PROFILES_ACTIVE=prod \
+    JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:MaxRAMPercentage=70"
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
