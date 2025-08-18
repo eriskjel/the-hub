@@ -1,0 +1,65 @@
+name: backend-ci
+
+on:
+  workflow_dispatch:            # manual run (build only)
+  pull_request:                 # build on PRs to dev or main
+    branches: [ dev, main ]
+    paths:
+      - "services/spring/**"
+      - ".github/workflows/backend-ci.yml"
+  push:                         # build & push only on main
+    branches: [ main ]
+    paths:
+      - "services/spring/**"
+      - ".github/workflows/backend-ci.yml"
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    name: Build (PR) / Build & Push (main)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write      # needed when pushing to GHCR on 'push' events
+    defaults:
+      run:
+        working-directory: services/spring
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      # Only log in when we intend to push (i.e., push to main)
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build for PRs and manual runs (no push)
+      - name: Build (no push)
+        if: github.event_name != 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: services/spring
+          file: services/spring/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+
+      # Build & Push on main
+      - name: Build & Push (GHCR)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: services/spring
+          file: services/spring/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/the-hub-api:latest
+            ghcr.io/${{ github.repository_owner }}/the-hub-api:${{ github.sha }}
