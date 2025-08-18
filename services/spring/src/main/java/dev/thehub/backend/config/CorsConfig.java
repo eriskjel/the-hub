@@ -12,7 +12,7 @@ import java.util.Arrays;
 public class CorsConfig {
 
     // Read as a single string with a default; parse ourselves (avoids SpEL pitfalls)
-    @Value("${app.cors.allowed-origins:http://localhost:3000,https://skjellevik.online,https://www.skjellevik.online,https://*.vercel.app}")
+    @Value("${app.cors.allowed-origins:https://skjellevik.online,https://www.skjellevik.online}")
     private String allowedOriginsRaw;
 
     @Bean
