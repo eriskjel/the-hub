@@ -3,6 +3,7 @@ import { getNameFromProfile } from "@/utils/nameFromProfile";
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
 import { getWidgetsSafe, WidgetsResult } from "@/lib/widgets/getWidgets.server";
 import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
+import ClientCacheGuard from "@/components/ClientCacheGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function DashboardPage() {
     const name: string = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
     const userId: string | null = user?.id ?? null;
 
-    const widgetsResult: WidgetsResult = await getWidgetsSafe();
+    const widgetsResult: WidgetsResult = await getWidgetsSafe(userId);
 
     const t = await getTranslations("dashboard");
 
@@ -24,6 +25,7 @@ export default async function DashboardPage() {
                 <p className="text-lg">{t("welcome", { name })}</p>
             </header>
             <main className="mx-auto max-w-6xl p-4">
+                <ClientCacheGuard userId={userId} />
                 <WidgetsGrid widgetsResult={widgetsResult} userId={userId} />
             </main>
         </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WidgetListItem } from "@/widgets/rows";
+import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
 
 const CACHE_KEY = "widgets_cache";
 const CACHE_TTL_S = 60 * 60 * 24 * 7;
@@ -31,8 +32,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
+    const { user } = await getCurrentUserAndProfile();
+    const uid = user?.id ?? "anon";
+
     const res = NextResponse.json({ ok: true }, { status: 200 });
-    res.cookies.set(CACHE_KEY, JSON.stringify({ ts: Date.now(), slim: payload, v: 1 }), {
+    res.cookies.set(CACHE_KEY, JSON.stringify({ ts: Date.now(), slim: payload, v: 1, uid }), {
         httpOnly: true,
         sameSite: "lax",
         path: "/",

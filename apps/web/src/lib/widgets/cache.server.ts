@@ -12,6 +12,7 @@ export const WIDGETS_CACHE_KEY = "widgets_cache";
  */
 type WidgetsCachePayload = {
     ts: number; // epoch millis of when the cookie was written
+    uid?: string; // user id
     rows?: unknown; // optional full rows
     slim?: unknown; // optional slim form (preferred)
 };
@@ -77,7 +78,7 @@ export function normalizeCachedToRows(payload: {
  * Read and parse the widgets cache cookie.
  * Returns typed rows and computed age (ms) if valid, otherwise null.
  */
-export async function readWidgetsCookie(): Promise<{
+export async function readWidgetsCookie(currentUid: string | null): Promise<{
     rows: WidgetListItem[];
     ageMs: number;
 } | null> {
@@ -87,6 +88,9 @@ export async function readWidgetsCookie(): Promise<{
 
     try {
         const parsed = JSON.parse(raw) as WidgetsCachePayload;
+
+        if (!parsed.uid || parsed.uid !== currentUid) return null;
+
         const rows = normalizeCachedToRows(parsed);
         if (!rows) return null;
         return { rows, ageMs: Date.now() - parsed.ts };
