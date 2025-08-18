@@ -4,7 +4,7 @@ import { ReactElement } from "react";
 import type { AnyWidget } from "@/widgets/schema";
 import WidgetCard from "@/components/widgets/WidgetCard";
 import { WidgetListItem } from "@/widgets/rows";
-import SeedWidgetsCacheWithRows from "@/components/widgets/SeedWidgetsCacheWithRows";
+import SeedWidgetsCacheWithRows from "@/components/widgets/_internal/SeedWidgetsCacheWithRows";
 
 interface WidgetsGridProps {
     widgetsResult: {
