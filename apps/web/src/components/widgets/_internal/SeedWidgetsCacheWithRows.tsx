@@ -3,7 +3,13 @@
 import { useEffect, useRef } from "react";
 import { WidgetListItem } from "@/widgets/rows";
 
-export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListItem[] }) {
+export default function SeedWidgetsCacheWithRows({
+    rows,
+    userId,
+}: {
+    rows: WidgetListItem[];
+    userId: string;
+}) {
     const didRun = useRef(false);
 
     useEffect(() => {
@@ -21,9 +27,9 @@ export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListIte
         fetch("/api/widgets/seed", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ slim }),
+            body: JSON.stringify({ uid: userId, slim }),
         }).catch(() => {});
-    }, [rows]);
+    }, [rows, userId]);
 
     return null;
 }

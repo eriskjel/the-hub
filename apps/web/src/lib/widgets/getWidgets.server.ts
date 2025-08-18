@@ -1,4 +1,5 @@
 import "server-only";
+
 import type { AnyWidget } from "@/widgets/schema";
 import { toAnyWidget, type WidgetListItem } from "@/widgets/rows";
 import { resolveOrigin } from "@/utils/url";
@@ -31,17 +32,24 @@ export async function getWidgets(): Promise<{ widgets: AnyWidget[]; rows: Widget
     return { widgets: rows.map(toAnyWidget), rows };
 }
 
-export async function getWidgetsSafe(): Promise<WidgetsResult> {
+export async function getWidgetsSafe(userId: string | null): Promise<WidgetsResult> {
     try {
-        return await getWidgets();
+        const { widgets, rows } = await getWidgets();
+        return { widgets, rows };
     } catch (e) {
         const msg = e instanceof Error ? e.message : "Failed to load widgets";
-        const offline: boolean = isOfflineError(msg);
-        const cached = await readWidgetsCookie();
-        if (cached) {
-            const widgets: AnyWidget[] = cached.rows.map(toAnyWidget);
-            return { widgets, rows: cached.rows, error: msg, stale: true, offline };
+        const offline = isOfflineError(msg);
+
+        if (userId) {
+            const cached = await readWidgetsCookie(userId);
+            if (cached) {
+                const rows = cached.rows;
+                const widgets = rows.map(toAnyWidget);
+                return { widgets, rows, error: msg, stale: true, offline }; // stale fallback
+            }
         }
+
+        // No cache or userId: return an empty + error envelope
         return { widgets: [], error: msg, stale: false, offline };
     }
 }

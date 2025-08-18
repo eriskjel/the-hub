@@ -33,8 +33,8 @@ export default function WidgetsGrid({
     // Only seed the cookie with the "slim" rows when the data is fresh (not stale).
     // This allows the dashboard to show cached widget *list* if the backend is temporarily unreachable.
     const maybeSeed: ReactElement | null =
-        !stale && widgets.length > 0 && rows && rows.length > 0 ? (
-            <SeedWidgetsCacheWithRows rows={rows} />
+        !stale && widgets.length > 0 && rows && rows.length > 0 && userId ? (
+            <SeedWidgetsCacheWithRows rows={rows} userId={userId} />
         ) : null;
 
     // 1) Stale: we have cached values but the backend is degraded/offline right now

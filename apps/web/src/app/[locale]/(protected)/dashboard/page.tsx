@@ -13,7 +13,7 @@ export default async function DashboardPage() {
     const name: string = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
     const userId: string | null = user?.id ?? null;
 
-    const widgetsResult: WidgetsResult = await getWidgetsSafe();
+    const widgetsResult: WidgetsResult = await getWidgetsSafe(userId);
 
     const t = await getTranslations("dashboard");
 
