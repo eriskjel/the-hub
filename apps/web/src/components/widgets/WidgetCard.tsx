@@ -1,9 +1,9 @@
 "use client";
 
 import { ReactElement } from "react";
-import type { AnyWidget, ServerPingsWidget } from "@/types/widgets/types";
-import type { PingsData } from "@/types/widgets/data";
-import { registry } from "@/lib/widgets/registry";
+import type { AnyWidget, ServerPingsWidget } from "@/widgets/schema";
+import type { PingsData } from "@/widgets/server-pings/types";
+import { registry } from "@/widgets";
 import { useWidgetData } from "@/hooks/useWidgetData";
 
 export default function WidgetCard({

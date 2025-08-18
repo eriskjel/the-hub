@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
-import type { AnyWidget } from "@/types/widgets/types";
-import { toAnyWidget, type WidgetListItem } from "@/types/widgets/list";
+import type { AnyWidget } from "@/widgets/schema";
+import { toAnyWidget, type WidgetListItem } from "@/widgets/rows";
 import { resolveOrigin } from "@/utils/url";
 
 const CACHE_KEY = "widgets_cache";

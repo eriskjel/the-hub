@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AnyWidget } from "@/types/widgets/types";
-import { registry } from "@/lib/widgets/registry";
+import type { AnyWidget } from "@/widgets/schema";
+import { registry } from "@/widgets";
 import { DegradedError, HttpError } from "@/lib/widgets/fetchJson";
 
 type State<D = unknown> =
@@ -31,7 +31,7 @@ export function useWidgetData<D = unknown>(
     intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS
 ) {
     const kind = widget.kind;
-    const entry = registry[kind as keyof typeof registry];
+    const entry = registry[widget.kind];
 
     const [state, setState] = useState<State<D>>({ status: "loading" });
     const inFlightRef = useRef(false);

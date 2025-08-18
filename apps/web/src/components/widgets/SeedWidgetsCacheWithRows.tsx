@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { WidgetListItem } from "@/types/widgets/list";
+import { WidgetListItem } from "@/widgets/rows";
 
 export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListItem[] }) {
     const didRun = useRef(false);

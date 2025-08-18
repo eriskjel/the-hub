@@ -1,9 +1,9 @@
 "use client";
 
 import { ReactElement } from "react";
-import { AnyWidget } from "@/types/widgets/types";
+import type { AnyWidget } from "@/widgets/schema";
 import WidgetCard from "@/components/widgets/WidgetCard";
-import { WidgetListItem } from "@/types/widgets/list";
+import { WidgetListItem } from "@/widgets/rows";
 import SeedWidgetsCacheWithRows from "@/components/widgets/SeedWidgetsCacheWithRows";
 
 interface WidgetsGridProps {

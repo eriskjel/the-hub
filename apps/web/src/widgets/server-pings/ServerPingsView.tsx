@@ -1,6 +1,6 @@
 "use client";
 
-import type { PingsData, PingsRow } from "@/types/widgets/data";
+import type { PingsData, PingsRow } from "@/widgets/server-pings/types";
 import { ReactElement } from "react";
 
 export default function ServerPingsView({ data }: { data: PingsData }): ReactElement {
