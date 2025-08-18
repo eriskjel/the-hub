@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { getNameFromProfile } from "@/utils/nameFromProfile";
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
-import { getWidgetsSafe } from "@/lib/widgets/getWidgets.server";
+import { getWidgetsSafe, WidgetsResult } from "@/lib/widgets/getWidgets.server";
 import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export default async function DashboardPage() {
     const name: string = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
     const userId: string | null = user?.id ?? null;
 
-    const widgetsResult = await getWidgetsSafe();
+    const widgetsResult: WidgetsResult = await getWidgetsSafe();
 
     const t = await getTranslations("dashboard");
 
