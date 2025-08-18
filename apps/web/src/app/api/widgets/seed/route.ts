@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { WidgetListItem } from "@/types/widgets/list";
+import { WidgetListItem } from "@/widgets/rows";
 
 const CACHE_KEY = "widgets_cache";
 const CACHE_TTL_S = 60 * 60 * 24 * 7;

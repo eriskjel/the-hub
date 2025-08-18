@@ -1,37 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AnyWidget } from "@/types/widgets/types";
-import { registry } from "@/lib/widgets/registry";
+import type { AnyWidget } from "@/widgets/schema";
+import { registry } from "@/widgets";
 import { DegradedError, HttpError } from "@/lib/widgets/fetchJson";
+import {
+    MIN_POLL_INTERVAL_MS,
+    DEFAULT_WIDGET_DATA_INTERVAL_MS,
+    MAX_RETRIES,
+    BASE_RETRY_DELAY,
+} from "@/utils/timers";
+import { warnOnce } from "@/utils/warnOnce";
 
 type State<D = unknown> =
     | { status: "loading" }
     | { status: "error"; error: string; retryCount: number }
     | { status: "success"; data: D; stale?: boolean };
 
-// Polling + retry constants
-export const DEFAULT_WIDGET_DATA_INTERVAL_MS = 30_000 as const;
-const MIN_POLL_INTERVAL_MS = 1_000 as const;
-const MAX_RETRIES = 3 as const;
-const BASE_RETRY_DELAY = 1_000 as const;
-
-// warn-once helper
-const lastWarn = new Map<string, number>();
-const warnOnce = (key: string, msg: string) => {
-    const now = Date.now();
-    if ((lastWarn.get(key) ?? 0) + 60_000 < now) {
-        console.warn(msg);
-        lastWarn.set(key, now);
-    }
-};
-
 export function useWidgetData<D = unknown>(
     widget: AnyWidget,
-    intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS
+    intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS,
+    userId: string = "anon"
 ) {
     const kind = widget.kind;
-    const entry = registry[kind as keyof typeof registry];
+    const entry = registry[widget.kind];
 
     const [state, setState] = useState<State<D>>({ status: "loading" });
     const inFlightRef = useRef(false);
@@ -39,7 +31,7 @@ export function useWidgetData<D = unknown>(
     const mountedRef = useRef(true);
 
     // Namespace cache per widget instance
-    const cacheKey = `hub:widget:${kind}:${widget.instanceId}`;
+    const cacheKey = `hub:u:${userId ?? "anon"}:widget:${kind}:${widget.instanceId}`;
 
     const saveCache = useCallback(
         (data: unknown) => {

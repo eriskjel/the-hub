@@ -1,29 +1,19 @@
-import { createClient } from "@/utils/supabase/server";
 import { getTranslations } from "next-intl/server";
-import { Profile } from "@/types/database";
 import { getNameFromProfile } from "@/utils/nameFromProfile";
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
-import { getWidgetsSafe } from "@/lib/widgets/getWidgets.server";
+import { getWidgetsSafe, WidgetsResult } from "@/lib/widgets/getWidgets.server";
+import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const { user, profile, error } = await getCurrentUserAndProfile();
+    if (error) console.warn("Failed to fetch profile:", error);
 
-    const { data: profile, error: profileError } = user
-        ? await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>()
-        : { data: null, error: null };
+    const name: string = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
+    const userId: string | null = user?.id ?? null;
 
-    if (profileError) {
-        console.warn("Failed to fetch profile:", profileError.message);
-    }
-
-    const name = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
-
-    const widgetsResult = await getWidgetsSafe();
+    const widgetsResult: WidgetsResult = await getWidgetsSafe();
 
     const t = await getTranslations("dashboard");
 
@@ -34,7 +24,7 @@ export default async function DashboardPage() {
                 <p className="text-lg">{t("welcome", { name })}</p>
             </header>
             <main className="mx-auto max-w-6xl p-4">
-                <WidgetsGrid widgetsResult={widgetsResult} />
+                <WidgetsGrid widgetsResult={widgetsResult} userId={userId} />
             </main>
         </div>
     );

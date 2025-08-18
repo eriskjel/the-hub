@@ -4,7 +4,7 @@ import {
     PiHealthSettings,
     ServerPingsSettings,
     WidgetKind,
-} from "@/types/widgets/types";
+} from "@/widgets/schema";
 
 export type WidgetListItem = {
     id: string;
