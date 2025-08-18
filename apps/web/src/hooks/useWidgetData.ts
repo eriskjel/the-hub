@@ -19,7 +19,8 @@ type State<D = unknown> =
 
 export function useWidgetData<D = unknown>(
     widget: AnyWidget,
-    intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS
+    intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS,
+    userId: string = "anon"
 ) {
     const kind = widget.kind;
     const entry = registry[widget.kind];
@@ -30,7 +31,7 @@ export function useWidgetData<D = unknown>(
     const mountedRef = useRef(true);
 
     // Namespace cache per widget instance
-    const cacheKey = `hub:widget:${kind}:${widget.instanceId}`;
+    const cacheKey = `hub:u:${userId ?? "anon"}:widget:${kind}:${widget.instanceId}`;
 
     const saveCache = useCallback(
         (data: unknown) => {

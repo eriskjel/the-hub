@@ -14,9 +14,10 @@ interface WidgetsGridProps {
         stale?: boolean;
         offline?: boolean;
     };
+    userId: string | null;
 }
 
-export default function WidgetsGrid({ widgetsResult }: WidgetsGridProps): ReactElement {
+export default function WidgetsGrid({ widgetsResult, userId }: WidgetsGridProps): ReactElement {
     const { widgets, rows, error, stale, offline } = widgetsResult;
 
     // Seed cookie only when fresh data is present (not stale)
@@ -34,7 +35,12 @@ export default function WidgetsGrid({ widgetsResult }: WidgetsGridProps): ReactE
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {widgets.map(
                         (widget: AnyWidget): ReactElement => (
-                            <WidgetContainer key={widget.instanceId} widget={widget} stale />
+                            <WidgetContainer
+                                key={widget.instanceId}
+                                widget={widget}
+                                userId={userId}
+                                stale
+                            />
                         )
                     )}
                 </div>
@@ -100,7 +106,7 @@ export default function WidgetsGrid({ widgetsResult }: WidgetsGridProps): ReactE
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {widgets.map(
                     (widget: AnyWidget): ReactElement => (
-                        <WidgetContainer key={widget.instanceId} widget={widget} />
+                        <WidgetContainer key={widget.instanceId} widget={widget} userId={userId} />
                     )
                 )}
             </div>
@@ -110,15 +116,17 @@ export default function WidgetsGrid({ widgetsResult }: WidgetsGridProps): ReactE
 
 function WidgetContainer({
     widget,
+    userId,
     stale = false,
 }: {
     widget: AnyWidget;
+    userId: string | null;
     stale?: boolean;
 }): ReactElement {
     return (
         <div className="rounded-2xl bg-neutral-900 p-2">
             <div className="px-2 py-1 text-sm text-neutral-400">{widget.title}</div>
-            <WidgetCard widget={widget} staleLayout={stale} />
+            <WidgetCard widget={widget} staleLayout={stale} userId={userId} />
         </div>
     );
 }

@@ -1,6 +1,4 @@
-import { createClient } from "@/utils/supabase/server";
 import { getTranslations } from "next-intl/server";
-import { Profile } from "@/types/database";
 import { getNameFromProfile } from "@/utils/nameFromProfile";
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
 import { getWidgetsSafe } from "@/lib/widgets/getWidgets.server";
@@ -12,7 +10,8 @@ export default async function DashboardPage() {
     const { user, profile, error } = await getCurrentUserAndProfile();
     if (error) console.warn("Failed to fetch profile:", error);
 
-    const name = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
+    const name: string = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
+    const userId: string | null = user?.id ?? null;
 
     const widgetsResult = await getWidgetsSafe();
 
@@ -25,7 +24,7 @@ export default async function DashboardPage() {
                 <p className="text-lg">{t("welcome", { name })}</p>
             </header>
             <main className="mx-auto max-w-6xl p-4">
-                <WidgetsGrid widgetsResult={widgetsResult} />
+                <WidgetsGrid widgetsResult={widgetsResult} userId={userId} />
             </main>
         </div>
     );

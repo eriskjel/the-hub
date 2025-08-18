@@ -1,79 +1,96 @@
 "use client";
 
-import { ReactElement } from "react";
-import type { AnyWidget, ServerPingsWidget } from "@/widgets/schema";
-import type { PingsData } from "@/widgets/server-pings/types";
+import type { ReactElement, ReactNode } from "react";
+import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { useWidgetData } from "@/hooks/useWidgetData";
 
-export default function WidgetCard({
-    widget,
-    staleLayout,
-}: {
-    widget: AnyWidget;
-    staleLayout?: boolean;
-}): ReactElement {
-    const state = useWidgetData(widget, 30_000);
-
-    const isStaleData = state.status === "success" && state.stale;
-    const showStaleBadge = staleLayout || isStaleData;
-
-    const StaleBadge = showStaleBadge ? (
+/** Shell + stale badge – exactly your current styling */
+function shell(children: ReactNode, stale?: boolean): ReactElement {
+    return (
+        <div className="relative rounded-2xl bg-neutral-900 p-4">
+            {stale ? <Stale /> : null}
+            {children}
+        </div>
+    );
+}
+function Stale(): ReactElement {
+    return (
         <div className="absolute top-2 right-2 rounded bg-yellow-600/30 px-2 py-0.5 text-[10px] tracking-wide text-yellow-200 uppercase">
             Cached
         </div>
-    ) : null;
+    );
+}
 
-    if (state.status === "loading") {
-        return (
-            <div className="relative rounded-2xl bg-neutral-900 p-4">
-                {StaleBadge}
-                Loading…
-            </div>
-        );
-    }
+/** Render a static widget (no fetch) */
+function WidgetStatic({ widget, staleLayout }: { widget: AnyWidget; staleLayout?: boolean }) {
+    const entry = registry[widget.kind]!;
+    // Avoid `any` by typing to a generic “base” props shape with unknown
+    const Component = entry.Component as (props: {
+        data: unknown;
+        widget: AnyWidget;
+    }) => ReactElement;
 
+    return (
+        <div className="relative">
+            {staleLayout ? <Stale /> : null}
+            <Component data={null} widget={widget} />
+        </div>
+    );
+}
+
+/** Render a data-backed widget (uses hook) */
+function WidgetWithData({
+    widget,
+    userId,
+    staleLayout,
+}: {
+    widget: AnyWidget;
+    userId: string | null;
+    staleLayout?: boolean;
+}) {
+    const entry = registry[widget.kind]!;
+    const state = useWidgetData(widget, 30_000, userId ?? "anon");
+    const showStale = staleLayout || (state.status === "success" && state.stale);
+
+    if (state.status === "loading") return shell("Loading…", showStale);
     if (state.status === "error") {
-        return (
-            <div className="relative rounded-2xl bg-neutral-900 p-4">
-                {StaleBadge}
-                <div className="rounded border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-                    {state.error}
-                </div>
-            </div>
+        return shell(
+            <div className="rounded border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                {state.error}
+            </div>,
+            showStale
         );
     }
 
-    // success
-    switch (widget.kind) {
-        case "server-pings": {
-            const entry = registry["server-pings"];
-            if (!entry) {
-                return (
-                    <div className="relative rounded-2xl bg-neutral-900 p-4">
-                        {StaleBadge}
-                        Unknown widget: server-pings
-                    </div>
-                );
-            }
-            const { Component } = entry;
-            const data = state.data as PingsData;
-            const w = widget as ServerPingsWidget;
-            return (
-                <div className="relative">
-                    {StaleBadge}
-                    <Component data={data} widget={w} />
-                </div>
-            );
-        }
+    const Component = entry.Component as (props: {
+        data: unknown;
+        widget: AnyWidget;
+    }) => ReactElement;
 
-        // ...other kinds
-        default:
-            return (
-                <div className="relative rounded-2xl bg-neutral-900 p-4">
-                    {StaleBadge}
-                    Unknown widget: {widget.kind}
-                </div>
-            );
+    return (
+        <div className="relative">
+            {showStale ? <Stale /> : null}
+            <Component data={state.data} widget={widget} />
+        </div>
+    );
+}
+
+export default function WidgetCard({
+    widget,
+    userId,
+    staleLayout,
+}: {
+    widget: AnyWidget;
+    userId: string | null;
+    staleLayout?: boolean;
+}) {
+    const entry = registry[widget.kind];
+    if (!entry) return shell("Unknown widget: " + widget.kind, staleLayout);
+
+    // No hooks here; we branch to subcomponents
+    if (!entry.fetch) {
+        return <WidgetStatic widget={widget} staleLayout={staleLayout} />;
     }
+    return <WidgetWithData widget={widget} userId={userId} staleLayout={staleLayout} />;
 }
