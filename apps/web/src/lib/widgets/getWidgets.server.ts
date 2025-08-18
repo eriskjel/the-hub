@@ -22,7 +22,7 @@ export async function getWidgets(): Promise<{ widgets: AnyWidget[]; rows: Widget
         headers: { cookie: cookieHeader },
     });
     if (!res.ok) {
-        const body: string = await res.text().catch(() => "");
+        const body = await res.text().catch(() => "");
         throw new Error(
             `Backend returned ${res.status} ${res.statusText}${body ? ` - ${body}` : ""}`
         );
@@ -35,7 +35,7 @@ export async function getWidgetsSafe(): Promise<WidgetsResult> {
     try {
         return await getWidgets();
     } catch (e) {
-        const msg: string = e instanceof Error ? e.message : "Failed to load widgets";
+        const msg = e instanceof Error ? e.message : "Failed to load widgets";
         const offline: boolean = isOfflineError(msg);
         const cached = await readWidgetsCookie();
         if (cached) {
