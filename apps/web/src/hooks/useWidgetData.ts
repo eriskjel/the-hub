@@ -4,27 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { DegradedError, HttpError } from "@/lib/widgets/fetchJson";
+import {
+    MIN_POLL_INTERVAL_MS,
+    DEFAULT_WIDGET_DATA_INTERVAL_MS,
+    MAX_RETRIES,
+    BASE_RETRY_DELAY,
+} from "@/utils/timers";
+import { warnOnce } from "@/utils/warnOnce";
 
 type State<D = unknown> =
     | { status: "loading" }
     | { status: "error"; error: string; retryCount: number }
     | { status: "success"; data: D; stale?: boolean };
-
-// Polling + retry constants
-export const DEFAULT_WIDGET_DATA_INTERVAL_MS = 30_000 as const;
-const MIN_POLL_INTERVAL_MS = 1_000 as const;
-const MAX_RETRIES = 3 as const;
-const BASE_RETRY_DELAY = 1_000 as const;
-
-// warn-once helper
-const lastWarn = new Map<string, number>();
-const warnOnce = (key: string, msg: string) => {
-    const now = Date.now();
-    if ((lastWarn.get(key) ?? 0) + 60_000 < now) {
-        console.warn(msg);
-        lastWarn.set(key, now);
-    }
-};
 
 export function useWidgetData<D = unknown>(
     widget: AnyWidget,
