@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "services/backend/**"
+      - "services/spring/**"
       - ".github/workflows/build-backend.yml"
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       packages: write  # needed for GHCR
     defaults:
       run:
-        working-directory: services/backend
+        working-directory: services/spring
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -28,8 +28,8 @@ jobs:
       - name: Build & Push
         uses: docker/build-push-action@v6
         with:
-          context: services/backend
-          file: services/backend/Dockerfile
+          context: services/spring
+          file: services/spring/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
