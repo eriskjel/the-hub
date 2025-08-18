@@ -27,7 +27,7 @@ function isSlimRow(x: unknown): x is {
 } {
     if (typeof x !== "object" || x === null) return false;
 
-    const obj = x as Record<string, unknown>; // clearer than "o"
+    const obj = x as Record<string, unknown>;
     return (
         typeof obj.id === "string" &&
         typeof obj.instanceId === "string" &&
