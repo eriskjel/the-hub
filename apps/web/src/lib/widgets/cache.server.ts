@@ -4,6 +4,10 @@ import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adap
 
 export const WIDGETS_CACHE_KEY = "widgets_cache";
 
+export function widgetsCookieKeyFor(uid: string) {
+    return `${WIDGETS_CACHE_KEY}_${uid}`;
+}
+
 /**
  * Shape persisted in the cookie. We support two payload forms:
  *  - "rows": full array of WidgetListItem-like objects
@@ -12,7 +16,6 @@ export const WIDGETS_CACHE_KEY = "widgets_cache";
  */
 type WidgetsCachePayload = {
     ts: number; // epoch millis of when the cookie was written
-    uid?: string; // user id
     rows?: unknown; // optional full rows
     slim?: unknown; // optional slim form (preferred)
 };
@@ -75,22 +78,21 @@ export function normalizeCachedToRows(payload: {
 }
 
 /**
- * Read and parse the widgets cache cookie.
- * Returns typed rows and computed age (ms) if valid, otherwise null.
+ * Read and parse the widgets cache cookie for a specific user.
+ * Returns typed rows and cookie age (ms) if present; otherwise null.
  */
 export async function readWidgetsCookie(currentUid: string | null): Promise<{
     rows: WidgetListItem[];
     ageMs: number;
 } | null> {
+    if (!currentUid) return null;
+
     const jar: ReadonlyRequestCookies = await cookies();
-    const raw = jar.get(WIDGETS_CACHE_KEY)?.value;
+    const raw = jar.get(widgetsCookieKeyFor(currentUid))?.value;
     if (!raw) return null;
 
     try {
         const parsed = JSON.parse(raw) as WidgetsCachePayload;
-
-        if (!parsed.uid || parsed.uid !== currentUid) return null;
-
         const rows = normalizeCachedToRows(parsed);
         if (!rows) return null;
         return { rows, ageMs: Date.now() - parsed.ts };

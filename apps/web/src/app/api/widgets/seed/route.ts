@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WidgetListItem } from "@/widgets/rows";
 import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
+import { widgetsCookieKeyFor } from "@/lib/widgets/cache.server";
 
-const CACHE_KEY = "widgets_cache";
 const CACHE_TTL_S = 60 * 60 * 24 * 7;
 
 type SlimWidget = Pick<WidgetListItem, "id" | "instanceId" | "kind" | "title" | "grid">;
@@ -26,17 +26,19 @@ function isSlimWidgetArray(x: unknown): x is SlimWidget[] {
 export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null);
 
-    // Accept { slim } (new) or { rows } (legacy) to be safe
-    const payload = body?.slim ?? body?.rows;
-    if (!isSlimWidgetArray(payload)) {
+    // Accept { slim } (new) or { rows } (legacy)
+    const slim = body?.slim ?? body?.rows;
+    if (!isSlimWidgetArray(slim)) {
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
     const { user } = await getCurrentUserAndProfile();
-    const uid = user?.id ?? "anon";
+    if (!user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
-    res.cookies.set(CACHE_KEY, JSON.stringify({ ts: Date.now(), slim: payload, v: 1, uid }), {
+    res.cookies.set(widgetsCookieKeyFor(user.id), JSON.stringify({ ts: Date.now(), slim, v: 1 }), {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
