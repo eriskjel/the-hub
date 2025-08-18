@@ -4,22 +4,13 @@ import { Profile } from "@/types/database";
 import { getNameFromProfile } from "@/utils/nameFromProfile";
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
 import { getWidgetsSafe } from "@/lib/widgets/getWidgets.server";
+import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-    const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    const { data: profile, error: profileError } = user
-        ? await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>()
-        : { data: null, error: null };
-
-    if (profileError) {
-        console.warn("Failed to fetch profile:", profileError.message);
-    }
+    const { user, profile, error } = await getCurrentUserAndProfile();
+    if (error) console.warn("Failed to fetch profile:", error);
 
     const name = getNameFromProfile(profile) ?? user?.email?.split("@")[0] ?? "User";
 
