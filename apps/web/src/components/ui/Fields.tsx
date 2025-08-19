@@ -1,20 +1,24 @@
 "use client";
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { InputHTMLAttributes, ReactElement, ReactNode } from "react";
 
-export function FieldRow({ children }: { children: ReactNode }) {
+function cx(...parts: Array<string | false | null | undefined>) {
+    return parts.filter(Boolean).join(" ");
+}
+
+export function FieldRow({ children }: { children: ReactNode }): ReactElement {
     return <div className="space-y-1.5">{children}</div>;
 }
 
-export function Label({ children }: { children: ReactNode }) {
+export function Label({ children }: { children: ReactNode }): ReactElement {
     return <label className="block text-sm font-medium">{children}</label>;
 }
 
-export function Help({ children }: { children?: ReactNode }) {
+export function Help({ children }: { children?: ReactNode }): ReactElement | null {
     if (!children) return null;
     return <p className="text-xs text-neutral-500">{children}</p>;
 }
 
-export function ErrorText({ children }: { children?: ReactNode }) {
+export function ErrorText({ children }: { children?: ReactNode }): ReactElement | null {
     if (!children) return null;
     return <p className="mt-1 text-xs text-red-600">{children}</p>;
 }
@@ -24,13 +28,22 @@ export function FieldText(
         label: string;
         error?: string;
         help?: string;
+        inputClassName?: string;
     }
-) {
-    const { label, error, help, ...rest } = props;
+): ReactElement {
+    const { label, error, help, inputClassName, className, ...rest } = props;
     return (
         <FieldRow>
             <Label>{label}</Label>
-            <input {...rest} className="w-full rounded-xl border border-neutral-300 px-3 py-2" />
+            <input
+                {...rest}
+                className={cx(
+                    "w-full rounded-xl border border-neutral-300 bg-white",
+                    "px-3 py-2 text-neutral-900 placeholder-neutral-500",
+                    "outline-none focus:border-neutral-400 focus:ring-2 focus:ring-black/20",
+                    inputClassName
+                )}
+            />
             <ErrorText>{error}</ErrorText>
             <Help>{help}</Help>
         </FieldRow>
@@ -46,6 +59,7 @@ export function FieldSelect({
     options,
     error,
     help,
+    selectClassName,
 }: {
     label: string;
     value: string;
@@ -53,20 +67,28 @@ export function FieldSelect({
     options: SelectOption[];
     error?: string;
     help?: string;
-}) {
+    selectClassName: string;
+}): ReactElement {
     return (
         <FieldRow>
             <Label>{label}</Label>
             <select
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2"
+                className={cx(
+                    "w-full rounded-xl border border-neutral-300 bg-white",
+                    "px-3 py-2 text-neutral-900",
+                    "outline-none focus:border-neutral-400 focus:ring-2 focus:ring-black/20",
+                    selectClassName
+                )}
             >
-                {options.map((o) => (
-                    <option key={o.value} value={o.value} disabled={o.disabled}>
-                        {o.label}
-                    </option>
-                ))}
+                {options.map(
+                    (o): ReactElement => (
+                        <option key={o.value} value={o.value} disabled={o.disabled}>
+                            {o.label}
+                        </option>
+                    )
+                )}
             </select>
             <ErrorText>{error}</ErrorText>
             <Help>{help}</Help>
@@ -80,19 +102,27 @@ export function Button({
     type = "button",
     variant = "solid",
     disabled,
+    className,
 }: {
     children: ReactNode;
     onClick?: () => void;
     type?: "button" | "submit";
     variant?: "solid" | "outline";
     disabled?: boolean;
-}) {
-    const cls =
+    className: string;
+}): ReactElement {
+    const base = "rounded-xl px-3 py-1.5 text-sm cursor-pointer disabled:opacity-50";
+    const styles =
         variant === "outline"
-            ? "rounded-xl border border-neutral-300 px-3 py-1.5 text-sm"
-            : "rounded-xl bg-black px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50";
+            ? "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-50"
+            : "bg-black text-white hover:bg-black/90";
     return (
-        <button type={type} onClick={onClick} disabled={disabled} className={`cursor-pointer ${cls}`}>
+        <button
+            type={type}
+            onClick={onClick}
+            disabled={disabled}
+            className={cx(base, styles, className)}
+        >
             {children}
         </button>
     );
