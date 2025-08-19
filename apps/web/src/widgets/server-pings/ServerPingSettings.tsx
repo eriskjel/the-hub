@@ -15,7 +15,7 @@ export function ServerPingsSettings({
             <div className="mb-2 text-sm text-neutral-700">
                 <strong>{t("serverPings.title")}</strong> — {t("serverPings.help")}
             </div>
-            <label className="mb-1 block text-sm font-medium">{t("serverPings.targetLabel")}</label>{" "}
+            <label className="mb-1 block text-sm font-medium">{t("serverPings.targetLabel")}</label>
             <input
                 {...form.register("settings.target")}
                 className="w-full rounded-xl border border-neutral-300 px-3 py-2"
