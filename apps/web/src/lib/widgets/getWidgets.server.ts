@@ -5,6 +5,7 @@ import { toAnyWidget, type WidgetListItem } from "@/widgets/rows";
 import { resolveOrigin } from "@/utils/url";
 import { isOfflineError, makeForwardedCookieHeader } from "@/utils/http";
 import { readWidgetsCookie } from "@/lib/widgets/cache.server";
+import { API } from "@/lib/apiRoutes";
 
 export type WidgetsResult = {
     widgets: AnyWidget[];
@@ -18,7 +19,7 @@ export async function getWidgets(): Promise<{ widgets: AnyWidget[]; rows: Widget
     const origin: string = await resolveOrigin();
     const cookieHeader: string = await makeForwardedCookieHeader();
 
-    const res = await fetch(`${origin}/api/widgets/list`, {
+    const res = await fetch(`${origin}${API.widgets.list}`, {
         cache: "no-store",
         headers: { cookie: cookieHeader },
     });

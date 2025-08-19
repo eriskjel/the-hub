@@ -2,6 +2,7 @@ package dev.thehub.backend.widgets.list;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.thehub.backend.widgets.WidgetKind;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.UUID;
 
+/**
+ * REST controller that returns a list of the current user's widgets with optional filtering.
+ */
 @RestController
 @RequestMapping("/api/widgets")
 public class WidgetsListController {
@@ -16,16 +20,28 @@ public class WidgetsListController {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
 
+    /**
+     * Constructs the controller.
+     * @param jdbc JDBC template for database access
+     * @param objectMapper optional ObjectMapper; if null, a default mapper is used
+     */
     public WidgetsListController(JdbcTemplate jdbc, ObjectMapper objectMapper) {
         this.jdbc = jdbc;
         this.json = objectMapper != null ? objectMapper : new ObjectMapper();
     }
 
     /**
+     * Lists widgets for the authenticated user.
+     * <p>
      * GET /api/widgets/list
      * Query params:
      *  - kind (optional): filter a single kind, e.g. 'server-pings'
      *  - includeSettings (optional, default true): include full settings JSON
+     *
+     * @param auth            JWT authentication
+     * @param kind            optional kind filter (case-insensitive, mapped via {@link WidgetKind#from(String)})
+     * @param includeSettings whether to include the settings JSON in the response
+     * @return list of maps containing id, instanceId, kind, title, grid, settings
      */
     @GetMapping("/list")
     public List<Map<String, Object>> list(
@@ -46,7 +62,10 @@ public class WidgetsListController {
         var rows = jdbc.query(sql,
                 ps -> {
                     ps.setObject(1, userId);
-                    if (kind != null) ps.setString(2, kind);
+                    if (kind != null) {
+                        var parsed = WidgetKind.from(kind).getValue();
+                        ps.setString(2, parsed);
+                    }
                 },
                 (rs, i) -> {
                     Map<String, Object> grid = Map.of();
