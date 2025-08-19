@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm, type SubmitHandler } from "react-hook-form";
@@ -50,7 +50,7 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }) 
 
     const active = creationRegistry[kind]!;
 
-    const form = useForm<CreateWidgetFormValues, any, CreateWidgetFormValues>({
+    const form = useForm<CreateWidgetFormValues, unknown, CreateWidgetFormValues>({
         resolver: zodResolver(FormSchema),
         defaultValues: {
             title: "",
@@ -88,8 +88,8 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }) 
             }
             onClose();
             router.refresh();
-        } catch (e: any) {
-            setSubmitError(e.message);
+        } catch (e: unknown) {
+            setSubmitError(e instanceof Error ? e.message : String(e));
         } finally {
             setSubmitting(false);
         }
