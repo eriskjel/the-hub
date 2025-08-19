@@ -1,12 +1,11 @@
 package dev.thehub.backend.widgets.pings;
 
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.stereotype.Service;
-
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.stereotype.Service;
 
 /**
  * Service providing simple HTTP ping functionality for a list of target URLs.
@@ -17,16 +16,24 @@ public class PingsService {
 
     /**
      * Result of a single ping probe.
-     * @param url the target URL
-     * @param status HTTP response code; -1 indicates a connection error
-     * @param ms latency in milliseconds for the probe
-     * @param checkedAt timestamp when the probe was performed (ISO-8601)
+     *
+     * @param url
+     *            the target URL
+     * @param status
+     *            HTTP response code; -1 indicates a connection error
+     * @param ms
+     *            latency in milliseconds for the probe
+     * @param checkedAt
+     *            timestamp when the probe was performed (ISO-8601)
      */
-    public record PingResult(String url, int status, long ms, String checkedAt) {}
+    public record PingResult(String url, int status, long ms, String checkedAt) {
+    }
 
     /**
      * Executes ping probes in parallel for the provided targets.
-     * @param targets list of URLs to probe
+     *
+     * @param targets
+     *            list of URLs to probe
      * @return list of {@link PingResult} objects
      */
     public List<PingResult> getResults(List<String> targets) {
@@ -54,5 +61,4 @@ public class PingsService {
             return new PingResult(url, -1, ms, OffsetDateTime.now().toString());
         }
     }
-
 }
