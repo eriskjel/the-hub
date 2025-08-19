@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { UseFormReturn } from "react-hook-form";
 import type { ReactElement } from "react";
 import { WIDGET_KINDS, type WidgetKind } from "@/widgets/schema";
+import { ServerPingsSettings } from "@/widgets/server-pings/ServerPingSettings";
 
 /** Shared create form values (stable shape) */
 export type CreateWidgetFormValues = {
@@ -16,7 +17,13 @@ export type CreateWidgetFormValues = {
 
 /** Per-kind settings schemas (used for UI + defaults; validation enforced in modal schema) */
 export const serverPingsSettingsSchema = z.object({
-    target: z.string().url("Must be a valid URL"),
+    target: z.preprocess(
+        (v) => (typeof v === "string" ? normalizeUrlLike(v) : v),
+        z
+            .string()
+            .url("Must be a valid URL starting with http(s)://")
+            .refine((u) => /^https?:\/\//i.test(u), "Only http:// or https:// are supported")
+    ),
 });
 
 export type CreateRegistryEntry = {
@@ -27,26 +34,34 @@ export type CreateRegistryEntry = {
     }) => ReactElement;
 };
 
+function normalizeUrlLike(input: string): string {
+    let s = input.trim();
+    if (!s) return s;
+
+    // If no scheme but looks like a domain, prefix https://
+    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(s)) {
+        // very light domain-ish check: has a dot, no spaces
+        if (/\s/.test(s) || !s.includes(".")) return s; // let .url() fail later
+        s = `https://${s}`;
+    }
+
+    // Fix common typos quickly (optional)
+    if (s.startsWith("htp://")) s = s.replace(/^htp:\/\//, "http://");
+
+    // Disallow non-http(s)
+    if (!/^https?:\/\//i.test(s)) return s;
+
+    // Drop trailing slash (cosmetic)
+    if (s.endsWith("/")) s = s.slice(0, -1);
+
+    return s;
+}
+
 export const creationRegistry: Partial<Record<WidgetKind, CreateRegistryEntry>> = {
     "server-pings": {
         schema: serverPingsSettingsSchema,
         defaults: { target: "" },
-        SettingsForm: ({ form }) => (
-            <div className="rounded-xl border border-neutral-200 p-3">
-                <div className="mb-2 text-sm text-neutral-700">
-                    <strong>Server pings</strong> — set a URL to ping.
-                </div>
-                <label className="mb-1 block text-sm font-medium">Target URL</label>
-                <input
-                    {...form.register("settings.target")}
-                    className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-                    placeholder="https://example.com/health"
-                />
-                <p className="mt-1 text-xs text-red-600">
-                    {form.formState.errors.settings?.target?.message}
-                </p>
-            </div>
-        ),
+        SettingsForm: ServerPingsSettings,
     },
 };
 
