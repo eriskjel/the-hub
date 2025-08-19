@@ -51,5 +51,34 @@
         "callback_failed": "Callback mislyktes",
         "unknown_reason": "Ukjent årsak",
         "goToLogin": "Gå til innlogging"
+    },
+    "widgets": {
+        "create": {
+            "title": "Lag en widget",
+            "subtitle": "Skriv inn widget-detaljer",
+            "name": "Navn",
+            "namePlaceholder": "Min widget",
+            "kind": "Widget-type",
+            "kinds": {
+                "server-pings": "Server‑ping"
+            },
+            "kindHelp": "Velg hva du vil lage. Flere typer kommer snart.",
+            "cancel": "Avbryt",
+            "submit": "Lag widget",
+            "submitting": "Lager…",
+            "errors": {
+                "url": "Må være en gyldig URL",
+                "uuid": "Velg en enhet",
+                "titleRequired": "Vennligst skriv inn et navn",
+                "targetRequired": "Mål-URL er påkrevd",
+                "failed": "Kunne ikke opprette widget"
+            },
+            "serverPings": {
+                "title": "Server-ping",
+                "help": "angi en URL som skal pinges.",
+                "targetLabel": "Mål-URL",
+                "targetPlaceholder": "https://eksempel.no/health"
+            }
+        }
     }
 }
