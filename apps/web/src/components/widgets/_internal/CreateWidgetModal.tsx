@@ -13,6 +13,7 @@ import {
     type CreateWidgetFormValues,
 } from "@/widgets/create/registry";
 import type { WidgetKind } from "@/widgets/schema";
+import { API } from "@/lib/apiRoutes";
 
 /** A literal enum from ENABLED_KINDS so Zod can narrow string values */
 const KindEnum = z.enum(
@@ -72,7 +73,7 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }) 
         setSubmitError(null);
         setSubmitting(true);
         try {
-            const res = await fetch("/api/widgets/create", {
+            const res = await fetch(API.widgets.create, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
@@ -99,7 +100,7 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }) 
 
     return (
         <Modal title="Create a widget" subtitle="Enter widget details" onClose={onClose}>
-            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+            <form className="space-y-4 text-left" onSubmit={form.handleSubmit(onSubmit)}>
                 <FieldText
                     label="Name"
                     placeholder="My widget"
