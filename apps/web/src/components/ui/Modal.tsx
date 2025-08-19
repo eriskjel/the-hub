@@ -24,10 +24,20 @@ export function Modal({
                     <button
                         aria-label="Close"
                         onClick={onClose}
-                        className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                        className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 focus:ring-2 focus:ring-neutral-300 focus:outline-none"
                     >
-                        <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 6l8 8M14 6l-8 8"/>
+                        <svg
+                            viewBox="0 0 20 20"
+                            className="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M6 6l8 8M14 6l-8 8"
+                            />
                         </svg>
                     </button>
                 </div>
