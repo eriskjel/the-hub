@@ -1,9 +1,20 @@
 import { ReactNode } from "react";
 import PageWrapper from "@/components/PageWrapper";
+import { setRequestLocale } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardSectionLayout({ children }: { children: ReactNode }) {
+export default async function DashboardSectionLayout({
+    children,
+    params,
+}: {
+    children: ReactNode;
+    params: Promise<{ locale: string }>;
+}) {
+    const { locale } = await params;
+
+    setRequestLocale(locale);
+
     return (
         <PageWrapper
             headerVariant="transparent"

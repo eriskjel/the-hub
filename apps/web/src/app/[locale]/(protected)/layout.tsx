@@ -1,8 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
+import { setRequestLocale } from "next-intl/server";
 
-// ensure no caching of protected shell
 export const dynamic = "force-dynamic";
 
 export default async function ProtectedLayout({
@@ -13,6 +13,7 @@ export default async function ProtectedLayout({
     params: Promise<{ locale: string }>;
 }) {
     const { locale } = await params;
+    setRequestLocale(locale);
 
     const supabase = await createClient();
     const {
