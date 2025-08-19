@@ -1,5 +1,6 @@
 package dev.thehub.backend.widgets.create;
 
+import dev.thehub.backend.widgets.WidgetKind;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -29,28 +30,23 @@ public class CreateWidgetController {
             return ResponseEntity.badRequest().body(Map.of("error", "invalid_request"));
         }
 
-        if (!"server-pings".equals(body.kind())) {
+        if (body.kind() != WidgetKind.SERVER_PINGS) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "unsupported_kind",
-                    "message", "Only 'server-pings' widgets are supported right now."
+                    "message", "Only '" + WidgetKind.SERVER_PINGS + "' widgets are supported right now."
             ));
         }
 
         try {
-            // enforce per-kind rules
-            service.ensureNoDuplicateTargets(userId, body.settings());
-
-            // create
+            service.ensureNoDuplicateTargets(userId, body.kind(), body.settings());
             var resp = service.create(userId, body.kind(), body.title(), body.settings(), body.grid());
             return ResponseEntity.created(URI.create("/api/widgets/" + resp.instanceId())).body(resp);
-
         } catch (CreateWidgetService.DuplicateTargetException e) {
             return ResponseEntity.status(409).body(Map.of(
                     "error", "duplicate_target",
                     "message", "One or more target URLs already exist in your widgets."
             ));
         } catch (IllegalArgumentException e) {
-            // e.g. target_required
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }

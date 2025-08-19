@@ -2,7 +2,7 @@ package dev.thehub.backend.widgets.create;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.ResponseEntity;
+import dev.thehub.backend.widgets.WidgetKind;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -24,57 +24,47 @@ public class CreateWidgetService {
      *
      * @return
      */
-    public ResponseEntity<Map<String, String>> ensureNoDuplicateTargets(UUID userId, Map<String, Object> settings) {
-        List<String> targets = extractTargets(settings);
-        if (targets.isEmpty()) {
-            throw new IllegalArgumentException("target_required");
-        }
+    public void ensureNoDuplicateTargets(UUID userId, WidgetKind kind, Map<String, Object> settings) {
+        var targets = extractTargets(settings);
+        if (targets.isEmpty()) throw new IllegalArgumentException("target_required");
 
         targets = targets.stream().map(CreateWidgetService::normalizeUrl).filter(Objects::nonNull).toList();
 
         final String dupeSql = """
-          select exists (
-            select 1
-            from user_widgets uw
-            where uw.user_id = ?
-              and uw.kind = 'server-pings'
-              and (
-                (jsonb_exists(uw.settings, 'target') and uw.settings->>'target' = any (?))
-                or
-                (jsonb_exists(uw.settings, 'targets') and exists (
-                    select 1
-                    from jsonb_array_elements_text(uw.settings->'targets') t(v)
-                    where t.v = any (?)
-                ))
-              )
+      select exists (
+        select 1
+        from user_widgets uw
+        where uw.user_id = ?
+          and uw.kind = ?
+          and (
+            (jsonb_exists(uw.settings, 'target') and uw.settings->>'target' = any (?))
+            or (jsonb_exists(uw.settings, 'targets') and exists (
+                select 1
+                from jsonb_array_elements_text(uw.settings->'targets') t(v)
+                where t.v = any (?)
+            ))
           )
-        """;
+      )
+    """;
 
         List<String> finalTargets = targets;
-        boolean anyExists = Boolean.TRUE.equals(
+        var anyExists = Boolean.TRUE.equals(
                 jdbc.query(con -> {
-                            var ps = con.prepareStatement(dupeSql);
-                            ps.setObject(1, userId);
-                            var arr = con.createArrayOf("text", finalTargets.toArray(new String[0]));
-                            ps.setArray(2, arr);
-                            ps.setArray(3, arr);
-                            return ps;
-                        },
-                        rs -> rs.next() ? rs.getBoolean(1) : Boolean.FALSE
-                )
+                    var ps = con.prepareStatement(dupeSql);
+                    ps.setObject(1, userId);
+                    ps.setString(2, kind.getValue()); // ← enum → DB string
+                    var arr = con.createArrayOf("text", finalTargets.toArray(new String[0]));
+                    ps.setArray(3, arr);
+                    ps.setArray(4, arr);
+                    return ps;
+                }, rs -> rs.next() ? rs.getBoolean(1) : Boolean.FALSE)
         );
 
-        if (anyExists) {
-            return ResponseEntity.status(409).body(Map.of(
-                    "error", "duplicate_target",
-                    "message", "One or more target URLs already exist in your widgets."
-            ));
-        }
-        return null;
+        if (anyExists) throw new DuplicateTargetException("duplicate_target");
     }
 
     /** Creates a widget row and returns response. */
-    public CreateWidgetResponse create(UUID userId, String kind, String title, Map<String, Object> settings, Map<String, Object> grid) {
+    public CreateWidgetResponse create(UUID userId, WidgetKind kind, String title, Map<String, Object> settings, Map<String, Object> grid) {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
 
@@ -91,7 +81,7 @@ public class CreateWidgetService {
             ps.setObject(1, id);
             ps.setObject(2, instanceId);
             ps.setObject(3, userId);
-            ps.setString(4, kind);
+            ps.setString(4, kind.getValue());
             ps.setString(5, title);
             try {
                 ps.setString(6, json.writeValueAsString(safeSettings));

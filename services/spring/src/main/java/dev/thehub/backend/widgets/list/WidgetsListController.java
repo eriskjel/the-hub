@@ -2,6 +2,7 @@ package dev.thehub.backend.widgets.list;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.thehub.backend.widgets.WidgetKind;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +47,10 @@ public class WidgetsListController {
         var rows = jdbc.query(sql,
                 ps -> {
                     ps.setObject(1, userId);
-                    if (kind != null) ps.setString(2, kind);
+                    if (kind != null) {
+                        var parsed = WidgetKind.from(kind).getValue();
+                        ps.setString(2, parsed);
+                    }
                 },
                 (rs, i) -> {
                     Map<String, Object> grid = Map.of();

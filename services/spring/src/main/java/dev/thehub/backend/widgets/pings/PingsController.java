@@ -1,6 +1,7 @@
 package dev.thehub.backend.widgets.pings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.thehub.backend.widgets.WidgetKind;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -40,10 +41,14 @@ public class PingsController {
         var row = jdbc.query("""
         select settings
         from user_widgets
-        where user_id = ? and kind = 'server-pings' and instance_id = ?
+        where user_id = ? and kind = ? and instance_id = ?
         limit 1
         """,
-                ps -> { ps.setObject(1, userId); ps.setObject(2, instanceId); },
+                ps -> {
+                    ps.setObject(1, userId);
+                    ps.setString(2, WidgetKind.SERVER_PINGS.getValue());
+                    ps.setObject(3, instanceId);
+                },
                 rs -> rs.next() ? rs.getString("settings") : null
         );
 
