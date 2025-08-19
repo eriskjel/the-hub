@@ -14,13 +14,15 @@ COPY . .
 RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
 
 # --- prod runtime ---
-FROM eclipse-temurin:21-jre AS prod
+FROM eclipse-temurin:21-jre-alpine AS prod
 # add curl for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-  && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+
+# Keep tuning; if you ever see musl/ZGC quirks on Pi, drop ZGC first.
 ENV SPRING_PROFILES_ACTIVE=prod \
     JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:MaxRAMPercentage=70"
+
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]

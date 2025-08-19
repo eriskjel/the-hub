@@ -1,6 +1,7 @@
 package dev.thehub.backend.widgets.pings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.thehub.backend.widgets.WidgetKind;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -13,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REST controller that returns server ping results for a specific widget instance.
+ */
 @RestController
 @RequestMapping("/api/widgets")
 public class PingsController {
@@ -21,11 +25,25 @@ public class PingsController {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json = new ObjectMapper();
 
+    /**
+     * Constructs the controller.
+     * @param pings service used to perform ping probes
+     * @param jdbc  JDBC template used to load widget configuration
+     */
     public PingsController(PingsService pings, JdbcTemplate jdbc) {
         this.pings = pings;
         this.jdbc = jdbc;
     }
 
+    /**
+     * Gets ping results for the provided widget instance owned by the authenticated user.
+     * <p>
+     * Authorization: requires role ADMIN.
+     *
+     * @param auth       current JWT authentication
+     * @param instanceId the widget instance identifier to read configuration from
+     * @return a JSON map containing status, data (list of ping results), and updatedAt timestamp
+     */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/server-pings")
     public Map<String, Object> serverPings(
@@ -34,16 +52,18 @@ public class PingsController {
     ) {
         var userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
 
-
-
         // read ONE instance belonging to this user
         var row = jdbc.query("""
         select settings
         from user_widgets
-        where user_id = ? and kind = 'server-pings' and instance_id = ?
+        where user_id = ? and kind = ? and instance_id = ?
         limit 1
         """,
-                ps -> { ps.setObject(1, userId); ps.setObject(2, instanceId); },
+                ps -> {
+                    ps.setObject(1, userId);
+                    ps.setString(2, WidgetKind.SERVER_PINGS.getValue());
+                    ps.setObject(3, instanceId);
+                },
                 rs -> rs.next() ? rs.getString("settings") : null
         );
 

@@ -18,10 +18,10 @@ export default async function DashboardPage() {
     const t = await getTranslations("dashboard");
 
     return (
-        <div className="min-h-full text-white">
+        <div className="min-h-full">
             <header className="py-8 text-center">
-                <h1 className="mb-2 text-5xl font-bold">The Hub</h1>
-                <p className="text-lg">{t("welcome", { name })}</p>
+                <h1 className="mb-2 text-5xl font-bold text-white">The Hub</h1>
+                <p className="text-lg text-white">{t("welcome", { name })}</p>
             </header>
             <main className="mx-auto max-w-6xl p-4">
                 <WidgetsGrid widgetsResult={widgetsResult} userId={userId} />
