@@ -1,0 +1,29 @@
+name: backend-lint
+
+on:
+  pull_request:
+    paths:
+      - "services/spring/**"
+  push:
+    branches: [ main, dev ]
+    paths:
+      - "services/spring/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/spring
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Verify formatting and style (tests skipped)
+        run: ./mvnw -DskipTests verify
