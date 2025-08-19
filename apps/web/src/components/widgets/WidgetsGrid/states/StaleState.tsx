@@ -12,8 +12,8 @@ export default function StaleState({
     userId: string | null;
 }): ReactElement {
     return (
-        <div className="space-y-4">
-            <div className="text-white-300 rounded-lg border border-red-500/30 bg-red-500/50 p-4 text-center">
+        <div className="space-y-4 text-white">
+            <div className=" rounded-lg border border-red-500/30 bg-red-500/50 p-4 text-center">
                 Showing cached data — live updates unavailable
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
