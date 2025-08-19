@@ -15,7 +15,7 @@ export function Modal({
 }): ReactElement {
     return (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-neutral-900 shadow-2xl">
                 <div className="mb-5 flex items-start justify-between gap-4">
                     <div>
                         <h2 className="text-lg font-semibold">{title}</h2>
