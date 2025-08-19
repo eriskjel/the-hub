@@ -23,7 +23,7 @@ export type CreateRegistryEntry = {
     schema: z.ZodTypeAny;
     defaults: Partial<CreateWidgetFormValues["settings"]>;
     SettingsForm: (props: {
-        form: UseFormReturn<CreateWidgetFormValues, any, CreateWidgetFormValues>;
+        form: UseFormReturn<CreateWidgetFormValues, unknown, CreateWidgetFormValues>;
     }) => ReactElement;
 };
 
@@ -52,5 +52,5 @@ export const creationRegistry: Partial<Record<WidgetKind, CreateRegistryEntry>> 
 
 /** Enabled kinds (intersection of schema kinds and creation registry) */
 export const ENABLED_KINDS = WIDGET_KINDS.filter(
-    (k) => creationRegistry[k] !== undefined
+    (kind) => creationRegistry[kind] !== undefined
 ) as WidgetKind[];
