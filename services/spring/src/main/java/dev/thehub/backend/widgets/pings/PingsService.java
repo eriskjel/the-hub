@@ -22,7 +22,7 @@ public class PingsService {
         var t0 = System.nanoTime();
         try {
             var conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setRequestMethod("HEAD"); // try HEAD first; most servers support it
+            conn.setRequestMethod("HEAD");
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(3000);
             conn.setInstanceFollowRedirects(true);
