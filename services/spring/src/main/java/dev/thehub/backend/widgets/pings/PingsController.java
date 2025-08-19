@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REST controller that returns server ping results for a specific widget instance.
+ */
 @RestController
 @RequestMapping("/api/widgets")
 public class PingsController {
@@ -22,11 +25,25 @@ public class PingsController {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json = new ObjectMapper();
 
+    /**
+     * Constructs the controller.
+     * @param pings service used to perform ping probes
+     * @param jdbc  JDBC template used to load widget configuration
+     */
     public PingsController(PingsService pings, JdbcTemplate jdbc) {
         this.pings = pings;
         this.jdbc = jdbc;
     }
 
+    /**
+     * Gets ping results for the provided widget instance owned by the authenticated user.
+     * <p>
+     * Authorization: requires role ADMIN.
+     *
+     * @param auth       current JWT authentication
+     * @param instanceId the widget instance identifier to read configuration from
+     * @return a JSON map containing status, data (list of ping results), and updatedAt timestamp
+     */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/server-pings")
     public Map<String, Object> serverPings(
@@ -34,8 +51,6 @@ public class PingsController {
             @RequestParam UUID instanceId
     ) {
         var userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
-
-
 
         // read ONE instance belonging to this user
         var row = jdbc.query("""

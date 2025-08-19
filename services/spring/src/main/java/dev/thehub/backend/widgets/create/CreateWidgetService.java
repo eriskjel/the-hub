@@ -8,21 +8,48 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * Service responsible for creating user widgets and enforcing business constraints around widget targets.
+ * Responsibilities:
+ * <ul>
+ *   <li>Persisting newly created widgets into the database.</li>
+ *   <li>Preventing duplicate target URLs for the same user and widget kind.</li>
+ *   <li>Serializing settings and grid configuration to JSON for storage.</li>
+ * </ul>
+ * The service uses Spring's JdbcTemplate for persistence and Jackson's ObjectMapper for JSON handling.
+ */
 @Service
 public class CreateWidgetService {
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
 
+    /**
+     * Constructs the CreateWidgetService.
+     *
+     * @param jdbc          JdbcTemplate used to execute SQL statements. Must not be null.
+     * @param objectMapper  Optional ObjectMapper used for JSON serialization of settings and grid.
+     *                      If null is provided, a new default ObjectMapper will be created.
+     */
     public CreateWidgetService(JdbcTemplate jdbc, ObjectMapper objectMapper) {
         this.jdbc = jdbc;
         this.json = objectMapper != null ? objectMapper : new ObjectMapper();
     }
 
     /**
-     * Throws DuplicateTargetException if any target already exists for this user (server-pings only).
+     * Ensures that no duplicate target URLs exist for the given user and widget kind.
+     * <p>
+     * This method extracts target values from the provided settings map (supporting either a single
+     * "target" or multiple "targets") and applies lightweight URL normalization (e.g., trimming and
+     * removing a trailing slash). It then checks the database to determine whether any of those targets
+     * already exist for the specified user and widget kind. If a duplicate is found, a
+     * {@link DuplicateTargetException} is thrown.
      *
-     * @return
+     * @param userId   the ID of the widget owner; used to scope the duplicate check
+     * @param kind     the widget kind; mapped to its DB representation via {@link WidgetKind#getValue()}
+     * @param settings input settings which may contain either "target" (String) or "targets" (array/iterable)
+     * @throws IllegalArgumentException if no target could be extracted from settings
+     * @throws DuplicateTargetException if any of the normalized targets already exist for the user and kind
      */
     public void ensureNoDuplicateTargets(UUID userId, WidgetKind kind, Map<String, Object> settings) {
         var targets = extractTargets(settings);
@@ -63,7 +90,24 @@ public class CreateWidgetService {
         if (anyExists) throw new DuplicateTargetException("duplicate_target");
     }
 
-    /** Creates a widget row and returns response. */
+    /**
+         * Creates a widget row in the database and returns a {@link CreateWidgetResponse} with generated IDs.
+         * <p>
+         * Notes:
+         * <ul>
+         *   <li>If settings is null, an empty map will be persisted.</li>
+         *   <li>If grid is null, a default grid {x:0, y:0, w:1, h:1} will be used.</li>
+         *   <li>Settings and grid are serialized as JSON and stored as jsonb.</li>
+         * </ul>
+         *
+         * @param userId   the owner of the widget
+         * @param kind     the widget kind; persisted via {@link WidgetKind#getValue()}
+         * @param title    the widget title
+         * @param settings arbitrary settings map; will be serialized to JSON (jsonb)
+         * @param grid     widget grid configuration; will be serialized to JSON (jsonb)
+         * @return a populated {@link CreateWidgetResponse} including generated id and instanceId
+         * @throws RuntimeException if JSON serialization fails
+         */
     public CreateWidgetResponse create(UUID userId, WidgetKind kind, String title, Map<String, Object> settings, Map<String, Object> grid) {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
@@ -102,7 +146,19 @@ public class CreateWidgetService {
         );
     }
 
-    /** Extracts {target} or {targets: []} into a flat list. */
+    /**
+         * Extracts targets from settings into a flat list.
+         * <p>
+         * Supported inputs:
+         * <ul>
+         *   <li>Single target under key "target" as a non-blank String.</li>
+         *   <li>Multiple targets under key "targets" as an Iterable or an Object[] of Strings.</li>
+         * </ul>
+         * Blank strings are ignored. If settings is null or no values are found, an empty list is returned.
+         *
+         * @param settings the settings map that may contain "target" or "targets"
+         * @return a list of non-blank target strings in the order discovered (single target first, then many)
+         */
     static List<String> extractTargets(Map<String, Object> settings) {
         if (settings == null) return List.of();
         var out = new ArrayList<String>(2);
@@ -119,12 +175,26 @@ public class CreateWidgetService {
         return out;
     }
 
-    /** Domain exception to signal duplicate target(s). */
+    /**
+         * Exception thrown when attempting to create a widget with a target that already exists
+         * for the same user and widget kind.
+         */
     public static class DuplicateTargetException extends RuntimeException {
         public DuplicateTargetException(String msg) { super(msg); }
     }
 
-    private static String normalizeUrl(String s) {
+    /**
+         * Performs a lightweight normalization on a URL-like string.
+         * <ul>
+         *   <li>Trims leading/trailing whitespace.</li>
+         *   <li>Removes a trailing slash, if present.</li>
+         * </ul>
+         * This method does not validate or parse the URL; it is intentionally minimal.
+         *
+         * @param s the input string (may be null)
+         * @return the normalized string, or null if the input was null
+         */
+        private static String normalizeUrl(String s) {
         if (s == null) return null;
         s = s.trim();
         // very light normalization; keep it simple for now

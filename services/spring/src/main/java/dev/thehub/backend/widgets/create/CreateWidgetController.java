@@ -10,16 +10,34 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * REST controller for creating widget instances for the authenticated user.
+ * Currently supports creating widgets of kind {@link WidgetKind#SERVER_PINGS} only.
+ */
 @RestController
 @RequestMapping("/api/widgets")
 public class CreateWidgetController {
 
     private final CreateWidgetService service;
 
+    /**
+     * Creates a new instance of the controller.
+     * @param service business service used to validate and create widgets
+     */
     public CreateWidgetController(CreateWidgetService service) {
         this.service = service;
     }
 
+    /**
+     * Creates a new widget for the authenticated user.
+     * Authorization: requires role ADMIN.
+     *
+     * @param auth  the JWT authentication containing the user subject (sub)
+     * @param body  the request payload with title, kind, settings and grid
+     * @return 201 Created with {@link CreateWidgetResponse} body on success;
+     *         400 Bad Request for invalid input or unsupported kind;
+     *         409 Conflict if a duplicate target exists for the user and kind.
+     */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<?> create(JwtAuthenticationToken auth,
