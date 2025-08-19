@@ -16,8 +16,6 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
 
-    console.log(body)
-
     const response = await fetch(`${backend}/api/widgets`, {
         method: "POST",
         headers: {
@@ -27,11 +25,16 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(body),
     });
 
-    const j = await response.json().catch(() => ({}));
-    if (!response.ok)
-        return NextResponse.json(
-            { error: j.error || "Upstream error" },
-            { status: response.status }
-        );
-    return NextResponse.json(j);
+    const json = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        let message = json.error || "Failed to create widget";
+        if (response.status === 401) message = "You need to sign in to create a widget.";
+        else if (response.status === 403) message = "You’re not allowed to create widgets.";
+        else if (response.status === 409 && json.error === "duplicate_target")
+            message = "That URL is already used by one of your widgets.";
+
+        return NextResponse.json({ error: message }, { status: response.status });
+    }
+    return NextResponse.json(json);
 }
