@@ -51,5 +51,34 @@
         "callback_failed": "Callback failed",
         "unknown_reason": "Unknown reason",
         "goToLogin": "Go to login"
+    },
+    "widgets": {
+        "create": {
+            "title": "Create a widget",
+            "subtitle": "Enter widget details",
+            "name": "Name",
+            "namePlaceholder": "My widget",
+            "kind": "Widget type",
+            "kinds": {
+                "server-pings": "Server pings"
+            },
+            "kindHelp": "Choose what to create. More types coming soon.",
+            "cancel": "Cancel",
+            "submit": "Create widget",
+            "submitting": "Creating…",
+            "errors": {
+                "url": "Must be a valid URL",
+                "uuid": "Pick a device",
+                "titleRequired": "Please enter a name",
+                "targetRequired": "Target URL is required",
+                "failed": "Failed to create widget"
+            },
+            "serverPings": {
+                "title": "Server pings",
+                "help": "set a URL to ping.",
+                "targetLabel": "Target URL",
+                "targetPlaceholder": "https://example.com/health"
+            }
+        }
     }
 }
