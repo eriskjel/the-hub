@@ -24,9 +24,11 @@ export function Modal({
                     <button
                         aria-label="Close"
                         onClick={onClose}
-                        className="cursor-pointer rounded-md border border-neutral-300 px-2 py-1 text-sm"
+                        className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-300"
                     >
-                        ✕
+                        <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 6l8 8M14 6l-8 8"/>
+                        </svg>
                     </button>
                 </div>
                 {children}
