@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { logout } from "@/app/auth/actions/auth";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
 
 type HeaderProps = {
@@ -10,8 +10,7 @@ type HeaderProps = {
 };
 
 export default async function Header({ variant = "solid", mode = "sticky" }: HeaderProps) {
-    const locale = await getLocale();
-    const t = await getTranslations({ locale });
+    const t = await getTranslations();
     const supabase = await createClient();
     const {
         data: { user },
