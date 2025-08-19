@@ -8,7 +8,6 @@ import EmptyState from "./states/EmptyState";
 import ErrorState from "./states/ErrorState";
 import SeedWidgetsCacheWithRows from "@/components/widgets/_internal/SeedWidgetsCacheWithRows";
 import { WidgetsResult } from "@/lib/widgets/getWidgets.server";
-import ActionBar from "./ActionBar";
 import CreateWidgetButton from "@/components/widgets/CreateWidgetButton";
 
 /**
