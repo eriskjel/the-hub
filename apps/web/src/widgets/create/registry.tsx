@@ -1,4 +1,3 @@
-// apps/web/src/widgets/create/registry.ts
 import { z } from "zod";
 import type { UseFormReturn } from "react-hook-form";
 import type { ReactElement } from "react";
