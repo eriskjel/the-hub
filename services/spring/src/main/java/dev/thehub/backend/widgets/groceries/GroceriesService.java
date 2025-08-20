@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.util.function.Function;
 
 @Service
 @Getter
+@Slf4j
 public class GroceriesService {
 
     private final RestTemplate http;
@@ -72,12 +75,8 @@ public class GroceriesService {
             }
         };
 
-        // final String qAds = enc.apply(new Object[]{"ads", Map.of("searchTerm", term,
-        // "type", "search_ad")});
         final String qOffers = enc.apply(new Object[]{"offers", Map.of("hideUpcoming", false, "pagination",
                 Map.of("limit", fetchLimit, "offset", 0), "searchTerm", term, "sort", List.of("score_desc"))});
-        // final String qSearchBusiness = enc.apply(new Object[]{"searchBusiness",
-        // Map.of("searchTerm", term)});
 
         final Map<String, Object> body = Map.of("data", List.of(qOffers));
 
@@ -100,15 +99,13 @@ public class GroceriesService {
         try {
             ResponseEntity<String> resp = http.exchange(baseUrl + "/", HttpMethod.POST, req, String.class);
             if (!resp.getStatusCode().is2xxSuccessful()) {
-                // Log and return empty rather than throwing
-                // (Up to you: you can add structured logging)
                 return List.of();
             }
             raw = Optional.ofNullable(resp.getBody()).orElse("");
-        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+        } catch (HttpStatusCodeException e) {
             // Preserve body for debugging
             String errBody = e.getResponseBodyAsString();
-            // log.warn("Etilbudsavis error {} body={}", e.getStatusCode(), errBody);
+            log.warn("Etilbudsavis error {} body={}", e.getStatusCode(), errBody);
             return List.of();
         }
         if (raw.isBlank())
