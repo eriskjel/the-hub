@@ -17,10 +17,11 @@ export default function GroceryDealsView({
     }
 
     const formatPrice = (n: number | undefined) =>
-        typeof n === "number" ? n.toLocaleString("no-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+        typeof n === "number"
+            ? n.toLocaleString("no-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : "";
 
-    const formatDate = (iso?: string) =>
-        iso ? new Date(iso).toLocaleDateString("no-NO") : "";
+    const formatDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("no-NO") : "");
 
     return (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -43,10 +44,15 @@ export default function GroceryDealsView({
                         <div className="truncate text-sm font-medium">{d.name}</div>
                         <div className="truncate text-xs text-neutral-400">{d.store}</div>
                         <div className="mt-0.5 text-sm">
-                            {formatPrice(d.price)} kr{typeof d.unitPrice === "number" ? ` · ${formatPrice(d.unitPrice)}/l` : ""}
+                            {formatPrice(d.price)} kr
+                            {typeof d.unitPrice === "number"
+                                ? ` · ${formatPrice(d.unitPrice)}/l`
+                                : ""}
                         </div>
                         {d.validUntil ? (
-                            <div className="mt-0.5 text-[11px] text-neutral-500">til {formatDate(d.validUntil)}</div>
+                            <div className="mt-0.5 text-[11px] text-neutral-500">
+                                til {formatDate(d.validUntil)}
+                            </div>
                         ) : null}
                     </div>
                 </div>
