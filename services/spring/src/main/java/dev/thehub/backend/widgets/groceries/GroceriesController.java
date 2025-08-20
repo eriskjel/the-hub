@@ -3,6 +3,7 @@ package dev.thehub.backend.widgets.groceries;
 import dev.thehub.backend.widgets.WidgetSettingsService;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/groceries")
+@RequestMapping("/api/widgets/grocery-deals")
 public class GroceriesController {
 
     private final GroceriesService svc;
@@ -54,11 +55,12 @@ public class GroceriesController {
      * @return HTTP 200 with a list of deals, or 400 when required inputs are
      *         missing
      */
-    @GetMapping("/deals")
+    @GetMapping
     public ResponseEntity<List<DealDto>> deals(JwtAuthenticationToken auth,
             @RequestParam(required = false) UUID instanceId, @RequestParam(name = "q", required = false) String q,
             @RequestParam(required = false) Integer limit, @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lon, @RequestParam(required = false) String city) {
+            @RequestParam(required = false) Double lon, @RequestParam(required = false) String city)
+            throws IOException {
         GroceryDealsSettings settings;
 
         if (instanceId != null) {
