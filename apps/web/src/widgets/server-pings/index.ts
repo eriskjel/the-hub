@@ -6,7 +6,7 @@ import { API } from "@/lib/apiRoutes";
 export const entry: Entry<"server-pings"> = {
     fetch: (instanceId) => {
         const qs = new URLSearchParams({ instanceId }).toString();
-        return fetchJson(`${API.widgets.pings}?${qs}`);
+        return fetchJson(`${API.widgets.serverPings}?${qs}`);
     },
     Component: ServerPingsView,
 };
