@@ -11,10 +11,24 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Spring Security configuration for the backend.
+ *
+ * <p>
+ * Enables method security and configures the application as an OAuth2 Resource
+ * Server that validates JWTs. Public endpoints include /health and
+ * /actuator/**. All other endpoints require authentication; /api/admin/**
+ * requires role ADMIN.
+ */
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    /**
+     * Extracts roles from JWT claims and maps them to Spring Security authorities
+     * with the ROLE_ prefix. Supports roles in app_metadata.role(s) and top-level
+     * role(s).
+     */
     @Bean
     JwtAuthenticationConverter jwtAuthConverter() {
         var conv = new JwtAuthenticationConverter();
@@ -58,6 +72,10 @@ public class SecurityConfig {
         return conv;
     }
 
+    /**
+     * Configures the HTTP security filter chain with CORS, CSRF, endpoint
+     * authorization, and JWT resource server support.
+     */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthConverter)
             throws Exception {
