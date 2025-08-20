@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller for grocery deals. Provides an endpoint to fetch deals either
+ * from a saved widget instance or ad-hoc query parameters.
+ */
 @RestController
 @RequestMapping("/api/widgets/grocery-deals")
 public class GroceriesController {

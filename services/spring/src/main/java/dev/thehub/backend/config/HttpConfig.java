@@ -7,6 +7,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * HTTP client configuration for outbound calls.
+ *
+ * <p>
+ * Exposes a RestTemplate bean configured with reasonable connect/read timeouts
+ * used by services that make HTTP requests (e.g., to external APIs).
+ */
 @Configuration
 public class HttpConfig {
 

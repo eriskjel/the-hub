@@ -7,6 +7,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * CORS configuration for the REST API.
+ *
+ * <p>
+ * Allows a configurable set of origins to access endpoints under /api/** and
+ * sets standard allowed methods/headers.
+ */
 @Configuration
 public class CorsConfig {
 
