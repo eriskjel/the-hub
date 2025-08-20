@@ -17,6 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 
+/**
+ * Service responsible for querying the external Etilbudsavis API and mapping
+ * responses into domain DTOs for the grocery-deals widget.
+ */
 @Service
 @Getter
 @Slf4j
@@ -48,6 +52,14 @@ public class GroceriesService {
         this.http = http;
     }
 
+    /**
+     * Convenience overload that delegates to {@link #fetchDeals(GroceryDealsSettings, Integer)}
+     * without applying a top-N limit.
+     *
+     * @param s search and location settings
+     * @return a price-ascending list of deals; empty if term is blank or no data
+     * @throws IOException if network or parsing fails
+     */
     public List<DealDto> fetchDeals(GroceryDealsSettings s) throws IOException {
         return fetchDeals(s, null);
     }
@@ -151,9 +163,15 @@ public class GroceriesService {
         String name = Objects.toString(m.get("name"), "");
         double price = ((Number) m.getOrDefault("price", 0)).doubleValue();
         Double unitPrice = (m.get("unitPrice") instanceof Number n) ? n.doubleValue() : null;
-        String image = (String) m.get("image");
-        if (image == null)
-            image = (String) m.get("imageLarge");
+
+        // Try a few likely fields for unit; fall back to null
+        String unit =
+                m.get("unit") instanceof String u && !u.isBlank() ? u :
+                        m.get("unitPriceUnit") instanceof String u2 && !u2.isBlank() ? u2 :
+                                m.get("unitOfMeasure") instanceof String u3 && !u3.isBlank() ? u3 :
+                                        null;
+
+        String image = (String) m.getOrDefault("image", m.get("imageLarge"));
         String validFrom = (String) m.get("validFrom");
         String validUntil = (String) m.get("validUntil");
 
@@ -165,7 +183,7 @@ public class GroceriesService {
             logo = (String) bm.get("positiveLogoImage");
         }
 
-        return new DealDto(name, store, price, unitPrice, validFrom, validUntil, image, logo);
+        return new DealDto(name, store, price, unitPrice, validFrom, validUntil, image, logo, unit);
     }
 
     /**

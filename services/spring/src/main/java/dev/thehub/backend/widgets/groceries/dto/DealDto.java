@@ -19,7 +19,9 @@ package dev.thehub.backend.widgets.groceries.dto;
  *            product image URL
  * @param storeLogo
  *            optional store logo URL
+ * @param unit
+ *            optional unit (e.g., "lb")
  */
 public record DealDto(String name, String store, double price, Double unitPrice, String validFrom, String validUntil,
-        String image, String storeLogo) {
+        String image, String storeLogo, String unit) {
 }
