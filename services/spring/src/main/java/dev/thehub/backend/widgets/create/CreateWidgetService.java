@@ -1,6 +1,5 @@
 package dev.thehub.backend.widgets.create;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.WidgetKind;
 import java.util.*;
@@ -39,6 +38,60 @@ public class CreateWidgetService {
     public CreateWidgetService(JdbcTemplate jdbc, ObjectMapper objectMapper) {
         this.jdbc = jdbc;
         this.json = objectMapper != null ? objectMapper : new ObjectMapper();
+    }
+
+    public void ensureNoDuplicate(UUID userId, WidgetKind kind, Map<String, Object> settings) {
+        switch (kind) {
+            case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings);
+            case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings);
+            default -> throw new IllegalArgumentException("unsupported_kind");
+        }
+    }
+
+    private void ensureNoDuplicateGroceries(UUID userId, WidgetKind kind, Map<String, Object> settings) {
+        if (settings == null)
+            throw new IllegalArgumentException("settings_required");
+
+        String query = optString(settings.get("query"));
+        String city = optString(settings.get("city")); // optional but useful for scoping
+
+        if (query == null || query.isBlank())
+            throw new IllegalArgumentException("query_required");
+
+        // Normalize key parts
+        String qNorm = query.trim().toLowerCase(Locale.ROOT);
+        String cNorm = city == null ? null : city.trim().toLowerCase(Locale.ROOT);
+
+        // Consider two groceries widgets duplicates if same (query, city) for the same
+        // user.
+        // Tune as you like (you can also include lat/lon rounding).
+        final String dupeSql = """
+                    select exists (
+                      select 1
+                      from user_widgets uw
+                      where uw.user_id = ?
+                        and uw.kind = ?
+                        and lower(uw.settings->>'query') = ?
+                        and (
+                             (? is null and jsonb_exists(uw.settings, 'city') = false)
+                          or (? is not null and lower(uw.settings->>'city') = ?)
+                        )
+                    )
+                """;
+
+        boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
+            var ps = con.prepareStatement(dupeSql);
+            ps.setObject(1, userId);
+            ps.setString(2, kind.getValue());
+            ps.setString(3, qNorm);
+            ps.setString(4, cNorm);
+            ps.setString(5, cNorm);
+            ps.setString(6, cNorm);
+            return ps;
+        }, rs -> rs.next() && rs.getBoolean(1)));
+
+        if (exists)
+            throw new DuplicateException("A groceries widget with the same query/city already exists.");
     }
 
     /**
@@ -139,28 +192,34 @@ public class CreateWidgetService {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
 
-        Map<String, Object> safeSettings = settings != null ? settings : Map.of();
-        Map<String, Object> safeGrid = grid != null ? grid : Map.of("x", 0, "y", 0, "w", 1, "h", 1);
+        Map<String, Object> safeSettings = (settings != null) ? settings : Map.of();
+        Map<String, Object> safeGrid = (grid != null) ? grid : Map.of("x", 0, "y", 0, "w", 1, "h", 1);
 
         final String insertSql = """
-                insert into user_widgets (id, instance_id, user_id, kind, title, settings, grid)
-                values (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
+                insert into user_widgets
+                  (id, instance_id, user_id, kind, title, settings, grid)
+                values
+                  (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
                 """;
 
-        jdbc.update(con -> {
-            var ps = con.prepareStatement(insertSql);
+        final String settingsJson;
+        final String gridJson;
+        try {
+            settingsJson = json.writeValueAsString(safeSettings);
+            gridJson = json.writeValueAsString(safeGrid);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize JSON", e);
+        }
+
+        // 👇 this form gives you per-index TRACE logs and avoids “param 7 not set”
+        jdbc.update(insertSql, ps -> {
             ps.setObject(1, id);
             ps.setObject(2, instanceId);
             ps.setObject(3, userId);
             ps.setString(4, kind.getValue());
             ps.setString(5, title);
-            try {
-                ps.setString(6, json.writeValueAsString(safeSettings));
-                ps.setString(7, json.writeValueAsString(safeGrid));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize JSON", e);
-            }
-            return ps;
+            ps.setString(6, settingsJson);
+            ps.setString(7, gridJson);
         });
 
         return new CreateWidgetResponse(id.toString(), instanceId.toString(), kind, title, safeGrid, safeSettings);
@@ -216,6 +275,16 @@ public class CreateWidgetService {
         public DuplicateTargetException(String msg) {
             super(msg);
         }
+    }
+
+    public static class DuplicateException extends RuntimeException {
+        public DuplicateException(String msg) {
+            super(msg);
+        }
+    }
+
+    private static String optString(Object o) {
+        return (o instanceof String s && !s.isBlank()) ? s : null;
     }
 
     /**
