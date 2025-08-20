@@ -84,7 +84,15 @@
                 "maxResultsLabel": "Maks antall søkeresultater (valgfritt)",
                 "cityLabel": "Bynavn (valgfritt)",
                 "latLabel": "Breddegrad (valgfritt)",
-                "lonLabel": "Lengdegrad (valgfritt)"
+                "lonLabel": "Lengdegrad (valgfritt)",
+                "view": {
+                    "noDeals": "Ingen tilbud akkurat nå.",
+                    "showMore": "Vis {count} flere",
+                    "showLess": "Vis færre",
+                    "until": "til",
+                    "storeFallback": "butikk",
+                    "currency": "kr"
+                }
             }
         }
     }

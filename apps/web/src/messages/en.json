@@ -84,7 +84,15 @@
                 "maxResultsLabel": "Max results (optional)",
                 "cityLabel": "City label (optional)",
                 "latLabel": "Latitude (optional)",
-                "lonLabel": "Longitude (optional)"
+                "lonLabel": "Longitude (optional)",
+                "view": {
+                    "noDeals": "No deals right now.",
+                    "showMore": "Show {count} more",
+                    "showLess": "Show fewer",
+                    "until": "until",
+                    "storeFallback": "store",
+                    "currency": "kr"
+                }
             }
         }
     }
