@@ -82,7 +82,7 @@ public class GroceriesController {
             settings = new GroceryDealsSettings(q, limit, city, lat, lon);
         }
 
-        int fetchLimit = Optional.ofNullable(settings.maxResults()).orElse(svc.defaultLimit());
+        int fetchLimit = Optional.ofNullable(settings.maxResults()).orElse(svc.getDefaultLimit());
         int effectiveTop = Math.max(1, Math.min(fetchLimit, (top != null ? top : defaultTop)));
 
         var deals = svc.fetchDeals(settings, effectiveTop);

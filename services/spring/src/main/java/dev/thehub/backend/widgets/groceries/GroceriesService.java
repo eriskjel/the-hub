@@ -3,37 +3,37 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+
 @Service
+@Getter
 public class GroceriesService {
 
     private final RestTemplate http;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public int defaultLimit() {
-        return defaultLimit;
-    }
-
     @Value("${etilbudsavis.base-url}")
-    String baseUrl;
+    private String baseUrl;
     @Value("${etilbudsavis.default-city}")
-    String defaultCity;
+    private String defaultCity;
     @Value("${etilbudsavis.default-lat}")
-    double defaultLat;
+    private double defaultLat;
     @Value("${etilbudsavis.default-lon}")
-    double defaultLon;
+    private double defaultLon;
     @Value("${etilbudsavis.country}")
-    String countryCode;
+    private String countryCode;
     @Value("${etilbudsavis.default-limit}")
-    int defaultLimit;
+    private int defaultLimit;
 
     /**
      * Constructs the groceries service with an HTTP client.
@@ -192,4 +192,5 @@ public class GroceriesService {
         }
         return out;
     }
+
 }
