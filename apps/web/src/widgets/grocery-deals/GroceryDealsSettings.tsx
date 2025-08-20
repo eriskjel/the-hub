@@ -3,8 +3,9 @@
 import type { ReactElement } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { FieldText } from "@/components/ui/Fields";
-import { grocerySettingsSchema } from "@/widgets/create/registry"; // only the schema is imported
+import { grocerySettingsSchema } from "@/widgets/create/registry";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 
 type GroceryForm = UseFormReturn<{
     title: string;
@@ -23,18 +24,20 @@ type GroceryErrors = {
 };
 
 export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElement {
+    const t = useTranslations("widgets.create.groceryDeals");
+
     const errs: GroceryErrors = form.formState.errors as GroceryErrors;
 
     return (
         <div className="space-y-3">
             <FieldText
-                label="Search term"
-                placeholder="e.g. monster"
+                label={t("queryLabel")}
+                placeholder={t("queryPlaceholder")}
                 error={errs.settings?.query?.message}
                 {...form.register("settings.query")}
             />
             <FieldText
-                label="Max results (optional)"
+                label={t("maxResultsLabel")}
                 placeholder="12"
                 type="number"
                 error={errs.settings?.maxResults?.message}
@@ -42,7 +45,7 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
             />
             <div className="grid grid-cols-2 gap-3">
                 <FieldText
-                    label="Latitude (optional)"
+                    label={t("latLabel")}
                     placeholder="63.4306"
                     type="number"
                     step="any"
@@ -50,7 +53,7 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
                     {...form.register("settings.lat", { valueAsNumber: true })}
                 />
                 <FieldText
-                    label="Longitude (optional)"
+                    label={t("lonLabel")}
                     placeholder="10.4037"
                     type="number"
                     step="any"
@@ -59,7 +62,7 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
                 />
             </div>
             <FieldText
-                label="City label (optional)"
+                label={t("cityLabel")}
                 placeholder="Trondheim"
                 error={errs.settings?.city?.message}
                 {...form.register("settings.city")}
