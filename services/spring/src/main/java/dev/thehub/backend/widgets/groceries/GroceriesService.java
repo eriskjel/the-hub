@@ -3,6 +3,11 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Function;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,12 +15,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.function.Function;
 
 /**
  * Service responsible for querying the external Etilbudsavis API and mapping
@@ -53,12 +52,15 @@ public class GroceriesService {
     }
 
     /**
-     * Convenience overload that delegates to {@link #fetchDeals(GroceryDealsSettings, Integer)}
-     * without applying a top-N limit.
+     * Convenience overload that delegates to
+     * {@link #fetchDeals(GroceryDealsSettings, Integer)} without applying a top-N
+     * limit.
      *
-     * @param s search and location settings
+     * @param s
+     *            search and location settings
      * @return a price-ascending list of deals; empty if term is blank or no data
-     * @throws IOException if network or parsing fails
+     * @throws IOException
+     *             if network or parsing fails
      */
     public List<DealDto> fetchDeals(GroceryDealsSettings s) throws IOException {
         return fetchDeals(s, null);
@@ -77,8 +79,9 @@ public class GroceriesService {
         if (term.isEmpty())
             return List.of();
 
-        final int fetchLimit = Optional.ofNullable(s.maxResults()).orElse(defaultLimit);
-
+        final int desired = (top != null && top > 0) ? top : Optional.ofNullable(s.maxResults()).orElse(defaultLimit);
+        final int safetyCap = 100;
+        final int fetchLimit = Math.min(Math.max(desired, 1), safetyCap);
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
@@ -149,8 +152,8 @@ public class GroceriesService {
         if (data == null || data.isEmpty())
             return List.of();
 
-        List<DealDto> sorted = data.stream().map(this::toDeal).sorted(Comparator.comparingDouble(DealDto::price))
-                .toList();
+        List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
+                .sorted(Comparator.comparingDouble(DealDto::price)).toList();
 
         if (top != null && top > 0) {
             int n = Math.min(top, sorted.size());
@@ -161,17 +164,22 @@ public class GroceriesService {
 
     private DealDto toDeal(Map<String, Object> m) {
         String name = Objects.toString(m.get("name"), "");
-        double price = ((Number) m.getOrDefault("price", 0)).doubleValue();
-        Double unitPrice = (m.get("unitPrice") instanceof Number n) ? n.doubleValue() : null;
 
-        // Try a few likely fields for unit; fall back to null
-        String unit =
-                m.get("unit") instanceof String u && !u.isBlank() ? u :
-                        m.get("unitPriceUnit") instanceof String u2 && !u2.isBlank() ? u2 :
-                                m.get("unitOfMeasure") instanceof String u3 && !u3.isBlank() ? u3 :
-                                        null;
+        // price is required; if absent/invalid, skip this record by returning null
+        Double priceD = toDouble(m.get("price"));
+        if (priceD == null)
+            return null;
+        double price = priceD;
 
-        String image = (String) m.getOrDefault("image", m.get("imageLarge"));
+        Double unitPrice = toDouble(m.get("unitPrice"));
+
+        String unit = (m.get("unit") instanceof String u && !u.isBlank())
+                ? u
+                : (m.get("unitPriceUnit") instanceof String u2 && !u2.isBlank())
+                        ? u2
+                        : (m.get("unitOfMeasure") instanceof String u3 && !u3.isBlank()) ? u3 : null;
+
+        String image = firstNonBlank(m.get("image"), m.get("imageLarge"));
         String validFrom = (String) m.get("validFrom");
         String validUntil = (String) m.get("validUntil");
 
@@ -206,6 +214,30 @@ public class GroceriesService {
             out.add(mapper.readValue(t, Map.class));
         }
         return out;
+    }
+
+    private static Double toDouble(Object o) {
+        if (o instanceof Number n)
+            return n.doubleValue();
+        if (o instanceof String s) {
+            try {
+                // tolerate "19,90" or "19.90" (strip currency symbols/spaces)
+                var clean = s.replaceAll("[^0-9,\\.]", "").replace(',', '.');
+                if (clean.isEmpty())
+                    return null;
+                return Double.parseDouble(clean);
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        return null;
+    }
+
+    private static String firstNonBlank(Object... candidates) {
+        for (Object c : candidates) {
+            if (c instanceof String s && !s.isBlank())
+                return s;
+        }
+        return null;
     }
 
 }
