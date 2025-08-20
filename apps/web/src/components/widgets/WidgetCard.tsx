@@ -25,7 +25,6 @@ function Stale(): ReactElement {
 /** Render a static widget (no fetch) */
 function WidgetStatic({ widget, staleLayout }: { widget: AnyWidget; staleLayout?: boolean }) {
     const entry = registry[widget.kind]!;
-    // Avoid `any` by typing to a generic “base” props shape with unknown
     const Component = entry.Component as (props: {
         data: unknown;
         widget: AnyWidget;
@@ -50,7 +49,8 @@ function WidgetWithData({
     staleLayout?: boolean;
 }) {
     const entry = registry[widget.kind]!;
-    const state = useWidgetData(widget, 30_000, userId ?? "anon");
+    const interval = entry.pollMs ?? 30_000;
+    const state = useWidgetData(widget, interval, userId ?? "anon");
     const showStale = staleLayout || (state.status === "success" && state.stale);
 
     if (state.status === "loading") return shell("Loading…", showStale);
@@ -88,7 +88,6 @@ export default function WidgetCard({
     const entry = registry[widget.kind];
     if (!entry) return shell("Unknown widget: " + widget.kind, staleLayout);
 
-    // No hooks here; we branch to subcomponents
     if (!entry.fetch) {
         return <WidgetStatic widget={widget} staleLayout={staleLayout} />;
     }

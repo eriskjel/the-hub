@@ -61,6 +61,7 @@ export type Entry<K extends WidgetKind> = {
         data: DataByKind[K];
         widget: Extract<AnyWidget, { kind: K }>;
     }) => ReactElement;
+    pollMs?: number;
 };
 
 export type Registry = {
