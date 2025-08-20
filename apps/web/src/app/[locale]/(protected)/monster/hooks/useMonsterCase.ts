@@ -99,9 +99,10 @@ function getWeightedRandomMonster(monsters: Monster[]): Monster {
 
     if (monstersOfRarity.length === 0) {
         const blueMonsters = monsters.filter((monster) => monster.rarity === "blue");
-        return blueMonsters.length > 0
-            ? blueMonsters[Math.floor(Math.random() * blueMonsters.length)]
-            : monsters[0];
+        if (blueMonsters.length > 0) {
+            return blueMonsters[Math.floor(Math.random() * blueMonsters.length)];
+        }
+        return monsters[Math.floor(Math.random() * monsters.length)];
     }
 
     return monstersOfRarity[Math.floor(Math.random() * monstersOfRarity.length)];
