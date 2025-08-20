@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (!instanceId) return NextResponse.json({ error: "Missing instanceId" }, { status: 400 });
 
     // Let backend resolve instance -> settings; OR pass-through optional overrides (not required)
-    const url = new URL(`${backend}/api/groceries/deals`);
+    const url = new URL(`${backend}/api/widgets/grocery-deals`);
     url.searchParams.set("instanceId", instanceId);
 
     const response = await fetch(url.toString(), {
