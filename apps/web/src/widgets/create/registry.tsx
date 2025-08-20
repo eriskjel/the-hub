@@ -11,8 +11,8 @@ export const serverPingsSettingsSchema = z.object({
 });
 
 export const grocerySettingsSchema = z.object({
-    query: z.string().min(1, "Please enter a search term"),
-    maxResults: z.number().int().min(1).max(100).optional(),
+    query: z.string().trim().min(1, "Please enter a search term").default("monster"),
+    maxResults: z.coerce.number().int().min(1).max(20).default(10),
     city: z.string().optional(),
     lat: z.number().optional(),
     lon: z.number().optional(),
@@ -31,6 +31,13 @@ export type CreateEntry<K extends WidgetKind, S extends z.ZodTypeAny> = {
 export const createEntry = <K extends WidgetKind, S extends z.ZodTypeAny>(e: CreateEntry<K, S>) =>
     e;
 
+function defaultsFromSchema<S extends z.ZodTypeAny>(
+    schema: S,
+    overrides?: Partial<z.infer<S>>
+): z.infer<S> {
+    return schema.parse(overrides ?? {});
+}
+
 // Registry (only list kinds you actually support in the create modal)
 export const creationRegistry = {
     "server-pings": createEntry({
@@ -42,7 +49,7 @@ export const creationRegistry = {
     "grocery-deals": createEntry({
         kind: "grocery-deals",
         schema: grocerySettingsSchema,
-        defaults: { query: "monster", maxResults: 12 },
+        defaults: defaultsFromSchema(grocerySettingsSchema),
         SettingsForm: GroceryDealsSettings,
     }),
 } as const;
