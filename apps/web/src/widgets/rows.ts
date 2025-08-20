@@ -1,6 +1,7 @@
 import {
     AnyWidget,
     Grid,
+    GroceryDealsSettings,
     PiHealthSettings,
     ServerPingsSettings,
     WidgetKind,
@@ -23,6 +24,17 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
     if (row.kind === "pi-health") {
         const settings = isPiHealthSettings(row.settings) ? row.settings : { deviceId: "" };
         return { ...row, kind: "pi-health", settings };
+    }
+    if (row.kind === "grocery-deals") {
+        const o = (row.settings ?? {}) as Partial<GroceryDealsSettings>;
+        const settings: GroceryDealsSettings = {
+            query: typeof o.query === "string" ? o.query : "",
+            maxResults: typeof o.maxResults === "number" ? o.maxResults : 12,
+            city: typeof o.city === "string" ? o.city : undefined,
+            lat: typeof o.lat === "number" ? o.lat : undefined,
+            lon: typeof o.lon === "number" ? o.lon : undefined,
+        };
+        return { ...row, kind: "grocery-deals", settings } as AnyWidget;
     }
     return row as unknown as AnyWidget;
 }

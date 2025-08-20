@@ -3,14 +3,23 @@ import type { UseFormReturn } from "react-hook-form";
 import type { ReactElement } from "react";
 import { WIDGET_KINDS, type WidgetKind } from "@/widgets/schema";
 import { ServerPingsSettings } from "@/widgets/server-pings/ServerPingSettings";
+import { GroceryDealsSettings } from "@/widgets/grocery-deals/GroceryDealsSettings";
 
 /** Shared create form values (stable shape) */
 export type CreateWidgetFormValues = {
     title: string;
     kind: WidgetKind;
     settings: {
-        target?: string; // server-pings
-        deviceId?: string; // pi-health (later)
+        // server-pings
+        target?: string;
+        // pi-health
+        deviceId?: string;
+        // grocery-deals
+        query?: string;
+        maxResults?: number;
+        city?: string;
+        lat?: number;
+        lon?: number;
     };
 };
 
@@ -61,6 +70,17 @@ export const creationRegistry: Partial<Record<WidgetKind, CreateRegistryEntry>> 
         schema: serverPingsSettingsSchema,
         defaults: { target: "" },
         SettingsForm: ServerPingsSettings,
+    },
+    "grocery-deals": {
+        schema: z.object({
+            query: z.string().min(1, "Please enter a search term"),
+            maxResults: z.number().int().min(1).max(100).optional(),
+            city: z.string().optional(),
+            lat: z.number().optional(),
+            lon: z.number().optional(),
+        }),
+        defaults: { query: "monster", maxResults: 12 },
+        SettingsForm: GroceryDealsSettings,
     },
 };
 
