@@ -40,6 +40,8 @@ public class GroceriesService {
     private String countryCode;
     @Value("${etilbudsavis.default-limit}")
     private int defaultLimit;
+    @Value("${app.http.user-agent:TheHub/1.0 (+https://skjellevik.online)}")
+    private String userAgent;
 
     /**
      * Constructs the groceries service with an HTTP client.
@@ -101,10 +103,9 @@ public class GroceriesService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(
-                List.of(MediaType.parseMediaType("application/x-ndjson"), MediaType.APPLICATION_JSON, MediaType.ALL));
+        headers.setAccept(List.of(MediaType.parseMediaType("application/x-ndjson"), MediaType.APPLICATION_JSON));
         headers.add(HttpHeaders.COOKIE, "eta-location=" + etaCookie);
-        headers.add(HttpHeaders.USER_AGENT, "TheHub/1.0 (+https://thehub)");
+        headers.add(HttpHeaders.USER_AGENT, userAgent);
         headers.add(HttpHeaders.REFERER, baseUrl + "/");
         headers.add("X-Requested-With", "XMLHttpRequest");
 
