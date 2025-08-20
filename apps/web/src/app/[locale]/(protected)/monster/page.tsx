@@ -18,6 +18,7 @@ const monsters: Monster[] = [
     { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png" },
     { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png" },
     { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png" },
+    { name: "Mango Loco", image: "/monsters/mango_loco.png" }
 ];
 
 const SPIN_ROUNDS = 3;
