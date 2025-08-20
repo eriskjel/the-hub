@@ -2,6 +2,8 @@
 
 import type { GroceryDealsWidget } from "@/widgets/schema";
 import { Deal } from "@/widgets/grocery-deals/types";
+import { ReactElement } from "react";
+import Image from "next/image";
 
 export default function GroceryDealsView({
     data,
@@ -9,7 +11,7 @@ export default function GroceryDealsView({
 }: {
     data: Deal[];
     widget: GroceryDealsWidget;
-}) {
+}): ReactElement {
     if (!data?.length) {
         return <div className="rounded-2xl bg-neutral-900 p-4 text-sm">No deals right now.</div>;
     }
@@ -19,11 +21,15 @@ export default function GroceryDealsView({
             {data.slice(0, widget.settings.maxResults ?? 12).map((d, i) => (
                 <div key={i} className="flex gap-3 rounded-2xl bg-neutral-900 p-3">
                     {d.image ? (
-                        <img
-                            src={d.image}
-                            alt={d.name}
-                            className="h-16 w-16 rounded-lg object-cover"
-                        />
+                        <div className="relative h-16 w-16">
+                            <Image
+                                src={d.image}
+                                alt={d.name}
+                                fill
+                                sizes="64px"
+                                className="rounded-lg object-cover"
+                            />
+                        </div>
                     ) : (
                         <div className="h-16 w-16 rounded-lg bg-neutral-800" />
                     )}

@@ -3,79 +3,57 @@
 import { ReactElement, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal } from "@/components/ui/Modal";
 import { Button, FieldSelect, FieldText } from "@/components/ui/Fields";
-import {
-    creationRegistry,
-    ENABLED_KINDS,
-    type CreateWidgetFormValues,
-} from "@/widgets/create/registry";
-import type { WidgetKind } from "@/widgets/schema";
 import { API } from "@/lib/apiRoutes";
 import { useTranslations } from "next-intl";
-
-/** A literal enum from ENABLED_KINDS so Zod can narrow string values */
-const KindEnum = z.enum(
-    ENABLED_KINDS.length ? (ENABLED_KINDS as [WidgetKind, ...WidgetKind[]]) : ["server-pings"]
-);
-
-function createFormSchema(t: (k: string) => string) {
-    const SettingsBase = z.object({
-        target: z.string().url(t("errors.url")).optional(),
-        deviceId: z.string().uuid(t("errors.uuid")).optional(),
-    });
-
-    return z
-        .object({
-            title: z.string().min(1, t("errors.titleRequired")),
-            kind: KindEnum,
-            settings: SettingsBase,
-        })
-        .superRefine((val, ctx) => {
-            if (val.kind === "server-pings" && !val.settings.target) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["settings", "target"],
-                    message: t("errors.targetRequired"),
-                });
-            }
-        });
-}
+import { creationRegistry, ENABLED_KINDS, type CreationKind } from "@/widgets/create/registry";
+import type { Resolver } from "react-hook-form";
 
 export default function CreateWidgetModal({ onClose }: { onClose: () => void }): ReactElement {
     const t = useTranslations("widgets.create");
     const router = useRouter();
-    const [kind, setKind] = useState<WidgetKind>(ENABLED_KINDS[0] ?? "server-pings");
-    const [submitError, setSubmitError] = useState<string | null>(null);
-    const [submitting, setSubmitting] = useState(false);
 
-    const active = creationRegistry[kind]!;
+    // State uses CreationKind (only the kinds in the create registry)
+    const [kind, setKind] = useState<CreationKind>(ENABLED_KINDS[0]);
 
-    const schema = useMemo(() => createFormSchema(t), [t]);
+    const active = creationRegistry[kind];
 
-    const form = useForm<CreateWidgetFormValues, unknown, CreateWidgetFormValues>({
-        resolver: zodResolver(schema),
+    type BaseForm = { title: string; kind: CreationKind; settings: unknown };
+
+    const schema = useMemo(
+        () =>
+            z.object({
+                title: z.string().min(1, t("errors.titleRequired")),
+                kind: z.literal(active.kind),
+                settings: active.schema,
+            }),
+        [active.kind, active.schema, t]
+    );
+
+    const resolver = zodResolver(schema) as unknown as Resolver<BaseForm>;
+
+    const form = useForm<BaseForm>({
+        resolver,
         defaultValues: {
             title: "",
-            kind,
+            kind: active.kind,
             settings: active.defaults,
         },
     });
 
-    // Reset when kind changes (preserve title)
     useEffect(() => {
+        const next = creationRegistry[kind];
         form.reset({
             title: form.getValues("title"),
-            kind,
-            settings: creationRegistry[kind]?.defaults ?? {},
+            kind: next.kind,
+            settings: next.defaults,
         });
     }, [kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const onSubmit: SubmitHandler<CreateWidgetFormValues> = async (v) => {
-        setSubmitError(null);
-        setSubmitting(true);
+    const onSubmit = async (v: BaseForm) => {
         try {
             const res = await fetch(API.widgets.create, {
                 method: "POST",
@@ -94,9 +72,9 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
             onClose();
             router.refresh();
         } catch (e: unknown) {
-            setSubmitError(e instanceof Error ? e.message : String(e));
-        } finally {
-            setSubmitting(false);
+            // surface error message nicely
+            const msg = e instanceof Error ? e.message : String(e);
+            form.setError("root", { type: "server", message: msg });
         }
     };
 
@@ -112,25 +90,24 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                     {...form.register("title")}
                 />
 
-                {/* Kind dropdown + hidden field to bind to form */}
+                {/* Kind dropdown + hidden bind */}
                 <input type="hidden" {...form.register("kind")} value={kind} />
                 <FieldSelect
                     label={t("kind")}
                     value={kind}
-                    onChange={(v) => setKind(v as WidgetKind)}
-                    options={ENABLED_KINDS.map((k) => ({
-                        value: k,
-                        label: t(`kinds.${k}`),
-                    }))}
+                    onChange={(v) => setKind(v as CreationKind)}
+                    options={ENABLED_KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) }))}
                     help={t("kindHelp")}
                 />
 
-                {/* Kind-specific settings */}
+                {/* Per-kind settings */}
+                {/* Single, localized cast to satisfy the SettingsForm's local type */}
+                {/* @ts-expect-error: narrowing BaseForm to the specific SettingsForm shape */}
                 <Settings form={form} />
 
-                {submitError ? (
+                {form.formState.errors.root?.message ? (
                     <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-                        {submitError}
+                        {form.formState.errors.root.message}
                     </div>
                 ) : null}
 
@@ -138,8 +115,8 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                     <Button variant="outline" onClick={onClose}>
                         {t("cancel")}
                     </Button>
-                    <Button type="submit" disabled={submitting}>
-                        {submitting ? t("submitting") : t("submit")}
+                    <Button type="submit">
+                        {form.formState.isSubmitting ? t("submitting") : t("submit")}
                     </Button>
                 </div>
             </form>
