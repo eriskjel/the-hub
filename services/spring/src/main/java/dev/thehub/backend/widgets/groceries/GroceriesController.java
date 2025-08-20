@@ -5,7 +5,9 @@ import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +21,9 @@ public class GroceriesController {
 
     private final GroceriesService svc;
     private final WidgetSettingsService settingsSvc;
+
+    @Value("${groceries.default-top:2}")
+    int defaultTop; // fallback when client doesn't pass ?top
 
     /**
      * Constructs the groceries controller.
@@ -59,8 +64,8 @@ public class GroceriesController {
     public ResponseEntity<List<DealDto>> deals(JwtAuthenticationToken auth,
             @RequestParam(required = false) UUID instanceId, @RequestParam(name = "q", required = false) String q,
             @RequestParam(required = false) Integer limit, @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lon, @RequestParam(required = false) String city)
-            throws IOException {
+            @RequestParam(required = false) Double lon, @RequestParam(required = false) String city,
+            @RequestParam(required = false) Integer top) throws IOException {
         GroceryDealsSettings settings;
 
         if (instanceId != null) {
@@ -77,7 +82,10 @@ public class GroceriesController {
             settings = new GroceryDealsSettings(q, limit, city, lat, lon);
         }
 
-        var deals = svc.fetchDeals(settings);
+        int fetchLimit = Optional.ofNullable(settings.maxResults()).orElse(svc.defaultLimit());
+        int effectiveTop = Math.max(1, Math.min(fetchLimit, (top != null ? top : defaultTop)));
+
+        var deals = svc.fetchDeals(settings, effectiveTop);
         return ResponseEntity.ok(deals);
     }
 }

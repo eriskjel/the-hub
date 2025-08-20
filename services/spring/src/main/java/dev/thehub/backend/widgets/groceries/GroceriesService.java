@@ -18,6 +18,10 @@ public class GroceriesService {
     private final RestTemplate http;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public int defaultLimit() {
+        return defaultLimit;
+    }
+
     @Value("${etilbudsavis.base-url}")
     String baseUrl;
     @Value("${etilbudsavis.default-city}")
@@ -41,6 +45,10 @@ public class GroceriesService {
         this.http = http;
     }
 
+    public List<DealDto> fetchDeals(GroceryDealsSettings s) throws IOException {
+        return fetchDeals(s, null);
+    }
+
     /**
      * Queries the external Etilbudsavis API for grocery deals using the provided
      * settings and maps the response into a list of {@link DealDto}.
@@ -49,12 +57,12 @@ public class GroceriesService {
      *            search and location settings
      * @return a price-ascending list of deals; empty if term is blank or no data
      */
-    public List<DealDto> fetchDeals(GroceryDealsSettings s) throws IOException {
+    public List<DealDto> fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
         final String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
         if (term.isEmpty())
             return List.of();
 
-        final int limit = Optional.ofNullable(s.maxResults()).orElse(defaultLimit);
+        final int fetchLimit = Optional.ofNullable(s.maxResults()).orElse(defaultLimit);
 
         Function<Object[], String> enc = parts -> {
             try {
@@ -64,12 +72,14 @@ public class GroceriesService {
             }
         };
 
-        final String qAds = enc.apply(new Object[]{"ads", Map.of("searchTerm", term, "type", "search_ad")});
+        // final String qAds = enc.apply(new Object[]{"ads", Map.of("searchTerm", term,
+        // "type", "search_ad")});
         final String qOffers = enc.apply(new Object[]{"offers", Map.of("hideUpcoming", false, "pagination",
-                Map.of("limit", limit, "offset", 0), "searchTerm", term, "sort", List.of("score_desc"))});
-        final String qSearchBusiness = enc.apply(new Object[]{"searchBusiness", Map.of("searchTerm", term)});
+                Map.of("limit", fetchLimit, "offset", 0), "searchTerm", term, "sort", List.of("score_desc"))});
+        // final String qSearchBusiness = enc.apply(new Object[]{"searchBusiness",
+        // Map.of("searchTerm", term)});
 
-        final Map<String, Object> body = Map.of("data", List.of(qAds, qOffers, qSearchBusiness));
+        final Map<String, Object> body = Map.of("data", List.of(qOffers));
 
         String etaCookie = buildEtaLocationCookie(s.lat() != null ? s.lat() : defaultLat,
                 s.lon() != null ? s.lon() : defaultLon,
@@ -116,6 +126,7 @@ public class GroceriesService {
                     Object d = vm.get("data");
                     return (d instanceof List<?>) && !((List<?>) d).isEmpty();
                 }).findFirst().orElse(null));
+
         if (offersBlock == null)
             return List.of();
 
@@ -129,7 +140,14 @@ public class GroceriesService {
         if (data == null || data.isEmpty())
             return List.of();
 
-        return data.stream().map(this::toDeal).sorted(Comparator.comparingDouble(DealDto::price)).toList();
+        List<DealDto> sorted = data.stream().map(this::toDeal).sorted(Comparator.comparingDouble(DealDto::price))
+                .toList();
+
+        if (top != null && top > 0) {
+            int n = Math.min(top, sorted.size());
+            return sorted.subList(0, n);
+        }
+        return sorted;
     }
 
     private DealDto toDeal(Map<String, Object> m) {
