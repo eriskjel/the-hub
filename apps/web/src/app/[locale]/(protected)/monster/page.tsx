@@ -9,42 +9,102 @@ import { Roller } from "./components/roller";
 // export const dynamic = "force-dynamic";
 
 const monsters: Monster[] = [
-    { name: "Original", image: "/monsters/original.png" },
-    { name: "Ultra White", image: "/monsters/ultra_white.png" },
-    { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png" },
-    { name: "Original Zero", image: "/monsters/original_zero.png" },
-    { name: "Peachy Keen", image: "/monsters/peachy_keen.png" },
-    { name: "Rio Punch", image: "/monsters/rio_punch.png" },
-    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png" },
-    { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png" },
-    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png" },
-    { name: "Mango Loco", image: "/monsters/mango_loco.png" },
-    { name: "Ultra Strawberry Dreams", image: "/monsters/ultra_strawberry_dreams.png" },
+    // Blue rarity (79.92% - most common)
+    { name: "Original", image: "/monsters/original.png", rarity: "blue" },
+    { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "blue" },
+    { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png", rarity: "blue" },
+    { name: "Original Zero", image: "/monsters/original_zero.png", rarity: "blue" },
+    { name: "Rio Punch", image: "/monsters/rio_punch.png", rarity: "blue" },
+    { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png", rarity: "blue" },
+    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png", rarity: "blue" },
+
+    // Purple rarity (15.98%)
+    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
+
+    // Pink rarity (3.2%)
+    { name: "Peachy Keen", image: "/monsters/peachy_keen.png", rarity: "pink" },
+
+    // Red rarity (0.64%)
+    {
+        name: "Ultra Strawberry Dreams",
+        image: "/monsters/ultra_strawberry_dreams.png",
+        rarity: "red",
+    },
+
+    // Yellow rarity (0.26% - legendary)
+    { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
 ];
 
 const SPIN_ROUNDS = 3;
-const ANIMATION_DURATION = 4000;
 
 export default function MonsterPage() {
-    const { selected, rolling, offset, handleOpen } = useMonsterCase(monsters);
+    const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
+        useMonsterCase(monsters);
+
     const t = useTranslations("monster");
 
     const repeatedMonsters: Monster[] = Array(SPIN_ROUNDS + 2)
-        .fill(monsters)
+        .fill(stripMonsters)
         .flat();
+
+    const handleOpenAnother = () => {
+        reset();
+        setTimeout(() => {
+            handleOpen();
+        }, 120);
+    };
 
     return (
         <div className="flex h-full flex-col items-center justify-center gap-6 text-center">
             <h1 className="text-5xl font-bold">{t("title")}</h1>
-            <button
-                className="rounded bg-green-600 px-6 py-3 text-xl font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
-                onClick={handleOpen}
-                disabled={selected !== null || rolling}
-            >
-                {rolling ? t("rolling") : t("button_text")}
-            </button>
-            <Roller monsters={repeatedMonsters} offset={offset} duration={ANIMATION_DURATION} />
-            {!rolling && selected && <div className="mt-4 text-3xl font-bold">{selected.name}</div>}
+
+            <div className="flex gap-4">
+                <div className="flex gap-4">
+                    {!selected || rolling ? (
+                        <button
+                            className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
+                            onClick={handleOpen}
+                            disabled={rolling}
+                        >
+                            {rolling ? t("rolling") : t("button_text")}
+                        </button>
+                    ) : (
+                        <button
+                            className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700"
+                            onClick={handleOpenAnother}
+                        >
+                            {t("button_text")}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            <Roller monsters={repeatedMonsters} offset={offset} duration={animate ? duration : 0} />
+
+            {!rolling && selected && (
+                <div
+                    className="mt-4 rounded-lg border-2 bg-black/50 p-6"
+                    style={{
+                        borderColor:
+                            selected.rarity === "blue"
+                                ? "#3b82f6"
+                                : selected.rarity === "purple"
+                                  ? "#a855f7"
+                                  : selected.rarity === "pink"
+                                    ? "#ec4899"
+                                    : selected.rarity === "red"
+                                      ? "#ef4444"
+                                      : "#eab308",
+                    }}
+                >
+                    <img
+                        src={selected.image}
+                        alt={selected.name}
+                        className="mx-auto mb-2 w-32 rounded-lg"
+                    />
+                    <div className="mb-2 text-3xl font-bold">{selected.name}</div>
+                </div>
+            )}
         </div>
     );
 }
