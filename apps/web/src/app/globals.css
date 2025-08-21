@@ -24,3 +24,7 @@ body {
     color: var(--foreground);
     font-family: Arial, Helvetica, sans-serif;
 }
+
+.scroll-gutter-stable {
+    scrollbar-gutter: stable both-edges;
+}

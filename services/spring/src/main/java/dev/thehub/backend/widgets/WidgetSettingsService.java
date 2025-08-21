@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service that loads widget rows and converts their JSON settings into typed
+ * settings objects used by individual widgets.
+ */
 @Service
 public class WidgetSettingsService {
 

@@ -9,6 +9,10 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Repository for reading user widgets and their stored JSON settings from the
+ * database.
+ */
 @Repository
 public class WidgetSettingsRepository {
 
