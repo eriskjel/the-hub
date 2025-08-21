@@ -56,6 +56,6 @@ public record DealDto(String name, String store, double price, Double unitPrice,
         Double perPiecePrice, // computed: price / pieceCountFrom (when >1)
         Double unitPriceMin, // computed from sizes (best-case per-kg)
         Double unitPriceMax, // computed from sizes (worst-case per-kg)
-        Boolean multipack // pieceCountFrom != null && >1)
+        Boolean multipack // (pieceCountFrom != null && >1)
 ) {
 }
