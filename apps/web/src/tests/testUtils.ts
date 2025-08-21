@@ -1,4 +1,5 @@
 import type { Mock } from "vitest";
+import { NextRequest } from "next/server";
 
 declare global {
     var __setIntl:
@@ -49,9 +50,7 @@ type GlobalWithMocks = typeof globalThis & {
 
 const global = globalThis as GlobalWithMocks;
 
-export function mkReq(url: string) {
-    return { url, nextUrl: new URL(url) };
-}
+export const mkReq = (url: string): NextRequest => new NextRequest(url);
 
 export function setIntl(opts: { locale?: string; messages?: Record<string, unknown> }) {
     global.__setIntl?.(opts);

@@ -2,6 +2,7 @@ package dev.thehub.backend.widgets.create;
 
 import dev.thehub.backend.widgets.WidgetKind;
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -54,18 +55,18 @@ public class CreateWidgetController {
             return ResponseEntity.badRequest().body(Map.of("error", "invalid_request"));
         }
 
-        if (body.kind() != WidgetKind.SERVER_PINGS) {
+        EnumSet<WidgetKind> allowed = EnumSet.of(WidgetKind.SERVER_PINGS, WidgetKind.GROCERY_DEALS);
+        if (!allowed.contains(body.kind())) {
             return ResponseEntity.badRequest().body(Map.of("error", "unsupported_kind", "message",
-                    "Only '" + WidgetKind.SERVER_PINGS + "' widgets are supported right now."));
+                    "Supported kinds: " + allowed.stream().map(WidgetKind::getValue).toList()));
         }
 
         try {
-            service.ensureNoDuplicateTargets(userId, body.kind(), body.settings());
+            service.ensureNoDuplicate(userId, body.kind(), body.settings());
             var resp = service.create(userId, body.kind(), body.title(), body.settings(), body.grid());
             return ResponseEntity.created(URI.create("/api/widgets/" + resp.instanceId())).body(resp);
-        } catch (CreateWidgetService.DuplicateTargetException e) {
-            return ResponseEntity.status(409).body(Map.of("error", "duplicate_target", "message",
-                    "One or more target URLs already exist in your widgets."));
+        } catch (CreateWidgetService.DuplicateException | CreateWidgetService.DuplicateTargetException e) {
+            return ResponseEntity.status(409).body(Map.of("error", "duplicate", "message", e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

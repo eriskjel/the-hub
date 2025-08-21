@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { WidgetListItem } from "@/widgets/rows";
+import { API } from "@/lib/apiRoutes";
 
 export default function SeedWidgetsCacheWithRows({
     rows,
@@ -24,7 +25,7 @@ export default function SeedWidgetsCacheWithRows({
             grid,
         }));
 
-        fetch("/api/widgets/seed", {
+        fetch(API.widgets.seed, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ uid: userId, slim }),

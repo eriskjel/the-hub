@@ -15,7 +15,7 @@ export function MonsterCard({ monster }: MonsterCardProps) {
                 height={96}
                 className="h-24 w-24 object-contain drop-shadow-lg"
             />
-            <span className="mt-2 text-sm">{monster.name}</span>
+            <span className="mt-2 text-sm text-white">{monster.name}</span>
         </div>
     );
 }

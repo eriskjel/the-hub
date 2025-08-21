@@ -18,6 +18,8 @@ const monsters: Monster[] = [
     { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png" },
     { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png" },
     { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png" },
+    { name: "Mango Loco", image: "/monsters/mango_loco.png" },
+    { name: "Ultra Strawberry Dreams", image: "/monsters/ultra_strawberry_dreams.png" },
 ];
 
 const SPIN_ROUNDS = 3;
@@ -32,10 +34,10 @@ export default function MonsterPage() {
         .flat();
 
     return (
-        <div className="flex h-full flex-col items-center justify-center gap-6 text-center text-white">
+        <div className="flex h-full flex-col items-center justify-center gap-6 text-center">
             <h1 className="text-5xl font-bold">{t("title")}</h1>
             <button
-                className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
+                className="rounded bg-green-600 px-6 py-3 text-xl font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
                 onClick={handleOpen}
                 disabled={selected !== null || rolling}
             >

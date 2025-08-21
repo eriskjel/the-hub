@@ -1,7 +1,8 @@
 import type { Registry } from "./schema";
 import * as ServerPings from "./server-pings";
+import * as GroceryDeals from "./grocery-deals";
 
 export const registry: Registry = {
     "server-pings": ServerPings.entry,
-    // Add more widgets here as you create them
+    "grocery-deals": GroceryDeals.entry,
 };

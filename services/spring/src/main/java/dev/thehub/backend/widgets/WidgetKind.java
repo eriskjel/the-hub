@@ -11,7 +11,9 @@ public enum WidgetKind {
     /** Server pings widget kind (value "server-pings"). */
     SERVER_PINGS("server-pings"),
     /** Raspberry Pi health widget kind (value "pi-health"). */
-    PI_HEALTH("pi-health");
+    PI_HEALTH("pi-health"),
+    /** Grocery deals widget kind (value "grocery-deals"). */
+    GROCERY_DEALS("grocery-deals");
 
     private final String value;
 
