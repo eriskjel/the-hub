@@ -56,7 +56,7 @@ export default function WidgetContainer({
                 : query;
 
     const title = right ? `${kindLabel} | ${right}` : kindLabel;
-    const header = <Header title={title} />;
+    const header: ReactElement = <Header title={title} />;
 
     return (
         <GlassCard header={header} stale={stale} variant="solid" tone="light">
