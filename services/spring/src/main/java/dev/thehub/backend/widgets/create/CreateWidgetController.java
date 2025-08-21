@@ -10,16 +10,48 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller that handles creation of widget instances for the
+ * authenticated user.
+ *
+ * <p>
+ * Applies business rules such as supported kinds, per-role restrictions, and
+ * duplicate/limit checks before persisting the widget using
+ * {@link CreateWidgetService}.
+ */
 @RestController
 @RequestMapping("/api/widgets")
 public class CreateWidgetController {
 
     private final CreateWidgetService service;
 
+    /**
+     * Constructs the controller.
+     *
+     * @param service
+     *            service responsible for validation and persistence of widgets
+     */
     public CreateWidgetController(CreateWidgetService service) {
         this.service = service;
     }
 
+    /**
+     * Creates a new widget for the current user.
+     *
+     * <p>
+     * Supported kinds are currently {@link WidgetKind#SERVER_PINGS} and
+     * {@link WidgetKind#GROCERY_DEALS}. Non-admin users may only create
+     * grocery-deals widgets and are limited to at most 5 such widgets. Duplicate
+     * widgets are rejected based on business rules.
+     *
+     * @param auth
+     *            current JWT authentication (used to derive user id)
+     * @param body
+     *            creation request payload
+     * @return 201 Created with {@link CreateWidgetResponse} on success; 400 for
+     *         invalid input; 403 when forbidden by role; 409 when duplicates/limits
+     *         are violated
+     */
     @PostMapping
     public ResponseEntity<?> create(JwtAuthenticationToken auth, @RequestBody CreateWidgetRequest body) {
         final UUID userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
