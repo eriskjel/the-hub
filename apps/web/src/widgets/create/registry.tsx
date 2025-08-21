@@ -40,17 +40,17 @@ function defaultsFromSchema<S extends z.ZodTypeAny>(
 
 // Registry (only list kinds you actually support in the create modal)
 export const creationRegistry = {
-    "server-pings": createEntry({
-        kind: "server-pings",
-        schema: serverPingsSettingsSchema,
-        defaults: { target: "" },
-        SettingsForm: ServerPingsSettings,
-    }),
     "grocery-deals": createEntry({
         kind: "grocery-deals",
         schema: grocerySettingsSchema,
         defaults: defaultsFromSchema(grocerySettingsSchema),
         SettingsForm: GroceryDealsSettings,
+    }),
+    "server-pings": createEntry({
+        kind: "server-pings",
+        schema: serverPingsSettingsSchema,
+        defaults: { target: "" },
+        SettingsForm: ServerPingsSettings,
     }),
 } as const;
 
