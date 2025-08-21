@@ -59,7 +59,7 @@ export default function MonsterPage() {
             <h1 className="text-5xl font-bold">{t("title")}</h1>
 
             <div className="flex gap-4">
-                <div className="flex gap-4">
+                <div className="flex gap-4 text-white">
                     {!selected || rolling ? (
                         <button
                             className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
