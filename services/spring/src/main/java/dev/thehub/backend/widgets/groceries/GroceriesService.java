@@ -51,6 +51,8 @@ public class GroceriesService {
     @Value("${groceries.preferred-vendors:}")
     private String preferredVendorsCsv;
 
+    private static final int SAFETY_CAP = 50;
+
     private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
 
     /**
@@ -100,8 +102,7 @@ public class GroceriesService {
         final int desired = (top != null && top > 0)
                 ? top
                 : Optional.ofNullable(s.maxResults()).orElse(getDefaultLimit());
-        final int safetyCap = 50;
-        final int fetchLimit = Math.min(Math.max(desired, 1), safetyCap);
+        final int fetchLimit = Math.min(Math.max(desired, 1), SAFETY_CAP);
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
@@ -113,7 +114,7 @@ public class GroceriesService {
         final String qOffers = enc.apply(new Object[]{"offers", Map.of("hideUpcoming", false, "pagination",
                 Map.of("limit", fetchLimit, "offset", 0), "searchTerm", term, "sort", List.of("score_desc"))});
 
-        final Map<String, Object> body = Map.of("data", List.of(qOffers));
+        final Map<String, Object> payload = Map.of("data", List.of(qOffers));
 
         String etaCookie = buildEtaLocationCookie(s.lat() != null ? s.lat() : defaultLat,
                 s.lon() != null ? s.lon() : defaultLon,
@@ -127,7 +128,7 @@ public class GroceriesService {
         headers.add(HttpHeaders.REFERER, baseUrl + "/");
         headers.add("X-Requested-With", "XMLHttpRequest");
 
-        HttpEntity<Map<String, Object>> req = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, Object>> req = new HttpEntity<>(payload, headers);
 
         String raw;
         try {
@@ -137,9 +138,11 @@ public class GroceriesService {
             }
             raw = Optional.ofNullable(resp.getBody()).orElse("");
         } catch (HttpStatusCodeException e) {
-            // Preserve body for debugging
-            String errBody = e.getResponseBodyAsString();
-            log.warn("Etilbudsavis error {} body={}", e.getStatusCode(), errBody);
+            final String errBody = Optional.ofNullable(e.getResponseBodyAsString()).orElse("");
+            final int max = 256;
+            final String truncated = errBody.length() > max ? errBody.substring(0, max) + "...[truncated]" : errBody;
+            log.warn("Etilbudsavis error status={} reason={} body={}", e.getStatusCode().value(), e.getStatusText(),
+                    truncated);
             return List.of();
         }
         if (raw.isBlank())
