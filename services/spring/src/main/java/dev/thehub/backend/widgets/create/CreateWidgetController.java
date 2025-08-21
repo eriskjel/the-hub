@@ -31,32 +31,25 @@ public class CreateWidgetController {
         // Only allow kinds you actually support right now
         EnumSet<WidgetKind> supported = EnumSet.of(WidgetKind.SERVER_PINGS, WidgetKind.GROCERY_DEALS);
         if (!supported.contains(body.kind())) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "unsupported_kind",
-                    "message", "Supported kinds: " + supported.stream().map(WidgetKind::getValue).toList()
-            ));
+            return ResponseEntity.badRequest().body(Map.of("error", "unsupported_kind", "message",
+                    "Supported kinds: " + supported.stream().map(WidgetKind::getValue).toList()));
         }
 
-        boolean isAdmin = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
+        boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
 
         // Non-admins: only grocery-deals
         if (!isAdmin && body.kind() != WidgetKind.GROCERY_DEALS) {
-            return ResponseEntity.status(403).body(Map.of(
-                    "error", "forbidden",
-                    "message", "Only admins can create this widget type."
-            ));
+            return ResponseEntity.status(403)
+                    .body(Map.of("error", "forbidden", "message", "Only admins can create this widget type."));
         }
 
         // Non-admins: cap grocery-deals at 5
         if (!isAdmin && body.kind() == WidgetKind.GROCERY_DEALS) {
             int current = service.countByUserAndKind(userId, WidgetKind.GROCERY_DEALS);
             if (current >= 5) {
-                return ResponseEntity.status(409).body(Map.of(
-                        "error", "limit_reached",
-                        "message", "You can have at most 5 grocery-deals widgets."
-                ));
+                return ResponseEntity.status(409).body(
+                        Map.of("error", "limit_reached", "message", "You can have at most 5 grocery-deals widgets."));
             }
         }
 
