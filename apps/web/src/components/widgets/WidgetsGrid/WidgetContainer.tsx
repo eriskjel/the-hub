@@ -44,8 +44,7 @@ export default function WidgetContainer({
             ? widget.settings.query.trim()
             : "";
 
-    const widgetTitle =
-        typeof (widget as any).title === "string" ? (widget as any).title.trim() : "";
+    const widgetTitle = widget.title.trim();
 
     const right =
         titleMode === "query"
