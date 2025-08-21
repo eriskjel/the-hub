@@ -7,10 +7,11 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -50,8 +51,7 @@ public class GroceriesService {
     @Value("${groceries.preferred-vendors:}")
     private String preferredVendorsCsv;
 
-    @Autowired(required = false)
-    private Map<String, String> groceriesVendorAliases = new java.util.concurrent.ConcurrentHashMap<>();
+    private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
 
     /**
      * Constructs the groceries service with an HTTP client.
@@ -244,16 +244,16 @@ public class GroceriesService {
         String logo = null;
         Object b = m.get("business");
         if (b instanceof Map<?, ?> bm) {
-            store = Objects.toString(bm.get("name"), "");
+            final String storeName = Objects.toString(bm.get("name"), ""); // <- final
+            store = storeName;
             logo = (String) bm.get("positiveLogoImage");
 
-            // register slugs as aliases -> "REMA-1000" -> "rema 1000"
             Object slugs = bm.get("slugs");
             if (slugs instanceof List<?> list) {
                 for (Object s : list) {
                     if (s instanceof String slug && !slug.isBlank()) {
                         String key = slug.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
-                        groceriesVendorAliases.putIfAbsent(key, store);
+                        groceriesVendorAliases.computeIfAbsent(key, k -> storeName); // use final var
                     }
                 }
             }
@@ -390,11 +390,6 @@ public class GroceriesService {
             return alias.trim().toLowerCase(Locale.ROOT);
         }
         return s;
-    }
-
-    // tiny helper used by toDeal()
-    private String canonicalizeFromApi(String store) {
-        return canonicalizeVendor(store);
     }
 
     private static double metricForSort(DealDto d) {
