@@ -45,7 +45,7 @@ function subtitle(d: Deal): string {
         typeof d.unitPriceMax === "number" &&
         d.unitPriceMin !== d.unitPriceMax
     ) {
-        right = `${formatPerKg(d.unitPriceMin)}–${formatPerKg(d.unitPriceMax)}`;
+        right = perKgRange(d.unitPriceMin, d.unitPriceMax) || safePerKg(d.unitPrice);
     } else {
         const up = d.unitPrice ?? d.unitPriceMax ?? d.unitPriceMin;
         right = formatPerKg(up);
@@ -164,3 +164,13 @@ function renderRows(rows: Deal[], t: ReturnType<typeof useTranslations>): ReactE
         </li>
     ));
 }
+
+const safePerKg = (n?: number) =>
+    typeof n === "number" && Number.isFinite(n) ? `${formatPrice(n)} kr/kg` : "";
+
+const perKgRange = (min?: number, max?: number) => {
+    const a = safePerKg(min);
+    const b = safePerKg(max);
+    if (a && b && a !== b) return `${a}–${b}`;
+    return a || b || "";
+};
