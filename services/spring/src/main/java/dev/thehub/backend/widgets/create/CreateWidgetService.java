@@ -48,6 +48,12 @@ public class CreateWidgetService {
         }
     }
 
+    public int countByUserAndKind(UUID userId, WidgetKind kind) {
+        final String sql = "select count(*) from user_widgets where user_id = ? and kind = ?";
+        Integer n = jdbc.queryForObject(sql, Integer.class, userId, kind.getValue());
+        return (n != null) ? n : 0;
+    }
+
     private void ensureNoDuplicateGroceries(UUID userId, WidgetKind kind, Map<String, Object> settings) {
         if (settings == null)
             throw new IllegalArgumentException("settings_required");
