@@ -3,7 +3,8 @@ package dev.thehub.backend.widgets.groceries.dto;
 /**
  * Data transfer object representing a single grocery deal.
  *
- * <p>Fields include both vendor-provided values and computed conveniences for
+ * <p>
+ * Fields include both vendor-provided values and computed conveniences for
  * client sorting/rendering.
  *
  * @param name
@@ -13,7 +14,8 @@ package dev.thehub.backend.widgets.groceries.dto;
  * @param price
  *            final price
  * @param unitPrice
- *            optional vendor-provided unit price per {@code baseUnit} (may be null)
+ *            optional vendor-provided unit price per {@code baseUnit} (may be
+ *            null)
  * @param validFrom
  *            ISO date from which the deal is valid
  * @param validUntil
@@ -37,7 +39,8 @@ package dev.thehub.backend.widgets.groceries.dto;
  * @param baseUnit
  *            base unit for {@code unitPrice} (e.g., "kilogram") (nullable)
  * @param perPiecePrice
- *            computed convenience: {@code price / pieceCountFrom} when multipack
+ *            computed convenience: {@code price / pieceCountFrom} when
+ *            multipack
  * @param unitPriceMin
  *            computed best-case unit price per kg based on sizes (nullable)
  * @param unitPriceMax

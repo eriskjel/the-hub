@@ -58,8 +58,8 @@ public class GroceriesController {
      * @param city
      *            optional city override
      * @param top
-     *            optional cap on number of items returned from service (must be > 0);
-     *            defaults to the effective limit if null or invalid
+     *            optional cap on number of items returned from service (must be >
+     *            0); defaults to the effective limit if null or invalid
      * @return HTTP 200 with a list of deals, or 400 when required inputs are
      *         missing
      */
