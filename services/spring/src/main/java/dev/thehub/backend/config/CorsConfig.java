@@ -7,6 +7,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * CORS configuration for the REST API.
+ *
+ * <p>
+ * Allows a configurable set of origins to access endpoints under /api/** and
+ * sets standard allowed methods/headers.
+ */
 @Configuration
 public class CorsConfig {
 
@@ -15,6 +22,12 @@ public class CorsConfig {
     @Value("${app.cors.allowed-origins:https://skjellevik.online,https://www.skjellevik.online}")
     private String allowedOriginsRaw;
 
+    /**
+     * Configures CORS for the REST API under /api/**, allowing a configurable set
+     * of origins, methods and headers.
+     *
+     * @return a WebMvcConfigurer that registers the CORS mappings
+     */
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         final String[] patterns = Arrays.stream(allowedOriginsRaw.split(",")).map(String::trim)
