@@ -9,10 +9,10 @@ export default function ServerPingsView({ data }: { data: PingsData }): ReactEle
 
     return (
         <div>
-            {/* subtle header, no heavy backgrounds */}
-            <div className="mb-2 text-xs text-white/70">Oppdatert {updatedStr}</div>
+            {/* subtle header */}
+            <div className="mb-2 text-xs text-neutral-600">Oppdatert {updatedStr}</div>
 
-            <ul className="divide-y divide-white/10">
+            <ul className="divide-y divide-neutral-200">
                 {data.data.map((row: PingsRow) => {
                     const { host, path } = toParts(row.url);
                     const cls = statusClasses(row.status);
@@ -23,11 +23,13 @@ export default function ServerPingsView({ data }: { data: PingsData }): ReactEle
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className={`h-2 w-2 rounded-full ${cls.dot}`} />
                                 <div className="min-w-0">
-                                    <div className="truncate text-sm font-medium text-white/90">
+                                    <div className="truncate text-sm font-medium text-neutral-900">
                                         {host}
                                     </div>
                                     {path ? (
-                                        <div className="truncate text-xs text-white/60">{path}</div>
+                                        <div className="truncate text-xs text-neutral-600">
+                                            {path}
+                                        </div>
                                     ) : null}
                                 </div>
                             </div>
@@ -41,7 +43,7 @@ export default function ServerPingsView({ data }: { data: PingsData }): ReactEle
                                     {row.status}
                                 </span>
                                 <span
-                                    className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[11px] text-white/85 tabular-nums"
+                                    className="rounded-md border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[11px] text-neutral-800 tabular-nums"
                                     title="Latency"
                                 >
                                     {row.ms} ms
@@ -65,28 +67,33 @@ function toParts(url: string): { host: string; path: string } {
     }
 }
 
+/**
+ * Tailwind classes tuned for a LIGHT (white) surface:
+ * - dot: saturated solid for quick status scan
+ * - badge: very light tinted bg + subtle border + darker text for contrast
+ */
 function statusClasses(code: number) {
     if (code >= 200 && code < 300) {
         return {
-            dot: "bg-emerald-400",
-            badge: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
+            dot: "bg-emerald-500",
+            badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
         };
     }
     if (code >= 300 && code < 400) {
         return {
-            dot: "bg-sky-400",
-            badge: "border-sky-400/25 bg-sky-400/10 text-sky-200",
+            dot: "bg-sky-500",
+            badge: "border-sky-200 bg-sky-50 text-sky-700",
         };
     }
     if (code >= 400 && code < 500) {
         return {
-            dot: "bg-amber-400",
-            badge: "border-amber-400/25 bg-amber-400/10 text-amber-200",
+            dot: "bg-amber-500",
+            badge: "border-amber-200 bg-amber-50 text-amber-800",
         };
     }
     // 5xx / error
     return {
-        dot: "bg-rose-400",
-        badge: "border-rose-400/25 bg-rose-400/10 text-rose-200",
+        dot: "bg-rose-500",
+        badge: "border-rose-200 bg-rose-50 text-rose-700",
     };
 }
