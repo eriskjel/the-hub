@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,16 @@ public class GroceriesService {
     @Value("${app.http.user-agent:TheHub/1.0 (+https://skjellevik.online)}")
     private String userAgent;
 
+    @Value("${groceries.prefer-favorites:true}")
+    private boolean preferFavoritesEnabled;
+
+    @Value("${groceries.preferred-vendors:}")
+    private String preferredVendorsCsv;
+
+    private static final int SAFETY_CAP = 50;
+
+    private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
+
     /**
      * Constructs the groceries service with an HTTP client.
      *
@@ -74,16 +86,23 @@ public class GroceriesService {
      *
      * @param s
      *            search and location settings
+     * @param top
+     *            optional cap on the number of deals to return (must be > 0 to
+     *            apply); when null or invalid, {@code maxResults} from settings or
+     *            the configured default limit is used
      * @return a price-ascending list of deals; empty if term is blank or no data
+     * @throws IOException
+     *             if the response payload cannot be parsed
      */
     public List<DealDto> fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
         final String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
         if (term.isEmpty())
             return List.of();
 
-        final int desired = (top != null && top > 0) ? top : Optional.ofNullable(s.maxResults()).orElse(defaultLimit);
-        final int safetyCap = 100;
-        final int fetchLimit = Math.min(Math.max(desired, 1), safetyCap);
+        final int desired = (top != null && top > 0)
+                ? top
+                : Optional.ofNullable(s.maxResults()).orElse(getDefaultLimit());
+        final int fetchLimit = Math.min(Math.max(desired, 1), SAFETY_CAP);
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
@@ -95,7 +114,7 @@ public class GroceriesService {
         final String qOffers = enc.apply(new Object[]{"offers", Map.of("hideUpcoming", false, "pagination",
                 Map.of("limit", fetchLimit, "offset", 0), "searchTerm", term, "sort", List.of("score_desc"))});
 
-        final Map<String, Object> body = Map.of("data", List.of(qOffers));
+        final Map<String, Object> payload = Map.of("data", List.of(qOffers));
 
         String etaCookie = buildEtaLocationCookie(s.lat() != null ? s.lat() : defaultLat,
                 s.lon() != null ? s.lon() : defaultLon,
@@ -109,7 +128,7 @@ public class GroceriesService {
         headers.add(HttpHeaders.REFERER, baseUrl + "/");
         headers.add("X-Requested-With", "XMLHttpRequest");
 
-        HttpEntity<Map<String, Object>> req = new HttpEntity<>(body, headers);
+        HttpEntity<Map<String, Object>> req = new HttpEntity<>(payload, headers);
 
         String raw;
         try {
@@ -119,9 +138,11 @@ public class GroceriesService {
             }
             raw = Optional.ofNullable(resp.getBody()).orElse("");
         } catch (HttpStatusCodeException e) {
-            // Preserve body for debugging
-            String errBody = e.getResponseBodyAsString();
-            log.warn("Etilbudsavis error {} body={}", e.getStatusCode(), errBody);
+            final String errBody = Optional.ofNullable(e.getResponseBodyAsString()).orElse("");
+            final int max = 256;
+            final String truncated = errBody.length() > max ? errBody.substring(0, max) + "...[truncated]" : errBody;
+            log.warn("Etilbudsavis error status={} reason={} body={}", e.getStatusCode().value(), e.getStatusText(),
+                    truncated);
             return List.of();
         }
         if (raw.isBlank())
@@ -154,31 +175,69 @@ public class GroceriesService {
             return List.of();
 
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
-                .sorted(Comparator.comparingDouble(DealDto::price)).toList();
+                .sorted(Comparator.comparingDouble(GroceriesService::metricForSort)).toList();
 
-        if (top != null && top > 0) {
-            int n = Math.min(top, sorted.size());
-            return sorted.subList(0, n);
+        List<DealDto> capped = (top != null && top > 0) ? sorted.subList(0, Math.min(top, sorted.size())) : sorted;
+
+        if (!preferFavoritesEnabled) {
+            return capped;
         }
-        return sorted;
+
+        return applyPreferenceFilter(capped, preferredVendorsNormalized());
+    }
+
+    private List<DealDto> applyPreferenceFilter(List<DealDto> deals, Set<String> favorites) {
+        if (deals.isEmpty() || favorites.isEmpty())
+            return deals;
+
+        List<DealDto> fav = new ArrayList<>();
+        List<DealDto> non = new ArrayList<>();
+        for (DealDto d : deals) {
+            String storeNorm = canonicalizeVendor(d.store());
+            if (favorites.contains(storeNorm))
+                fav.add(d);
+            else
+                non.add(d);
+        }
+        if (fav.isEmpty())
+            return deals;
+
+        // compare using the same metric you sort with
+        double cheapestFavMetric = metricForSort(fav.get(0));
+
+        List<DealDto> allowedNon = new ArrayList<>();
+        for (DealDto d : non) {
+            if (metricForSort(d) < cheapestFavMetric) {
+                allowedNon.add(d);
+            }
+        }
+
+        // keep order: non-favs that truly beat favorites, then all favorites
+        List<DealDto> out = new ArrayList<>(allowedNon.size() + fav.size());
+        out.addAll(allowedNon);
+        out.addAll(fav);
+        return out;
     }
 
     private DealDto toDeal(Map<String, Object> m) {
         String name = Objects.toString(m.get("name"), "");
 
-        // price is required; if absent/invalid, skip this record by returning null
         Double priceD = toDouble(m.get("price"));
         if (priceD == null)
             return null;
         double price = priceD;
 
-        Double unitPrice = toDouble(m.get("unitPrice"));
+        Double unitPrice = toDouble(m.get("unitPrice")); // vendor’s per base unit
+        String baseUnit = (String) m.getOrDefault("baseUnit", null); // e.g., "kilogram"
+        String unitSymbol = (String) m.getOrDefault("unitSymbol", null); // e.g., "g"
 
-        String unit = (m.get("unit") instanceof String u && !u.isBlank())
-                ? u
-                : (m.get("unitPriceUnit") instanceof String u2 && !u2.isBlank())
-                        ? u2
-                        : (m.get("unitOfMeasure") instanceof String u3 && !u3.isBlank()) ? u3 : null;
+        // legacy unit fallback (you had several sources)
+        String unit = firstNonBlank(m.get("unit"), m.get("unitPriceUnit"), m.get("unitOfMeasure"));
+
+        Double unitSizeFrom = toDouble(m.get("unitSizeFrom")); // e.g., grams
+        Double unitSizeTo = toDouble(m.get("unitSizeTo"));
+        Integer pieceCountFrom = toInt(m.get("pieceCountFrom"));
+        Integer pieceCountTo = toInt(m.get("pieceCountTo"));
 
         String image = firstNonBlank(m.get("image"), m.get("imageLarge"));
         String validFrom = (String) m.get("validFrom");
@@ -188,11 +247,77 @@ public class GroceriesService {
         String logo = null;
         Object b = m.get("business");
         if (b instanceof Map<?, ?> bm) {
-            store = Objects.toString(bm.get("name"), "");
+            final String storeName = Objects.toString(bm.get("name"), ""); // <- final
+            store = storeName;
             logo = (String) bm.get("positiveLogoImage");
+
+            Object slugs = bm.get("slugs");
+            if (slugs instanceof List<?> list) {
+                for (Object s : list) {
+                    if (s instanceof String slug && !slug.isBlank()) {
+                        String key = slug.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
+                        groceriesVendorAliases.computeIfAbsent(key, k -> storeName); // use final var
+                    }
+                }
+            }
         }
 
-        return new DealDto(name, store, price, unitPrice, validFrom, validUntil, image, logo, unit);
+        // Derived fields
+        boolean multipack = pieceCountFrom != null && pieceCountFrom > 1;
+        Double perPiecePrice = (multipack && price > 0) ? (price / pieceCountFrom) : null;
+
+        // Compute per-kg min/max if we have sizes + unitSymbol in grams
+        Double unitPriceMin = null, unitPriceMax = null;
+
+        if (unitSymbol != null && unitSizeFrom != null && unitSizeFrom > 0) {
+            String sym = unitSymbol.toLowerCase(Locale.ROOT);
+            double factor; // to kg
+            if (sym.equals("g"))
+                factor = 1_000.0;
+            else if (sym.equals("kg"))
+                factor = 1.0;
+            else
+                factor = -1.0;
+
+            if (factor > 0) {
+                double pcsMin = (pieceCountFrom != null && pieceCountFrom > 0) ? pieceCountFrom : 1.0;
+                double pcsMax = (pieceCountTo != null && pieceCountTo > 0) ? pieceCountTo : pcsMin;
+
+                double wMinKg = (unitSizeFrom * pcsMin) / factor;
+                Double wMaxKg = (unitSizeTo != null && unitSizeTo > 0) ? (unitSizeTo * pcsMax) / factor : null;
+
+                if (wMinKg > 0)
+                    unitPriceMax = price / wMinKg; // worst case (smallest weight)
+                if (wMaxKg != null && wMaxKg > 0)
+                    unitPriceMin = price / wMaxKg; // best case (largest weight)
+
+                // if vendor provided unitPrice, backfill any missing bound(s)
+                if (unitPriceMin == null && unitPrice != null)
+                    unitPriceMin = unitPrice;
+                if (unitPriceMax == null && unitPrice != null)
+                    unitPriceMax = unitPrice;
+            } else if (unitPrice != null) {
+                unitPriceMin = unitPriceMax = unitPrice;
+            }
+        } else if (unitPrice != null) {
+            unitPriceMin = unitPriceMax = unitPrice;
+        }
+
+        return new DealDto(name, store, price, unitPrice, validFrom, validUntil, image, logo, unit, pieceCountFrom,
+                pieceCountTo, unitSizeFrom, unitSizeTo, unitSymbol, baseUnit, perPiecePrice, unitPriceMin, unitPriceMax,
+                multipack);
+    }
+
+    private static Integer toInt(Object o) {
+        if (o instanceof Number n)
+            return n.intValue();
+        if (o instanceof String s && !s.isBlank()) {
+            try {
+                return Integer.parseInt(s.trim());
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        return null;
     }
 
     /**
@@ -239,6 +364,47 @@ public class GroceriesService {
                 return s;
         }
         return null;
+    }
+
+    private Set<String> preferredVendorsNormalized() {
+        if (preferredVendorsCsv == null || preferredVendorsCsv.isBlank())
+            return Set.of();
+        String[] parts = preferredVendorsCsv.split(",");
+        Set<String> out = new HashSet<>();
+        for (String p : parts) {
+            String c = canonicalizeVendor(p);
+            if (!c.isBlank())
+                out.add(c);
+        }
+        return out;
+    }
+
+    private String canonicalizeVendor(String raw) {
+        if (raw == null)
+            return "";
+        String s = raw.trim().toLowerCase(Locale.ROOT);
+        // collapse multiple spaces and punctuation variants
+        s = s.replaceAll("[\\s\\-_/]+", " ").trim();
+
+        // alias map: normalize inputs like "rema1000" -> "rema 1000"
+        String aliasKey = s.replace(" ", "");
+        String alias = groceriesVendorAliases.get(aliasKey);
+        if (alias != null && !alias.isBlank()) {
+            return alias.trim().toLowerCase(Locale.ROOT);
+        }
+        return s;
+    }
+
+    private static double metricForSort(DealDto d) {
+        // prefer unit price (per kg) if present; else fallback to absolute price
+        Double up = d.unitPrice();
+        if (up != null)
+            return up;
+        // if we computed min/max, prefer the midpoint
+        if (d.unitPriceMin() != null && d.unitPriceMax() != null) {
+            return (d.unitPriceMin() + d.unitPriceMax()) / 2.0;
+        }
+        return d.price();
     }
 
 }

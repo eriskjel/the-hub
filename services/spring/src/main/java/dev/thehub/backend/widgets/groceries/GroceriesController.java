@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,9 +24,6 @@ public class GroceriesController {
 
     private final GroceriesService svc;
     private final WidgetSettingsService settingsSvc;
-
-    @Value("${groceries.default-top:2}")
-    int defaultTop; // fallback when client doesn't pass ?top
 
     /**
      * Constructs the groceries controller.
@@ -61,6 +57,9 @@ public class GroceriesController {
      *            optional longitude override
      * @param city
      *            optional city override
+     * @param top
+     *            optional cap on number of items returned from service (must be >
+     *            0); defaults to the effective limit if null or invalid
      * @return HTTP 200 with a list of deals, or 400 when required inputs are
      *         missing
      */
@@ -87,7 +86,7 @@ public class GroceriesController {
         }
 
         int fetchLimit = Optional.ofNullable(settings.maxResults()).orElse(svc.getDefaultLimit());
-        int effectiveTop = Math.max(1, Math.min(fetchLimit, (top != null ? top : defaultTop)));
+        Integer effectiveTop = (top != null && top > 0) ? Math.min(fetchLimit, top) : fetchLimit;
 
         var deals = svc.fetchDeals(settings, effectiveTop);
         return ResponseEntity.ok(deals);
