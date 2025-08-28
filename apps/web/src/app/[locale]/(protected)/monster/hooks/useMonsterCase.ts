@@ -14,30 +14,16 @@ const RARITY_PROBABILITIES = {
     yellow: 0.26,
 };
 
-const RARITY_PROBABILITIES = {
-    blue: 79.92,
-    purple: 15.98,
-    pink: 3.2,
-    red: 0.64,
-    yellow: 0.26,
-};
-
 export function useMonsterCase(monsters: Monster[]) {
     const [selected, setSelected] = useState<Monster | null>(null);
     const [rolling, setRolling] = useState(false);
     const [offset, setOffset] = useState(0);
     const [animate, setAnimate] = useState(true);
     const [stripMonsters, setStripMonsters] = useState<Monster[]>(monsters);
-    const [animate, setAnimate] = useState(true);
-    const [stripMonsters, setStripMonsters] = useState<Monster[]>(monsters);
 
     const handleOpen = () => {
         if (rolling) return;
 
-        const shuffled = shuffle(monsters);
-        setStripMonsters(shuffled);
-
-        setAnimate(true);
         const shuffled = shuffle(monsters);
         setStripMonsters(shuffled);
 
@@ -54,11 +40,6 @@ export function useMonsterCase(monsters: Monster[]) {
         const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
         const finalOffset =
             (shuffled.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
-            (shuffled.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => setOffset(finalOffset));
-        });
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => setOffset(finalOffset));
@@ -67,27 +48,6 @@ export function useMonsterCase(monsters: Monster[]) {
         setTimeout(() => setRolling(false), ANIMATION_DURATION);
     };
 
-    const reset = () => {
-        setAnimate(false);
-        setOffset(0);
-        setSelected(null);
-        setRolling(false);
-
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => setAnimate(true));
-        });
-    };
-
-    return {
-        selected,
-        rolling,
-        offset,
-        handleOpen,
-        reset,
-        duration: ANIMATION_DURATION,
-        animate,
-        stripMonsters,
-    };
     const reset = () => {
         setAnimate(false);
         setOffset(0);

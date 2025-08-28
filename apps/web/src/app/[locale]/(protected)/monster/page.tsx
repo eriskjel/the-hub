@@ -1,39 +1,16 @@
 "use client";
-import Image from "next/image";
 
 import { useTranslations } from "next-intl";
 import { Monster } from "./types";
 import { useMonsterCase } from "./hooks/useMonsterCase";
 import { Roller } from "./components/roller";
+import Image from "next/image";
+
 
 // if you later need to fetch user info from session you need this:
 // export const dynamic = "force-dynamic";
 
 const monsters: Monster[] = [
-    // Blue rarity (79.92% - most common)
-    { name: "Original", image: "/monsters/original.png", rarity: "blue" },
-    { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "blue" },
-    { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png", rarity: "blue" },
-    { name: "Original Zero", image: "/monsters/original_zero.png", rarity: "blue" },
-    { name: "Rio Punch", image: "/monsters/rio_punch.png", rarity: "blue" },
-    { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png", rarity: "blue" },
-    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png", rarity: "blue" },
-
-    // Purple rarity (15.98%)
-    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
-
-    // Pink rarity (3.2%)
-    { name: "Peachy Keen", image: "/monsters/peachy_keen.png", rarity: "pink" },
-
-    // Red rarity (0.64%)
-    {
-        name: "Ultra Strawberry Dreams",
-        image: "/monsters/ultra_strawberry_dreams.png",
-        rarity: "red",
-    },
-
-    // Yellow rarity (0.26% - legendary)
-    { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
     // Blue rarity (79.92% - most common)
     { name: "Original", image: "/monsters/original.png", rarity: "blue" },
     { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "blue" },
@@ -70,7 +47,6 @@ export default function MonsterPage() {
 
     const repeatedMonsters: Monster[] = Array(SPIN_ROUNDS + 2)
         .fill(stripMonsters)
-        .fill(stripMonsters)
         .flat();
 
     const handleOpenAnother = () => {
@@ -85,7 +61,7 @@ export default function MonsterPage() {
             <h1 className="text-5xl font-bold">{t("title")}</h1>
 
             <div className="flex gap-4">
-                <div className="flex gap-4">
+                <div className="flex gap-4 text-white">
                     {!selected || rolling ? (
                         <button
                             className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
@@ -126,12 +102,10 @@ export default function MonsterPage() {
                     <Image
                         src={selected.image}
                         alt={selected.name}
+                        className="mx-auto mb-2 w-32 rounded-lg"
                         width={128}
                         height={128}
-                        className="mx-auto mb-2 w-32 rounded-lg"
-                        style={{ objectFit: 'cover' }}
-                        priority
-                    />
+                    />  
                     <div className="mb-2 text-3xl font-bold">{selected.name}</div>
                 </div>
             )}
