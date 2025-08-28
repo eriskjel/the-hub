@@ -6,7 +6,6 @@ import { useMonsterCase } from "./hooks/useMonsterCase";
 import { Roller } from "./components/roller";
 import Image from "next/image";
 
-
 // if you later need to fetch user info from session you need this:
 // export const dynamic = "force-dynamic";
 
@@ -105,7 +104,7 @@ export default function MonsterPage() {
                         className="mx-auto mb-2 w-32 rounded-lg"
                         width={128}
                         height={128}
-                    />  
+                    />
                     <div className="mb-2 text-3xl font-bold">{selected.name}</div>
                 </div>
             )}
