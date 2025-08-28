@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { useTranslations } from "next-intl";
 import { Monster } from "./types";
@@ -65,22 +66,12 @@ export default function MonsterPage() {
     const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
         useMonsterCase(monsters);
 
-    const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
-        useMonsterCase(monsters);
-
     const t = useTranslations("monster");
 
     const repeatedMonsters: Monster[] = Array(SPIN_ROUNDS + 2)
         .fill(stripMonsters)
         .fill(stripMonsters)
         .flat();
-
-    const handleOpenAnother = () => {
-        reset();
-        setTimeout(() => {
-            handleOpen();
-        }, 120);
-    };
 
     const handleOpenAnother = () => {
         reset();
@@ -132,10 +123,14 @@ export default function MonsterPage() {
                                       : "#eab308",
                     }}
                 >
-                    <img
+                    <Image
                         src={selected.image}
                         alt={selected.name}
+                        width={128}
+                        height={128}
                         className="mx-auto mb-2 w-32 rounded-lg"
+                        style={{ objectFit: 'cover' }}
+                        priority
                     />
                     <div className="mb-2 text-3xl font-bold">{selected.name}</div>
                 </div>
