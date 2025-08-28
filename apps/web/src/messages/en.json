@@ -59,25 +59,40 @@
             "name": "Name",
             "namePlaceholder": "My widget",
             "kind": "Widget type",
-            "kinds": {
-                "server-pings": "Server pings"
-            },
             "kindHelp": "Choose what to create. More types coming soon.",
+            "kinds": {
+                "server-pings": "Server pings",
+                "grocery-deals": "Grocery deals"
+            },
             "cancel": "Cancel",
             "submit": "Create widget",
             "submitting": "Creating…",
             "errors": {
-                "url": "Must be a valid URL",
-                "uuid": "Pick a device",
                 "titleRequired": "Please enter a name",
-                "targetRequired": "Target URL is required",
                 "failed": "Failed to create widget"
             },
             "serverPings": {
                 "title": "Server pings",
-                "help": "set a URL to ping.",
+                "help": "Set a URL to ping.",
                 "targetLabel": "Target URL",
                 "targetPlaceholder": "https://example.com/health"
+            },
+            "groceryDeals": {
+                "title": "Grocery deals",
+                "queryLabel": "Search term",
+                "queryPlaceholder": "e.g. monster",
+                "maxResultsLabel": "Max results (optional)",
+                "cityLabel": "City label (optional)",
+                "latLabel": "Latitude (optional)",
+                "lonLabel": "Longitude (optional)",
+                "view": {
+                    "noDeals": "No deals right now.",
+                    "showMore": "Show {count} more",
+                    "showLess": "Show fewer",
+                    "until": "until",
+                    "storeFallback": "store",
+                    "currency": "kr"
+                }
             }
         }
     }

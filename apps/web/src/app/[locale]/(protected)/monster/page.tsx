@@ -33,6 +33,30 @@ const monsters: Monster[] = [
 
     // Yellow rarity (0.26% - legendary)
     { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
+    // Blue rarity (79.92% - most common)
+    { name: "Original", image: "/monsters/original.png", rarity: "blue" },
+    { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "blue" },
+    { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png", rarity: "blue" },
+    { name: "Original Zero", image: "/monsters/original_zero.png", rarity: "blue" },
+    { name: "Rio Punch", image: "/monsters/rio_punch.png", rarity: "blue" },
+    { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png", rarity: "blue" },
+    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png", rarity: "blue" },
+
+    // Purple rarity (15.98%)
+    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
+
+    // Pink rarity (3.2%)
+    { name: "Peachy Keen", image: "/monsters/peachy_keen.png", rarity: "pink" },
+
+    // Red rarity (0.64%)
+    {
+        name: "Ultra Strawberry Dreams",
+        image: "/monsters/ultra_strawberry_dreams.png",
+        rarity: "red",
+    },
+
+    // Yellow rarity (0.26% - legendary)
+    { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
 ];
 
 const SPIN_ROUNDS = 3;
@@ -41,9 +65,13 @@ export default function MonsterPage() {
     const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
         useMonsterCase(monsters);
 
+    const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
+        useMonsterCase(monsters);
+
     const t = useTranslations("monster");
 
     const repeatedMonsters: Monster[] = Array(SPIN_ROUNDS + 2)
+        .fill(stripMonsters)
         .fill(stripMonsters)
         .flat();
 
@@ -54,8 +82,15 @@ export default function MonsterPage() {
         }, 120);
     };
 
+    const handleOpenAnother = () => {
+        reset();
+        setTimeout(() => {
+            handleOpen();
+        }, 120);
+    };
+
     return (
-        <div className="flex h-full flex-col items-center justify-center gap-6 text-center text-white">
+        <div className="flex h-full flex-col items-center justify-center gap-6 text-center">
             <h1 className="text-5xl font-bold">{t("title")}</h1>
 
             <div className="flex gap-4">

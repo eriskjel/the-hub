@@ -1,16 +1,15 @@
 package dev.thehub.backend.widgets.pings;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.thehub.backend.widgets.WidgetKind;
+import dev.thehub.backend.widgets.WidgetSettingsService;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller that returns server ping results for a specific widget
@@ -21,20 +20,19 @@ import org.springframework.web.bind.annotation.*;
 public class PingsController {
 
     private final PingsService pings;
-    private final JdbcTemplate jdbc;
-    private final ObjectMapper json = new ObjectMapper();
+    private final WidgetSettingsService settings;
 
     /**
      * Constructs the controller.
      *
      * @param pings
      *            service used to perform ping probes
-     * @param jdbc
-     *            JDBC template used to load widget configuration
+     * @param settings
+     *            service used to load and parse widget configuration
      */
-    public PingsController(PingsService pings, JdbcTemplate jdbc) {
+    public PingsController(PingsService pings, WidgetSettingsService settings) {
         this.pings = pings;
-        this.jdbc = jdbc;
+        this.settings = settings;
     }
 
     /**
@@ -55,41 +53,9 @@ public class PingsController {
     @GetMapping("/server-pings")
     public Map<String, Object> serverPings(JwtAuthenticationToken auth, @RequestParam UUID instanceId) {
         var userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
-
-        // read ONE instance belonging to this user
-        var row = jdbc.query("""
-                select settings
-                from user_widgets
-                where user_id = ? and kind = ? and instance_id = ?
-                limit 1
-                """, ps -> {
-            ps.setObject(1, userId);
-            ps.setString(2, WidgetKind.SERVER_PINGS.getValue());
-            ps.setObject(3, instanceId);
-        }, rs -> rs.next() ? rs.getString("settings") : null);
-
-        // default if missing
-        List<String> targets = List.of("http://localhost:8080/actuator/health");
-
-        if (row != null) {
-            try {
-                var node = json.readTree(row);
-                // support both "target" and "targets"
-                if (node.hasNonNull("target")) {
-                    targets = List.of(node.get("target").asText());
-                } else if (node.hasNonNull("targets")) {
-                    List<String> parsed = json.convertValue(node.get("targets"), new TypeReference<List<String>>() {
-                    });
-                    var safe = parsed.stream().filter(u -> u.startsWith("http://") || u.startsWith("https://"))
-                            .toList();
-                    if (!safe.isEmpty())
-                        targets = safe;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        var data = pings.getResults(targets);
+        var row = settings.requireWidget(userId, instanceId);
+        var cfg = settings.toPings(row);
+        var data = pings.getResults(cfg.targets());
         return Map.of("status", "ok", "data", data, "updatedAt", OffsetDateTime.now().toString());
     }
 }

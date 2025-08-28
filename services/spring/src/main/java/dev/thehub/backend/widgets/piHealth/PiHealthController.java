@@ -7,6 +7,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller exposing Raspberry Pi health snapshots for a specific widget
+ * instance owned by the authenticated user.
+ */
 @RestController
 @RequestMapping("/api/widgets")
 public class PiHealthController {
@@ -14,10 +18,27 @@ public class PiHealthController {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json = new ObjectMapper();
 
+    /**
+     * Constructs the controller with a JDBC template for database access.
+     *
+     * @param jdbc
+     *            Spring JdbcTemplate
+     */
     public PiHealthController(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
+    /**
+     * Returns the latest health snapshot for the device referenced by the given
+     * widget instance.
+     *
+     * @param auth
+     *            current JWT authentication (used to determine user id)
+     * @param instanceId
+     *            widget instance id belonging to the user
+     * @return a map with status, data (list with a single snapshot or empty), and
+     *         updatedAt timestamp
+     */
     @GetMapping("/pi-health")
     public Map<String, Object> piHealth(JwtAuthenticationToken auth, @RequestParam UUID instanceId) {
         var userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));

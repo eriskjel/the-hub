@@ -9,8 +9,9 @@ import java.util.Map;
  * @param title
  *            the widget title (required, non-blank)
  * @param kind
- *            the kind of widget to create (currently only
- *            {@link WidgetKind#SERVER_PINGS} is supported)
+ *            the kind of widget to create (currently supports
+ *            {@link WidgetKind#SERVER_PINGS} and
+ *            {@link WidgetKind#GROCERY_DEALS})
  * @param settings
  *            arbitrary settings specific to the widget kind (e.g., targets for
  *            pings)
