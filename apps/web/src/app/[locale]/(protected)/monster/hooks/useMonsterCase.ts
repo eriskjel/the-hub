@@ -33,7 +33,7 @@ export function useMonsterCase(monsters: Monster[]) {
 
         const weightedChoice = getWeightedRandomMonster(shuffled);
         const tempChosenIndex = shuffled.findIndex((m) => m.name === weightedChoice.name);
-        const chosenIndex = getChosenIndex(tempChosenIndex, shuffled);
+        const chosenIndex = validateChosenIndex(tempChosenIndex, shuffled);
 
         setSelected(shuffled[chosenIndex]);
 
@@ -108,7 +108,7 @@ function getWeightedRandomMonster(monsters: Monster[]): Monster {
     return monstersOfRarity[Math.floor(Math.random() * monstersOfRarity.length)];
 }
 
-function getChosenIndex(chosenIndex: number, monsters: Monster[]): number {
+function validateChosenIndex(chosenIndex: number, monsters: Monster[]): number {
     if (chosenIndex === -1) {
         return Math.floor(Math.random() * monsters.length);
     }
