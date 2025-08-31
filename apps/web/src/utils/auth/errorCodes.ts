@@ -29,10 +29,7 @@ export const ERROR_KEY_BY_CODE: Record<AuthErrorCode, string> = {
 };
 
 // Helper to resolve translated message
-export function getAuthErrorMessage(
-    t: (k: string) => string,
-    code?: string | null
-): string | null {
+export function getAuthErrorMessage(t: (k: string) => string, code?: string | null): string | null {
     if (!code) return null;
     const key = ERROR_KEY_BY_CODE[code as AuthErrorCode] ?? "generic";
     return t(`errors.${key}`);
