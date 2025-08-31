@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAbortError } from "@/utils/http";
 
 export const dynamic = "force-dynamic";
-
-function isAbortError(e: unknown): boolean {
-    return (
-        (e instanceof DOMException && e.name === "AbortError") ||
-        (typeof e === "object" && e !== null && (e as { name?: string }).name === "AbortError")
-    );
-}
 
 export async function GET(req: NextRequest) {
     const lat = req.nextUrl.searchParams.get("lat");
