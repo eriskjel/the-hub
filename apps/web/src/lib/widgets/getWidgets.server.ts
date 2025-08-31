@@ -3,9 +3,10 @@ import "server-only";
 import type { AnyWidget } from "@/widgets/schema";
 import { toAnyWidget, type WidgetListItem } from "@/widgets/rows";
 import { resolveOrigin } from "@/utils/url";
-import { isOfflineError, makeForwardedCookieHeader } from "@/utils/http";
+import { isOfflineError } from "@/utils/http";
 import { readWidgetsCookie } from "@/lib/widgets/cache.server";
 import { API } from "@/lib/apiRoutes";
+import { makeForwardedCookieHeader } from "@/utils/httpServer";
 
 export type WidgetsResult = {
     widgets: AnyWidget[];
