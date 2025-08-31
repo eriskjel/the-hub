@@ -9,28 +9,22 @@ import { startGithubOAuth } from "@/utils/auth/startGithubOAuth";
 import { useAuthMode } from "@/hooks/useAuthMode";
 import Image from "next/image";
 import { Divider } from "@/components/ui/Divider";
-
-const ERROR_KEY_BY_CODE = {
-    "invalid-credentials": "invalidCredentials",
-    "signup-failed": "signupFailed",
-    "confirm-failed": "confirmFailed",
-} as const;
-
-type ErrorCode = keyof typeof ERROR_KEY_BY_CODE;
-type ErrorKey = (typeof ERROR_KEY_BY_CODE)[ErrorCode] | "generic";
+import { type AuthErrorCode, getAuthErrorMessage } from "@/utils/auth/errorCodes";
 
 export default function AuthForm(): ReactElement {
     const locale = useLocale();
     const t = useTranslations("login");
 
     const searchParams = useSearchParams();
-    const errorCode = searchParams.get("error") as ErrorCode | null;
-    const errorKey: ErrorKey = (errorCode && ERROR_KEY_BY_CODE[errorCode]) ?? "generic";
-    const errorMessage = errorCode ? t(`errors.${errorKey}`) : null;
+    const errorCode = searchParams.get("error") as AuthErrorCode | null;
+    const errorMessage = getAuthErrorMessage(t, errorCode);
 
-    const handleGithub = useCallback(() => startGithubOAuth(locale), [locale]);
+    const { mode, isLogin, switchTo } = useAuthMode();
 
-    const { isLogin, switchTo } = useAuthMode();
+    const handleGithub = useCallback(
+        () => startGithubOAuth(locale, "/dashboard", mode),
+        [locale, mode]
+    );
 
     const formAction = useMemo(() => (isLogin ? login : signup), [isLogin]);
 
