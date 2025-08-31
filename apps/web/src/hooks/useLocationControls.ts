@@ -2,18 +2,33 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { GroceryForm } from "@/widgets/grocery-deals/types";
-import { geocodeCity, reverseGeocode } from "@/lib/location/api";
+import {
+    geocodeCity as defGeocodeCity,
+    reverseGeocode as defReverseGeocode,
+} from "@/lib/location/api";
 import { isAbortError } from "@/utils/http";
 
 const CITY_SEARCH_DEBOUNCE_MS = 350 as const;
+const GEOLOCATION_TIMEOUT_MS = 10_000 as const;
+const GEOLOCATION_MAX_AGE_MS = 60_000 as const;
 
-export function useLocationControls(form: GroceryForm, t: ReturnType<typeof useTranslations>) {
+type LocationServices = {
+    geocodeCity: typeof defGeocodeCity;
+    reverseGeocode: typeof defReverseGeocode;
+};
+
+export function useLocationControls(
+    form: GroceryForm,
+    t: ReturnType<typeof useTranslations>,
+    services: LocationServices = { geocodeCity: defGeocodeCity, reverseGeocode: defReverseGeocode }
+) {
     const [locBusy, setLocBusy] = useState(false);
     const [geoErr, setGeoErr] = useState<string | null>(null);
     const [cityLookupBusy, setCityLookupBusy] = useState(false);
     const [cityLookupErr, setCityLookupErr] = useState<string | null>(null);
     const [cityInput, setCityInput] = useState("");
     const [mode, setMode] = useState<"gps" | "city" | null>(null);
+    const { geocodeCity, reverseGeocode } = services;
 
     const debounce = useDebouncedCallback(CITY_SEARCH_DEBOUNCE_MS);
     const activeCityRequest = useRef<AbortController | null>(null);
@@ -105,7 +120,11 @@ export function useLocationControls(form: GroceryForm, t: ReturnType<typeof useT
                 setLocBusy(false);
                 setGeoErr(t("location.locationDenied"));
             },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 }
+            {
+                enableHighAccuracy: false,
+                timeout: GEOLOCATION_TIMEOUT_MS,
+                maximumAge: GEOLOCATION_MAX_AGE_MS,
+            }
         );
     };
 
