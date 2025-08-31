@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
     const qsLocale = url.searchParams.get("locale") || "";
     const locale = qsLocale || (await resolveLocale());
 
+    const mode = url.searchParams.get("mode") ?? undefined;
+
     let next = url.searchParams.get("next") || `/${locale}/dashboard`;
     next = safeNextPath(next);
 
@@ -24,6 +26,7 @@ export async function GET(req: NextRequest) {
     const redirectTo = new URL("/auth/callback", origin);
     redirectTo.searchParams.set("locale", locale);
     redirectTo.searchParams.set("next", next);
+    if (mode) redirectTo.searchParams.set("mode", mode);
 
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
