@@ -107,7 +107,8 @@
                     "usingCity": "Bruker {city}",
                     "usingCoords": "Bruker {lat}, {lon}",
                     "noLocationSelected": "Ingen lokasjon valgt enda",
-                    "clearSelection": "Fjern valg"
+                    "clearSelection": "Fjern valg",
+                    "required": "Velg et sted (bruk posisjonen din eller søk etter by)."
                 }
             }
         }

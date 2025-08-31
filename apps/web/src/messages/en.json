@@ -107,7 +107,8 @@
                     "usingCity": "Using {city}",
                     "usingCoords": "Using {lat}, {lon}",
                     "noLocationSelected": "No location selected yet",
-                    "clearSelection": "Clear selection"
+                    "clearSelection": "Clear selection",
+                    "required": "Please choose a location (use your location or search by city)."
                 }
             }
         }
