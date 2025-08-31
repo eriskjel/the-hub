@@ -7,6 +7,8 @@ import { Roller } from "./components/roller";
 import Image from "next/image";
 import { useMemo } from "react";
 import { SPIN_ROUNDS } from "@/app/[locale]/(protected)/monster/constants";
+import clsx from "clsx";
+import { RARITY_BORDERS } from "@/app/[locale]/(protected)/monster/rarityStyles";
 
 // if you later need to fetch user info from session you need this:
 // export const dynamic = "force-dynamic";
@@ -37,14 +39,6 @@ const monsters: Monster[] = [
     // Yellow rarity (0.26% - legendary)
     { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
 ];
-
-const RARITY_BORDERS: Record<Monster["rarity"], string> = {
-    blue: "border-blue-500",
-    purple: "border-purple-500",
-    pink: "border-pink-500",
-    red: "border-red-500",
-    yellow: "border-yellow-500",
-};
 
 export default function MonsterPage() {
     const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
@@ -93,10 +87,10 @@ export default function MonsterPage() {
 
             {!rolling && selected && (
                 <div
-                    className={[
+                    className={clsx(
                         "mt-4 rounded-lg border-2 bg-black/50 p-6",
-                        RARITY_BORDERS[selected.rarity],
-                    ].join(" ")}
+                        RARITY_BORDERS[selected.rarity]
+                    )}
                 >
                     <Image
                         src={selected.image}
