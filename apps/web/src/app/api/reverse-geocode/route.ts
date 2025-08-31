@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+    const lat = req.nextUrl.searchParams.get("lat");
+    const lon = req.nextUrl.searchParams.get("lon");
+    const zoom = req.nextUrl.searchParams.get("zoom") ?? "10"; // 10 ~ city/town level
+
+    if (!lat || !lon) {
+        return NextResponse.json({ error: "Missing lat/lon" }, { status: 400 });
+    }
+
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("lat", lat);
+    url.searchParams.set("lon", lon);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("zoom", zoom);
+    url.searchParams.set("addressdetails", "1");
+
+    const res = await fetch(url.toString(), {
+        headers: { "User-Agent": "the-hub/1.0 reverse-geocode" },
+        cache: "no-store",
+    });
+
+    if (!res.ok) {
+        return NextResponse.json(
+            { error: `Reverse geocoder failed: ${res.status}` },
+            { status: 502 }
+        );
+    }
+
+    const data = (await res.json()) as {
+        display_name?: string;
+        address?: Record<string, string>;
+    };
+
+    const a = data.address ?? {};
+    // try common city-ish fields
+    const city =
+        a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || a.county;
+
+    return NextResponse.json({
+        city: city ?? null,
+        displayName: data.display_name ?? null,
+    });
+}

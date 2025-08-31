@@ -9,6 +9,8 @@ import { useTranslations } from "next-intl";
 import { Divider } from "@/components/ui/Divider";
 import { Crosshair, MapPin, X } from "lucide-react";
 
+const CITY_SEARCH_DEBOUNCE_MS = 350;
+
 type GroceryForm = UseFormReturn<{
     title: string;
     kind: "grocery-deals";
@@ -33,13 +35,19 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
     const [geoErr, setGeoErr] = useState<string | null>(null);
     const [cityLookupBusy, setCityLookupBusy] = useState(false);
     const [cityLookupErr, setCityLookupErr] = useState<string | null>(null);
-
+    const [cityInput, setCityInput] = useState("");
     const [mode, setMode] = useState<"gps" | "city" | null>(null);
 
     const resetLocation = () => {
         setMode(null);
         setCityLookupErr(null);
         setGeoErr(null);
+        if (activeCityRequest.current) {
+            activeCityRequest.current.abort();
+            activeCityRequest.current = null;
+        }
+        setCityLookupBusy(false);
+        setCityInput("");
         form.resetField("settings.lat");
         form.resetField("settings.lon");
         form.resetField("settings.city");
@@ -52,36 +60,84 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
     };
 
     const handleUseMyLocation = () => {
+        // cancel any in-flight city request
+        if (activeCityRequest.current) {
+            activeCityRequest.current.abort();
+            activeCityRequest.current = null;
+        }
+
+        setCityLookupBusy(false);
+        setCityLookupErr(null);
+
+        // clear previous city label + search box
+        form.setValue("settings.city", undefined as unknown as string, { shouldValidate: true });
+        setCityInput("");
+
         setGeoErr(null);
         setLocBusy(true);
+
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            async (pos) => {
                 setLocBusy(false);
                 setMode("gps");
-                setCoords(pos.coords.latitude, pos.coords.longitude);
-            },
-            () => {
-                setLocBusy(false);
-                setGeoErr(t("location.locationDenied"));
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                setCoords(lat, lon); // coords first
+
+                // optional: fetch a nice label
+                try {
+                    const r = await fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}&zoom=10`);
+                    if (r.ok) {
+                        const { city: label, displayName } = await r.json();
+                        if (label || displayName) {
+                            form.setValue("settings.city", label ?? displayName, {
+                                shouldValidate: true,
+                            });
+                        }
+                    }
+                } catch {
+                    // ignore reverse lookup errors; coords are enough
+                }
             }
+            // …
         );
     };
 
-    // Debounce helper
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const activeCityRequest = useRef<AbortController | null>(null);
+
     const debounce = useCallback((fn: () => void, ms: number) => {
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
         debounceTimer.current = setTimeout(fn, ms);
     }, []);
 
     const handleCityChange = (value: string) => {
+        const q = value.trim();
         setCityLookupErr(null);
-        if (!value || value.trim().length < 2) return;
 
-        setCityLookupBusy(true);
+        // If input too short: cancel pending work and clear busy
+        if (q.length < 2) {
+            if (activeCityRequest.current) {
+                activeCityRequest.current.abort();
+                activeCityRequest.current = null;
+            }
+            setCityLookupBusy(false);
+            return;
+        }
+
         debounce(async () => {
+            // mark busy only when a request will actually start
+            setCityLookupBusy(true);
+
+            // cancel any in-flight request
+            if (activeCityRequest.current) activeCityRequest.current.abort();
+            const controller = new AbortController();
+            activeCityRequest.current = controller;
+
             try {
-                const res = await fetch(`/api/geocode?city=${encodeURIComponent(value.trim())}`);
+                const res = await fetch(`/api/geocode?city=${encodeURIComponent(q)}`, {
+                    signal: controller.signal,
+                });
                 if (!res.ok) {
                     setCityLookupBusy(false);
                     setCityLookupErr(
@@ -92,14 +148,18 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
                     return;
                 }
                 const { lat, lon, displayName } = await res.json();
-                setCityLookupBusy(false);
-                setCoords(lat, lon, displayName ?? value.trim());
-                setMode("city"); // <-- flip to city mode on success
-            } catch {
+                // only apply if not aborted
+                if (!controller.signal.aborted) {
+                    setCoords(lat, lon, displayName ?? q);
+                    setMode("city");
+                    setCityLookupBusy(false);
+                }
+            } catch (err) {
+                if ((err as any)?.name === "AbortError") return; // ignore
                 setCityLookupBusy(false);
                 setCityLookupErr(t("location.cityLookupFailed"));
             }
-        }, 350);
+        }, CITY_SEARCH_DEBOUNCE_MS);
     };
 
     // Live label
@@ -159,10 +219,10 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
                     </div>
                 ) : (
                     <>
-                        <div
-                            role="button"
+                        <button
+                            type="button"
                             onClick={handleUseMyLocation}
-                            className={`flex cursor-pointer items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
+                            className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
                                 locBusy ? "pointer-events-none opacity-50" : ""
                             } bg-blue-600 text-white transition-colors hover:bg-blue-500`}
                             aria-busy={locBusy}
@@ -171,7 +231,7 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
                             <span>
                                 {locBusy ? t("location.locating") : t("location.useMyLocation")}
                             </span>
-                        </div>
+                        </button>
 
                         {/* show geo error under the action */}
                         {geoErr ? <div className="mt-1 text-xs text-red-400">{geoErr}</div> : null}
@@ -183,7 +243,12 @@ export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElem
                 <FieldText
                     label={t("location.citySearchLabel")}
                     placeholder={t("location.citySearchPlaceholder")}
-                    onChange={(e) => handleCityChange(e.target.value)}
+                    value={cityInput}
+                    onChange={(e) => {
+                        const v = e.target.value;
+                        setCityInput(v);
+                        handleCityChange(v);
+                    }}
                     error={cityLookupErr ?? errs.settings?.city?.message}
                 />
 
