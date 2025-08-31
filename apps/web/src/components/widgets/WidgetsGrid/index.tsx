@@ -45,7 +45,14 @@ export default function WidgetsGrid({
 
     // 2) Offline empty: there are no widgets and the service is offline
     if (widgets.length === 0 && offline) {
-        return <OfflineState />;
+        return (
+            <>
+                <div className="mb-4 flex items-center justify-center">
+                    <CreateWidgetButton />
+                </div>
+                <OfflineState />
+            </>
+        );
     }
 
     // 3) True empty: we’re online but the user simply has no widgets yet
