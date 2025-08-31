@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+    getRedirectMock,
     getReplaceMock,
     getRevalidatePathMock,
-    getRedirectMock,
     setIntl,
     setPathname,
     setSearch,
@@ -11,6 +11,7 @@ import {
 } from "@/tests/testUtils";
 import noMessages from "@/messages/no.json";
 import { signup } from "@/app/auth/actions/auth";
+
 const replaceMock = getReplaceMock();
 
 // Mock the OAuth starter at top-level so it is hoisted
@@ -119,7 +120,7 @@ describe("<AuthForm />", () => {
 
         fireEvent.click(screen.getByRole("button", { name: t.github }));
 
-        expect(oauth.startGithubOAuth).toHaveBeenCalledWith("no");
+        expect(oauth.startGithubOAuth).toHaveBeenCalledWith("no", "/dashboard", "login");
     });
 
     it("shows translated error when ?error=signup-failed (signup mode)", async () => {
@@ -195,8 +196,8 @@ describe("signup action", () => {
         const form = new FormData();
         form.set("name", "Bob");
         form.set("email", "bob@example.com");
-        form.set("password", "x");
-        form.set("confirmPassword", "x");
+        form.set("password", "secret123");
+        form.set("confirmPassword", "secret123");
 
         try {
             await signup(form);
@@ -204,7 +205,11 @@ describe("signup action", () => {
         } catch (e: unknown) {
             const err = e as RedirectErr;
             expect(err.__isRedirect).toBe(true);
-            expect(err.message).toContain("?error=signup-failed"); // now passes
+            const href = err.message.replace(/^REDIRECT:/, "");
+            const qs = href.split("?")[1] ?? "";
+            const params = new URLSearchParams(qs);
+            expect(params.get("mode")).toBe("signup");
+            expect(params.get("error")).toBe("signup-failed");
         }
     });
 
