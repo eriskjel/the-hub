@@ -1,18 +1,29 @@
 import { useState } from "react";
 import { Monster } from "../types";
 
+// Visual math: item card is w-40 (10rem = 160px), 4 items visible → 640px window
 const ITEM_WIDTH = 160;
 const CONTAINER_WIDTH = 640;
+// Spins: how many full strips before stopping
 const SPIN_ROUNDS = 3;
+// CSS/transition duration (ms) — keep in sync with Roller
 const ANIMATION_DURATION = 4000;
 
-const RARITY_PROBABILITIES = {
+const RARITY_PROBABILITIES = Object.freeze({
     blue: 79.92,
     purple: 15.98,
     pink: 3.2,
     red: 0.64,
     yellow: 0.26,
-};
+});
+
+if (process.env.NODE_ENV !== "production") {
+    const total = Object.values(RARITY_PROBABILITIES).reduce((a, b) => a + b, 0);
+    if (Math.abs(total - 100) > 0.001) {
+        // eslint-disable-next-line no-console
+        console.warn(`RARITY_PROBABILITIES sum to ${total}, expected 100`);
+    }
+}
 
 export function useMonsterCase(monsters: Monster[]) {
     const [selected, setSelected] = useState<Monster | null>(null);
@@ -41,19 +52,23 @@ export function useMonsterCase(monsters: Monster[]) {
         const finalOffset =
             (shuffled.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
 
+        // Double rAF ensures the browser applies the initial transform(0) before animating to final
         requestAnimationFrame(() => {
             requestAnimationFrame(() => setOffset(finalOffset));
         });
 
+        // When animation is done, release the UI
         setTimeout(() => setRolling(false), ANIMATION_DURATION);
     };
 
     const reset = () => {
+        // Disable animation to snap back to 0 cleanly
         setAnimate(false);
         setOffset(0);
         setSelected(null);
         setRolling(false);
 
+        // Re-enable animation for the next spin
         requestAnimationFrame(() => {
             requestAnimationFrame(() => setAnimate(true));
         });
@@ -75,42 +90,34 @@ function shuffle<T>(arr: T[]): T[] {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        const tmp = a[i];
-        a[i] = a[j];
-        a[j] = tmp;
+        [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
 }
 
 function getWeightedRandomMonster(monsters: Monster[]): Monster {
-    const random = Math.random() * 100;
-    let cumulativeProbability = 0;
-    let selectedRarity: keyof typeof RARITY_PROBABILITIES = "blue";
+    // Pick a rarity by cumulative probability on [0,100)
+    const r = Math.random() * 100;
+    let acc = 0;
+    let picked: keyof typeof RARITY_PROBABILITIES = "blue";
 
-    for (const [rarity, probability] of Object.entries(RARITY_PROBABILITIES)) {
-        cumulativeProbability += probability;
-        if (random <= cumulativeProbability) {
-            selectedRarity = rarity as keyof typeof RARITY_PROBABILITIES;
+    for (const [rarity, p] of Object.entries(RARITY_PROBABILITIES)) {
+        acc += p;
+        if (r < acc) {
+            picked = rarity as keyof typeof RARITY_PROBABILITIES;
             break;
         }
     }
 
-    const monstersOfRarity = monsters.filter((monster) => monster.rarity === selectedRarity);
+    const pool = monsters.filter((m) => m.rarity === picked);
+    if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
 
-    if (monstersOfRarity.length === 0) {
-        const blueMonsters = monsters.filter((monster) => monster.rarity === "blue");
-        if (blueMonsters.length > 0) {
-            return blueMonsters[Math.floor(Math.random() * blueMonsters.length)];
-        }
-        return monsters[Math.floor(Math.random() * monsters.length)];
-    }
-
-    return monstersOfRarity[Math.floor(Math.random() * monstersOfRarity.length)];
+    // Fallbacks if the strip somehow lacks that rarity
+    const commons = monsters.filter((m) => m.rarity === "blue");
+    if (commons.length) return commons[Math.floor(Math.random() * commons.length)];
+    return monsters[Math.floor(Math.random() * monsters.length)];
 }
 
 function validateChosenIndex(chosenIndex: number, monsters: Monster[]): number {
-    if (chosenIndex === -1) {
-        return Math.floor(Math.random() * monsters.length);
-    }
-    return chosenIndex;
+    return chosenIndex >= 0 ? chosenIndex : Math.floor(Math.random() * monsters.length);
 }

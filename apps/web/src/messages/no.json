@@ -36,7 +36,16 @@
         "pageTitle": "Monster",
         "title": "Hvilken Monster skal du drikke i dag?",
         "button_text": "Få Monster",
-        "rolling": "Åpner..."
+        "rolling": "Åpner...",
+        "open_another": "Åpne en til",
+        "you_got": "Du fikk {name} ({rarity})!",
+        "rarity": {
+            "blue": "Vanlig",
+            "purple": "Sjelden",
+            "pink": "Episk",
+            "red": "Myte",
+            "yellow": "Legendarisk"
+        }
     },
     "auth": {
         "loginFailed": "Innlogging mislyktes",
@@ -61,7 +70,7 @@
             "kind": "Widget-type",
             "kindHelp": "Velg hva du vil lage. Flere typer kommer.",
             "kinds": {
-                "server-pings": "Server‑pings",
+                "server-pings": "Server-pings",
                 "grocery-deals": "Dagligvarekupp"
             },
             "cancel": "Avbryt",
@@ -72,9 +81,9 @@
                 "failed": "Kunne ikke opprette widget"
             },
             "serverPings": {
-                "title": "Server‑pings",
+                "title": "Server-pings",
                 "help": "Sett en URL som skal pinges.",
-                "targetLabel": "Mål‑URL",
+                "targetLabel": "Mål-URL",
                 "targetPlaceholder": "https://example.com/health"
             },
             "groceryDeals": {
