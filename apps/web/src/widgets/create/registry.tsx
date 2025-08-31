@@ -11,7 +11,7 @@ export const serverPingsSettingsSchema = z.object({
 });
 
 export const grocerySettingsSchema = z.object({
-    query: z.string().trim().min(1, "Please enter a search term").default("monster"),
+    query: z.string().trim().min(1, "Please enter a search term").optional(),
     maxResults: z.coerce.number().int().min(1).max(20).default(10),
     city: z.string().optional(),
     lat: z.number().optional(),
