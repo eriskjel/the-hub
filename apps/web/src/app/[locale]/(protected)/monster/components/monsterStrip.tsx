@@ -17,7 +17,7 @@ export function MonsterStrip({ monsters, offset, duration }: MonsterStripProps) 
             }}
         >
             {monsters.map((monster, idx) => (
-                <MonsterCard key={idx} monster={monster} />
+                <MonsterCard key={`${monster.name}-${idx}`} monster={monster} />
             ))}
         </div>
     );

@@ -36,7 +36,16 @@
         "pageTitle": "Monster",
         "title": "What Monster Will You Drink Today?",
         "button_text": "Get Monster",
-        "rolling": "Opening..."
+        "rolling": "Opening...",
+        "open_another": "Open another",
+        "you_got": "You got {name} ({rarity})!",
+        "rarity": {
+            "blue": "Common",
+            "purple": "Rare",
+            "pink": "Epic",
+            "red": "Mythic",
+            "yellow": "Legendary"
+        }
     },
     "auth": {
         "loginFailed": "Login failed",
