@@ -26,6 +26,14 @@
             "generic": "Something went wrong.",
             "invalidCredentials": "Invalid email or password.",
             "signupFailed": "We couldn't create your account.",
+            "signupInvalid": "Some fields are invalid — please check the form.",
+            "nameRequired": "Name is required.",
+            "invalidEmail": "Please enter a valid email address.",
+            "passwordTooShort": "Password must be at least 6 characters.",
+            "passwordMismatch": "Passwords do not match.",
+            "emailAlreadyRegistered": "This email is already registered. Sign in or continue with GitHub.",
+            "rateLimited": "Too many attempts. Please try again later.",
+            "signupDisabled": "Signups are disabled.",
             "confirmFailed": "The confirmation link is invalid or expired."
         }
     },

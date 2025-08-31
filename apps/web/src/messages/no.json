@@ -26,6 +26,14 @@
             "generic": "Noe gikk galt.",
             "invalidCredentials": "Feil e-post eller passord.",
             "signupFailed": "Kunne ikke opprette konto.",
+            "signupInvalid": "Noen felter er ugyldige — sjekk skjemaet.",
+            "nameRequired": "Navn er påkrevd.",
+            "invalidEmail": "Skriv inn en gyldig e-postadresse.",
+            "passwordTooShort": "Passordet må være minst 6 tegn.",
+            "passwordMismatch": "Passordene er ikke like.",
+            "emailAlreadyRegistered": "E-posten er allerede registrert. Logg inn eller fortsett med GitHub.",
+            "rateLimited": "For mange forsøk. Prøv igjen senere.",
+            "signupDisabled": "Registrering er deaktivert.",
             "confirmFailed": "Bekreftelseslenken er ugyldig eller utløpt."
         }
     },
