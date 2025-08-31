@@ -3,6 +3,8 @@ import { isAbortError } from "@/utils/http";
 
 export const dynamic = "force-dynamic";
 
+const GEOCODE_TIMEOUT_MS = 10_000 as const;
+
 export async function GET(req: NextRequest) {
     const lat = req.nextUrl.searchParams.get("lat");
     const lon = req.nextUrl.searchParams.get("lon");
@@ -20,7 +22,7 @@ export async function GET(req: NextRequest) {
     url.searchParams.set("addressdetails", "1");
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
+    const timeout = setTimeout(() => controller.abort(), GEOCODE_TIMEOUT_MS);
 
     try {
         const res = await fetch(url.toString(), {
