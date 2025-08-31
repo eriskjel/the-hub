@@ -108,7 +108,8 @@
                     "usingCoords": "Bruker {lat}, {lon}",
                     "noLocationSelected": "Ingen lokasjon valgt enda",
                     "clearSelection": "Fjern valg",
-                    "required": "Velg et sted (bruk posisjonen din eller søk etter by)."
+                    "required": "Velg et sted (bruk posisjonen din eller søk etter by).",
+                    "notSupported": "Geolokasjon støttes ikke i denne nettleseren."
                 }
             }
         }

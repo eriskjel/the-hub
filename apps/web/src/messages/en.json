@@ -108,7 +108,8 @@
                     "usingCoords": "Using {lat}, {lon}",
                     "noLocationSelected": "No location selected yet",
                     "clearSelection": "Clear selection",
-                    "required": "Please choose a location (use your location or search by city)."
+                    "required": "Please choose a location (use your location or search by city).",
+                    "notSupported": "Geolocation is not supported in this browser."
                 }
             }
         }

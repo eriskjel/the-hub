@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { GroceryForm } from "@/widgets/grocery-deals/types";
 import { geocodeCity, reverseGeocode } from "@/lib/location/api";
+import { isAbortError } from "@/utils/http";
 
 const CITY_SEARCH_DEBOUNCE_MS = 350 as const;
 
@@ -71,6 +72,12 @@ export function useLocationControls(form: GroceryForm, t: ReturnType<typeof useT
         setCityInput("");
 
         setGeoErr(null);
+
+        if (!("geolocation" in navigator)) {
+            setGeoErr(t("location.notSupported"));
+            return;
+        }
+
         setLocBusy(true);
 
         navigator.geolocation.getCurrentPosition(
@@ -97,7 +104,8 @@ export function useLocationControls(form: GroceryForm, t: ReturnType<typeof useT
             () => {
                 setLocBusy(false);
                 setGeoErr(t("location.locationDenied"));
-            }
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 }
         );
     };
 
@@ -133,8 +141,8 @@ export function useLocationControls(form: GroceryForm, t: ReturnType<typeof useT
                     setMode("city");
                     setCityLookupBusy(false);
                 }
-            } catch (err) {
-                if ((err as Error).name === "AbortError") return;
+            } catch (err: unknown) {
+                if (isAbortError(err)) return;
                 setCityLookupBusy(false);
                 setCityLookupErr(t("location.cityLookupFailed"));
             }

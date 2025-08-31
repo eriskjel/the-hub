@@ -13,3 +13,17 @@ export function isOfflineError(msg: string): boolean {
         msg
     );
 }
+
+/**
+ * Narrow unknown errors to an AbortError in both browser and Node.
+ */
+export function isAbortError(e: unknown): e is DOMException {
+    if (e instanceof DOMException && e.name === "AbortError") return true;
+    if (typeof e === "object" && e !== null) {
+        const anyErr = e as { name?: string; code?: string };
+        // Some runtimes set code instead of name
+        if (anyErr.name === "AbortError") return true;
+        if (anyErr.code === "ABORT_ERR") return true;
+    }
+    return false;
+}

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+function isAbortError(e: unknown): boolean {
+    return (
+        (e instanceof DOMException && e.name === "AbortError") ||
+        (typeof e === "object" && e !== null && (e as { name?: string }).name === "AbortError")
+    );
+}
+
 export async function GET(req: NextRequest) {
     const city = req.nextUrl.searchParams.get("city")?.trim();
     if (!city) return NextResponse.json({ error: "Missing ?city" }, { status: 400 });
@@ -11,21 +18,37 @@ export async function GET(req: NextRequest) {
     url.searchParams.set("format", "jsonv2");
     url.searchParams.set("limit", "1");
 
-    const res = await fetch(url.toString(), {
-        headers: { "User-Agent": "the-hub/1.0 geocode" },
-        cache: "no-store",
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
 
-    if (!res.ok)
-        return NextResponse.json({ error: `Geocoder failed: ${res.status}` }, { status: 502 });
+    try {
+        const res = await fetch(url.toString(), {
+            headers: { "User-Agent": "the-hub/1.0 geocode" },
+            cache: "no-store",
+            signal: controller.signal,
+        });
 
-    const data = (await res.json()) as Array<{ lat: string; lon: string; display_name?: string }>;
-    if (!data?.length) return NextResponse.json({ error: "No results" }, { status: 404 });
+        if (!res.ok)
+            return NextResponse.json({ error: `Geocoder failed: ${res.status}` }, { status: 502 });
 
-    const top = data[0];
-    return NextResponse.json({
-        lat: Number(top.lat),
-        lon: Number(top.lon),
-        displayName: top.display_name ?? city,
-    });
+        const data = (await res.json()) as Array<{
+            lat: string;
+            lon: string;
+            display_name?: string;
+        }>;
+        if (!data?.length) return NextResponse.json({ error: "No results" }, { status: 404 });
+
+        const top = data[0];
+        return NextResponse.json({
+            lat: Number(top.lat),
+            lon: Number(top.lon),
+            displayName: top.display_name ?? city,
+        });
+    } catch (err: unknown) {
+        if (isAbortError(err))
+            return NextResponse.json({ error: "Geocoder timed out" }, { status: 504 });
+        return NextResponse.json({ error: "Geocoder request failed" }, { status: 502 });
+    } finally {
+        clearTimeout(timeout);
+    }
 }
