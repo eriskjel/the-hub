@@ -36,7 +36,16 @@
         "pageTitle": "Monster",
         "title": "Hvilken Monster skal du drikke i dag?",
         "button_text": "Få Monster",
-        "rolling": "Åpner..."
+        "rolling": "Åpner...",
+        "open_another": "Åpne en til",
+        "you_got": "Du fikk {name} ({rarity})!",
+        "rarity": {
+            "blue": "Vanlig",
+            "purple": "Sjelden",
+            "pink": "Episk",
+            "red": "Myte",
+            "yellow": "Legendarisk"
+        }
     },
     "auth": {
         "loginFailed": "Innlogging mislyktes",
@@ -61,7 +70,7 @@
             "kind": "Widget-type",
             "kindHelp": "Velg hva du vil lage. Flere typer kommer.",
             "kinds": {
-                "server-pings": "Server‑pings",
+                "server-pings": "Server-pings",
                 "grocery-deals": "Dagligvarekupp"
             },
             "cancel": "Avbryt",
@@ -72,9 +81,9 @@
                 "failed": "Kunne ikke opprette widget"
             },
             "serverPings": {
-                "title": "Server‑pings",
+                "title": "Server-pings",
                 "help": "Sett en URL som skal pinges.",
-                "targetLabel": "Mål‑URL",
+                "targetLabel": "Mål-URL",
                 "targetPlaceholder": "https://example.com/health"
             },
             "groceryDeals": {
@@ -92,6 +101,24 @@
                     "until": "til",
                     "storeFallback": "butikk",
                     "currency": "kr"
+                },
+                "location": {
+                    "sectionTitle": "Sted",
+                    "useMyLocation": "Bruk posisjonen min",
+                    "locating": "Henter posisjon …",
+                    "locationDenied": "Tilgang til posisjon ble avvist.",
+                    "or": "eller",
+                    "citySearchLabel": "Søk etter by",
+                    "citySearchPlaceholder": "f.eks. Trondheim",
+                    "searching": "Søker …",
+                    "cityNotFound": "Fant ingen treff for den byen.",
+                    "cityLookupFailed": "Kunne ikke hente koordinater for by.",
+                    "usingCity": "Bruker {city}",
+                    "usingCoords": "Bruker {lat}, {lon}",
+                    "noLocationSelected": "Ingen lokasjon valgt enda",
+                    "clearSelection": "Fjern valg",
+                    "required": "Velg et sted (bruk posisjonen din eller søk etter by).",
+                    "notSupported": "Geolokasjon støttes ikke i denne nettleseren."
                 }
             }
         }

@@ -18,6 +18,24 @@ export const grocerySettingsSchema = z.object({
     lon: z.number().optional(),
 });
 
+export const buildGrocerySettingsSchema = (t: (key: string) => string) =>
+    grocerySettingsSchema.superRefine((val, ctx) => {
+        const hasCoords =
+            typeof val.lat === "number" &&
+            Number.isFinite(val.lat) &&
+            typeof val.lon === "number" &&
+            Number.isFinite(val.lon);
+        const hasCity = !!val.city?.trim();
+
+        if (!hasCoords && !hasCity) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["city"],
+                message: t("groceryDeals.location.required"),
+            });
+        }
+    });
+
 // Generic entry type
 export type CreateEntry<K extends WidgetKind, S extends z.ZodTypeAny> = {
     kind: K;

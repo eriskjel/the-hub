@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { startGithubOAuth } from "@/utils/auth/startGithubOAuth";
 import { useAuthMode } from "@/hooks/useAuthMode";
 import Image from "next/image";
+import { Divider } from "@/components/ui/Divider";
 
 const ERROR_KEY_BY_CODE = {
     "invalid-credentials": "invalidCredentials",
@@ -143,16 +144,6 @@ function Field(props: {
                 autoComplete={autoComplete}
                 className="w-full rounded border border-gray-300 px-3 py-2"
             />
-        </div>
-    );
-}
-
-function Divider({ label }: { label: string }): ReactElement {
-    return (
-        <div className="my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs text-gray-500">{label}</span>
-            <div className="h-px flex-1 bg-gray-200" />
         </div>
     );
 }
