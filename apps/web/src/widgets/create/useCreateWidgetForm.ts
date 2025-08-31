@@ -2,23 +2,31 @@
 
 import { useEffect, useMemo } from "react";
 import { z } from "zod";
-import { useForm, type Resolver } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { creationRegistry, type CreationKind } from "@/widgets/create/registry";
+import {
+    buildGrocerySettingsSchema,
+    type CreationKind,
+    creationRegistry,
+} from "@/widgets/create/registry";
 
 export type BaseForm = { title: string; kind: CreationKind; settings: unknown };
 
 export function useCreateWidgetForm(kind: CreationKind, t: (k: string) => string) {
     const active = creationRegistry[kind];
 
+    const settingsSchema = useMemo(() => {
+        return active.kind === "grocery-deals" ? buildGrocerySettingsSchema(t) : active.schema;
+    }, [active.kind, active.schema, t]);
+
     const schema = useMemo(
         () =>
             z.object({
                 title: z.string().min(1, t("errors.titleRequired")),
                 kind: z.literal(active.kind),
-                settings: active.schema,
+                settings: settingsSchema,
             }),
-        [active.kind, active.schema, t]
+        [active.kind, settingsSchema, t]
     );
 
     // bridge resolver types without `any`

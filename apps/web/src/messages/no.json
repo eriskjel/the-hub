@@ -92,6 +92,24 @@
                     "until": "til",
                     "storeFallback": "butikk",
                     "currency": "kr"
+                },
+                "location": {
+                    "sectionTitle": "Sted",
+                    "useMyLocation": "Bruk posisjonen min",
+                    "locating": "Henter posisjon …",
+                    "locationDenied": "Tilgang til posisjon ble avvist.",
+                    "or": "eller",
+                    "citySearchLabel": "Søk etter by",
+                    "citySearchPlaceholder": "f.eks. Trondheim",
+                    "searching": "Søker …",
+                    "cityNotFound": "Fant ingen treff for den byen.",
+                    "cityLookupFailed": "Kunne ikke hente koordinater for by.",
+                    "usingCity": "Bruker {city}",
+                    "usingCoords": "Bruker {lat}, {lon}",
+                    "noLocationSelected": "Ingen lokasjon valgt enda",
+                    "clearSelection": "Fjern valg",
+                    "required": "Velg et sted (bruk posisjonen din eller søk etter by).",
+                    "notSupported": "Geolokasjon støttes ikke i denne nettleseren."
                 }
             }
         }

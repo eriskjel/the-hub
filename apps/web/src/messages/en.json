@@ -92,6 +92,24 @@
                     "until": "until",
                     "storeFallback": "store",
                     "currency": "kr"
+                },
+                "location": {
+                    "sectionTitle": "Location",
+                    "useMyLocation": "Use my location",
+                    "locating": "Getting location…",
+                    "locationDenied": "Location permission was denied.",
+                    "or": "or",
+                    "citySearchLabel": "Search by city",
+                    "citySearchPlaceholder": "e.g. Trondheim",
+                    "searching": "Searching…",
+                    "cityNotFound": "No results for that city.",
+                    "cityLookupFailed": "Could not resolve coordinates for city.",
+                    "usingCity": "Using {city}",
+                    "usingCoords": "Using {lat}, {lon}",
+                    "noLocationSelected": "No location selected yet",
+                    "clearSelection": "Clear selection",
+                    "required": "Please choose a location (use your location or search by city).",
+                    "notSupported": "Geolocation is not supported in this browser."
                 }
             }
         }

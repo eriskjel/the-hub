@@ -1,3 +1,7 @@
+import type { UseFormReturn } from "react-hook-form";
+import { z } from "zod";
+import { grocerySettingsSchema } from "@/widgets/create/registry";
+
 export type Deal = {
     name: string;
     store: string;
@@ -18,4 +22,20 @@ export type Deal = {
     unitPriceMin?: number; // computed
     unitPriceMax?: number; // computed
     multipack?: boolean;
+};
+
+export type GroceryForm = UseFormReturn<{
+    title: string;
+    kind: "grocery-deals";
+    settings: z.infer<typeof grocerySettingsSchema>;
+}>;
+
+export type GroceryErrors = {
+    settings?: {
+        query?: { message?: string };
+        maxResults?: { message?: string };
+        city?: { message?: string };
+        lat?: { message?: string };
+        lon?: { message?: string };
+    };
 };
