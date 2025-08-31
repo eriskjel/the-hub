@@ -7,6 +7,7 @@ import { Divider } from "@/components/ui/Divider";
 import { Crosshair, MapPin, X } from "lucide-react";
 import { useLocationControls } from "@/hooks/useLocationControls";
 import { GroceryErrors, GroceryForm } from "./types";
+import { fmtCoord } from "@/widgets/grocery-deals/format";
 
 export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElement {
     const t = useTranslations("widgets.create.groceryDeals");
@@ -73,8 +74,8 @@ function LocationSection({
                             {cityLabel
                                 ? t("location.usingCity", { city: cityLabel })
                                 : t("location.usingCoords", {
-                                      lat: (lat as number).toFixed(4),
-                                      lon: (lon as number).toFixed(4),
+                                      lat: fmtCoord(lat),
+                                      lon: fmtCoord(lon),
                                   })}
                         </span>
                     </div>
@@ -128,8 +129,8 @@ function LocationSection({
                         {cityLabel
                             ? t("location.usingCity", { city: cityLabel })
                             : t("location.usingCoords", {
-                                  lat: (lat as number).toFixed(4),
-                                  lon: (lon as number).toFixed(4),
+                                  lat: fmtCoord(lat),
+                                  lon: fmtCoord(lon),
                               })}
                     </span>
                 </div>
