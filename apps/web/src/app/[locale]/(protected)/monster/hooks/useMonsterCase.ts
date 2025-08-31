@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Monster } from "../types";
-
-// Visual math: item card is w-40 (10rem = 160px), 4 items visible → 640px window
-const ITEM_WIDTH = 160;
-const CONTAINER_WIDTH = 640;
-// Spins: how many full strips before stopping
-const SPIN_ROUNDS = 3;
-// CSS/transition duration (ms) — keep in sync with Roller
-const ANIMATION_DURATION = 4000;
+import {
+    ANIMATION_DURATION,
+    CONTAINER_WIDTH,
+    ITEM_WIDTH,
+    SPIN_ROUNDS,
+} from "@/app/[locale]/(protected)/monster/constants";
 
 const RARITY_PROBABILITIES = Object.freeze({
     blue: 79.92,
@@ -17,7 +15,8 @@ const RARITY_PROBABILITIES = Object.freeze({
     yellow: 0.26,
 });
 
-if (process.env.NODE_ENV !== "production") {
+export function validateRarityWeightsDev() {
+    if (process.env.NODE_ENV !== "development") return;
     const total = Object.values(RARITY_PROBABILITIES).reduce((a, b) => a + b, 0);
     if (Math.abs(total - 100) > 0.001) {
         // eslint-disable-next-line no-console
@@ -26,6 +25,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export function useMonsterCase(monsters: Monster[]) {
+    if (process.env.NODE_ENV === "development") validateRarityWeightsDev();
     const [selected, setSelected] = useState<Monster | null>(null);
     const [rolling, setRolling] = useState(false);
     const [offset, setOffset] = useState(0);

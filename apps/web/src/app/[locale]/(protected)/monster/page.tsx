@@ -5,6 +5,8 @@ import { Monster } from "./types";
 import { useMonsterCase } from "./hooks/useMonsterCase";
 import { Roller } from "./components/roller";
 import Image from "next/image";
+import { useMemo } from "react";
+import { SPIN_ROUNDS } from "@/app/[locale]/(protected)/monster/constants";
 
 // if you later need to fetch user info from session you need this:
 // export const dynamic = "force-dynamic";
@@ -36,7 +38,13 @@ const monsters: Monster[] = [
     { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
 ];
 
-const SPIN_ROUNDS = 3;
+const RARITY_BORDERS: Record<Monster["rarity"], string> = {
+    blue: "border-blue-500",
+    purple: "border-purple-500",
+    pink: "border-pink-500",
+    red: "border-red-500",
+    yellow: "border-yellow-500",
+};
 
 export default function MonsterPage() {
     const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
@@ -44,9 +52,10 @@ export default function MonsterPage() {
 
     const t = useTranslations("monster");
 
-    const repeatedMonsters: Monster[] = Array(SPIN_ROUNDS + 2)
-        .fill(stripMonsters)
-        .flat();
+    const repeatedMonsters = useMemo(
+        () => Array.from({ length: SPIN_ROUNDS + 2 }, () => stripMonsters).flat(),
+        [stripMonsters]
+    );
 
     const handleOpenAnother = () => {
         reset();
@@ -84,19 +93,10 @@ export default function MonsterPage() {
 
             {!rolling && selected && (
                 <div
-                    className="mt-4 rounded-lg border-2 bg-black/50 p-6"
-                    style={{
-                        borderColor:
-                            selected.rarity === "blue"
-                                ? "#3b82f6"
-                                : selected.rarity === "purple"
-                                  ? "#a855f7"
-                                  : selected.rarity === "pink"
-                                    ? "#ec4899"
-                                    : selected.rarity === "red"
-                                      ? "#ef4444"
-                                      : "#eab308",
-                    }}
+                    className={[
+                        "mt-4 rounded-lg border-2 bg-black/50 p-6",
+                        RARITY_BORDERS[selected.rarity],
+                    ].join(" ")}
                 >
                     <Image
                         src={selected.image}
