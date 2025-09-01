@@ -4,6 +4,7 @@ import dev.thehub.backend.widgets.WidgetSettingsService;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,11 +52,18 @@ public class PingsController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/server-pings")
-    public Map<String, Object> serverPings(JwtAuthenticationToken auth, @RequestParam UUID instanceId) {
+    public ResponseEntity<?> serverPings(JwtAuthenticationToken auth, @RequestParam UUID instanceId) {
         var userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
-        var row = settings.requireWidget(userId, instanceId);
-        var cfg = settings.toPings(row);
-        var data = pings.getResults(cfg.targets());
-        return Map.of("status", "ok", "data", data, "updatedAt", OffsetDateTime.now().toString());
+
+        try {
+            var row = settings.requireWidget(userId, instanceId); // throws if missing / not owned
+            var cfg = settings.toPings(row);
+            var data = pings.getResults(cfg.targets());
+            return ResponseEntity
+                    .ok(Map.of("status", "ok", "data", data, "updatedAt", OffsetDateTime.now().toString()));
+        } catch (WidgetSettingsService.NotFoundOrNotOwned e) {
+            // Treat as idempotent: the widget was deleted or isn't owned
+            return ResponseEntity.status(404).body(Map.of("error", "not_found"));
+        }
     }
 }
