@@ -61,8 +61,8 @@ public class PingsController {
             var data = pings.getResults(cfg.targets());
             return ResponseEntity
                     .ok(Map.of("status", "ok", "data", data, "updatedAt", OffsetDateTime.now().toString()));
-        } catch (IllegalArgumentException e) {
-            // Treat as idempotent: the widget was deleted or isn’t owned
+        } catch (WidgetSettingsService.NotFoundOrNotOwned e) {
+            // Treat as idempotent: the widget was deleted or isn't owned
             return ResponseEntity.status(404).body(Map.of("error", "not_found"));
         }
     }
