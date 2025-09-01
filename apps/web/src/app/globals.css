@@ -28,15 +28,3 @@ body {
 .scroll-gutter-stable {
     scrollbar-gutter: stable both-edges;
 }
-
-/* Prevent layout shift when vertical scrollbar appears */
-html {
-    scrollbar-gutter: stable both-edges;
-}
-
-@supports not (scrollbar-gutter: stable) {
-    html {
-        /* Fallback to always-reserved vertical scrollbar */
-        overflow-y: scroll;
-    }
-}
