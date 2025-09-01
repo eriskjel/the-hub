@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { WidgetListItem } from "@/widgets/rows";
 import { API } from "@/lib/apiRoutes";
 
@@ -11,11 +11,21 @@ export default function SeedWidgetsCacheWithRows({
     rows: WidgetListItem[];
     userId: string;
 }) {
-    const didRun = useRef(false);
+    // build a stable signature from instanceIds; order-insensitive
+    const sig = useMemo(
+        () =>
+            rows
+                .map((r) => r.instanceId)
+                .sort()
+                .join("|"),
+        [rows]
+    );
+    const lastSig = useRef<string | null>(null);
 
     useEffect(() => {
-        if (didRun.current || !rows?.length) return;
-        didRun.current = true;
+        if (!rows?.length) return;
+        if (sig === lastSig.current) return;
+        lastSig.current = sig;
 
         const slim = rows.map(({ id, instanceId, kind, title, grid }) => ({
             id,
@@ -28,9 +38,10 @@ export default function SeedWidgetsCacheWithRows({
         fetch(API.widgets.seed, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ uid: userId, slim }),
+            body: JSON.stringify({ slim }),
+            credentials: "same-origin",
         }).catch(() => {});
-    }, [rows, userId]);
+    }, [sig, rows]);
 
     return null;
 }

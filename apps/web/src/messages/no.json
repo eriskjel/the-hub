@@ -129,6 +129,16 @@
                     "notSupported": "Geolokasjon støttes ikke i denne nettleseren."
                 }
             }
+        },
+        "delete": {
+            "ariaDelete": "Slett widget",
+            "title": "Slett widget",
+            "subtitle": "«{name}»",
+            "confirmText": "Er du sikker på at du vil slette denne widgeten? Dette kan ikke angres.",
+            "cancel": "Avbryt",
+            "delete": "Slett",
+            "deleting": "Sletter…",
+            "genericError": "Noe gikk galt. Prøv igjen."
         }
     }
 }

@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import type { AnyWidget, GroceryDealsWidget, WidgetKind } from "@/widgets/schema";
 import WidgetCard from "@/components/widgets/WidgetCard";
 import GlassCard from "@/components/ui/GlassCard";
+import { DeleteWidgetButton } from "@/components/widgets/delete/DeleteWidgetButton";
 import { useTranslations } from "next-intl";
 
 type TitleMode = "title" | "query" | "auto";
@@ -56,10 +57,19 @@ export default function WidgetContainer({
                 : query;
 
     const title = right ? `${kindLabel} | ${right}` : kindLabel;
+
     const header: ReactElement = <Header title={title} />;
+    const actions: ReactElement = (
+        <DeleteWidgetButton
+            widgetId={widget.instanceId}
+            widgetTitle={widgetTitle || kindLabel}
+            userId={userId}
+            kind={widget.kind}
+        />
+    );
 
     return (
-        <GlassCard header={header} stale={stale} variant="solid" tone="light">
+        <GlassCard header={header} actions={actions} stale={stale} variant="solid" tone="light">
             <WidgetCard widget={widget} userId={userId} staleLayout={stale} />
         </GlassCard>
     );

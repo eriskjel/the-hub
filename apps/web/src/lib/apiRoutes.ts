@@ -5,5 +5,6 @@ export const API = {
         seed: "/api/widgets/seed",
         serverPings: "/api/widgets/server-pings",
         groceryDeals: "/api/widgets/grocery-deals",
+        byId: (id: string) => `/api/widgets/${encodeURIComponent(id)}`,
     },
 } as const;

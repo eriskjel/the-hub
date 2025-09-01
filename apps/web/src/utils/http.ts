@@ -15,3 +15,12 @@ export function isAbortError(e: unknown): e is DOMException {
     }
     return false;
 }
+
+export async function parseError(res: Response): Promise<string> {
+    try {
+        const j = await res.json();
+        return j?.error || j?.message || `HTTP ${res.status}`;
+    } catch {
+        return `HTTP ${res.status}`;
+    }
+}
