@@ -15,6 +15,11 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class WidgetSettingsService {
+    public static class NotFoundOrNotOwned extends RuntimeException {
+        public NotFoundOrNotOwned() {
+            super("Widget not found or not owned by user");
+        }
+    }
 
     private final WidgetSettingsRepository repo;
 
@@ -40,8 +45,7 @@ public class WidgetSettingsService {
      *             if not found or not owned by the user
      */
     public WidgetRow requireWidget(UUID userId, UUID instanceId) {
-        return repo.findWidget(userId, instanceId)
-                .orElseThrow(() -> new IllegalArgumentException("Widget not found or not owned by user"));
+        return repo.findWidget(userId, instanceId).orElseThrow(NotFoundOrNotOwned::new);
     }
 
     /**
