@@ -3,6 +3,7 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -30,6 +31,7 @@ public class GroceriesService {
 
     private final RestTemplate http;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final MeterRegistry metrics;
 
     @Value("${etilbudsavis.base-url}")
     private String baseUrl;
@@ -68,8 +70,9 @@ public class GroceriesService {
      * @param http
      *            RestTemplate used to call the external Etilbudsavis API
      */
-    public GroceriesService(RestTemplate http) {
+    public GroceriesService(RestTemplate http, MeterRegistry metrics) {
         this.http = http;
+        this.metrics = metrics;
     }
 
     /**
@@ -102,7 +105,8 @@ public class GroceriesService {
      *             if the response payload cannot be parsed
      */
     public List<DealDto> fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
-        final String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
+        final long t0 = System.nanoTime();
+        String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
         if (term.isEmpty())
             return List.of();
 
@@ -110,6 +114,9 @@ public class GroceriesService {
                 ? top
                 : Optional.ofNullable(s.maxResults()).orElse(getDefaultLimit());
         final int fetchLimit = Math.min(Math.max(desired, 1), SAFETY_CAP);
+        if (desired > SAFETY_CAP) {
+            log.warn("Groceries desired_limit_exceeds_safety desired={} cap={}", desired, SAFETY_CAP);
+        }
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
@@ -141,6 +148,8 @@ public class GroceriesService {
         try {
             ResponseEntity<String> resp = http.exchange(baseUrl + "/", HttpMethod.POST, req, String.class);
             if (!resp.getStatusCode().is2xxSuccessful()) {
+                log.warn("Etilbudsavis non2xx status={} reason={}", resp.getStatusCode().value(), resp.getStatusCode());
+                recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
                 return List.of();
             }
             raw = Optional.ofNullable(resp.getBody()).orElse("");
@@ -150,10 +159,17 @@ public class GroceriesService {
             final String truncated = errBody.length() > max ? errBody.substring(0, max) + "...[truncated]" : errBody;
             log.warn("Etilbudsavis error status={} reason={} body={}", e.getStatusCode().value(), e.getStatusText(),
                     truncated);
+            recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
+            return List.of();
+        } catch (Exception e) {
+            log.error("Etilbudsavis call failed", e);
+            recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
+            throw e;
+        }
+        if (raw.isBlank()) {
+            recordMetrics(term, s.city(), fetchLimit, 0, t0, true);
             return List.of();
         }
-        if (raw.isBlank())
-            return List.of();
 
         List<Map<String, Object>> lines = parseNdjson(raw);
         if (lines.isEmpty())
@@ -190,10 +206,17 @@ public class GroceriesService {
 
         List<DealDto> capped = (top != null && top > 0) ? sorted.subList(0, Math.min(top, sorted.size())) : sorted;
 
+        if (log.isDebugEnabled() || sample(0.02)) {
+            long ms = (System.nanoTime() - t0) / 1_000_000;
+            log.info("Groceries fetched term={} city={} fetchLimit={} returned={} ms={}", norm(term),
+                    norm(cityOrDefault(s)), fetchLimit, capped.size(), ms);
+        }
+
+        recordMetrics(term, s.city(), fetchLimit, capped.size(), t0, true);
+
         if (!preferFavoritesEnabled) {
             return capped;
         }
-
         return applyPreferenceFilter(capped, preferred);
     }
 
@@ -438,5 +461,36 @@ public class GroceriesService {
             String key = k.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
             groceriesVendorAliases.putIfAbsent(key, v);
         });
+    }
+
+    private void recordMetrics(String term, String city, int limit, int outSize, long startNanos, boolean success) {
+        long ms = (System.nanoTime() - startNanos) / 1_000_000;
+        io.micrometer.core.instrument.Tags tags = io.micrometer.core.instrument.Tags.of("success",
+                Boolean.toString(success), "city", norm(city),
+                // keep term coarse to avoid cardinality explosions:
+                "term_class", termClass(term), "limit", Integer.toString(limit));
+        metrics.counter("thehub.groceries.requests", tags).increment();
+        metrics.summary("thehub.groceries.results.count", tags).record(outSize);
+        metrics.timer("thehub.groceries.latency", tags).record(ms, java.util.concurrent.TimeUnit.MILLISECONDS);
+    }
+
+    private static String norm(String s) {
+        return (s == null || s.isBlank()) ? "<none>" : s.toLowerCase(Locale.ROOT);
+    }
+    private static String cityOrDefault(GroceryDealsSettings s) {
+        return (s.city() == null || s.city().isBlank()) ? "<default>" : s.city();
+    }
+    private static String termClass(String term) {
+        if (term == null)
+            return "<none>";
+        int len = term.length();
+        if (len <= 3)
+            return "short";
+        if (len <= 8)
+            return "medium";
+        return "long";
+    }
+    private static boolean sample(double p) {
+        return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
     }
 }

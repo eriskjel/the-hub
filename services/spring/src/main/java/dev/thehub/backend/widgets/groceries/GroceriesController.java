@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/widgets/grocery-deals")
 public class GroceriesController {
+
+    private static final Logger log = LoggerFactory.getLogger(GroceriesController.class);
 
     private final GroceriesService svc;
     private final WidgetSettingsService settingsSvc;
@@ -69,6 +73,11 @@ public class GroceriesController {
             @RequestParam(required = false) Integer limit, @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lon, @RequestParam(required = false) String city,
             @RequestParam(required = false) Integer top) throws IOException {
+        if (log.isDebugEnabled() || sample(0.02)) { // 2% sampled breadcrumb
+            var uid = UUID.fromString(auth.getToken().getClaimAsString("sub"));
+            log.debug("Groceries request uid={} instId={} q={} city={} limit={} top={}", uid, instanceId, safe(q),
+                    safe(city), limit, top);
+        }
         GroceryDealsSettings settings;
 
         if (instanceId != null) {
@@ -90,5 +99,12 @@ public class GroceriesController {
 
         var deals = svc.fetchDeals(settings, effectiveTop);
         return ResponseEntity.ok(deals);
+    }
+
+    private static boolean sample(double p) {
+        return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
+    }
+    private static String safe(String s) {
+        return (s == null || s.isBlank()) ? "<none>" : s;
     }
 }
