@@ -3,13 +3,7 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +11,14 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
 /**
  * Service responsible for querying the external Etilbudsavis API and mapping
@@ -50,6 +52,9 @@ public class GroceriesService {
 
     @Value("${groceries.preferred-vendors:}")
     private String preferredVendorsCsv;
+
+    @Value("#{${groceries.vendor-aliases:{}}}")
+    private Map<String, String> vendorAliases = Map.of();
 
     @Value("${groceries.excluded-vendors:}")
     private String excludedVendorsCsv;
@@ -390,11 +395,10 @@ public class GroceriesService {
         if (raw == null)
             return "";
         String s = raw.trim().toLowerCase(Locale.ROOT);
-        // collapse multiple spaces and punctuation variants
         s = s.replaceAll("[\\s\\-_/]+", " ").trim();
 
         // alias map: normalize inputs like "rema1000" -> "rema 1000"
-        String aliasKey = s.replace(" ", "");
+        String aliasKey = s.replaceAll("[\\s\\-_/]+", "");
         String alias = groceriesVendorAliases.get(aliasKey);
         if (alias != null && !alias.isBlank()) {
             return alias.trim().toLowerCase(Locale.ROOT);
@@ -427,4 +431,13 @@ public class GroceriesService {
         return out;
     }
 
+    @PostConstruct
+    void initVendorAliases() {
+        vendorAliases.forEach((k, v) -> {
+            if (k == null || v == null)
+                return;
+            String key = k.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
+            groceriesVendorAliases.putIfAbsent(key, v);
+        });
+    }
 }
