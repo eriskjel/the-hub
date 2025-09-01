@@ -3,18 +3,26 @@
   "private": true,
   "packageManager": "pnpm@10.14.0",
   "scripts": {
-  "dev": "pnpm -F web dev",
-  "build": "pnpm -F web build",
-  "lint": "pnpm -F web lint",
-  "test": "pnpm -F web test",
-  "test:run": "pnpm -F web test:run",
-  "test:ui": "pnpm -F web test:ui"
-  }, 
+    "dev": "pnpm -F web dev",
+    "build": "pnpm -F web build",
+    "lint": "pnpm -F web lint",
+    "test": "pnpm -F web test",
+    "test:run": "pnpm -F web test:run",
+    "test:ui": "pnpm -F web test:ui"
+  },
   "pnpm": {
     "overrides": {
       "vitest": "2.1.9",
       "vite": "5.4.11",
       "zod": "^3.25.7"
     }
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@next/eslint-plugin-next": "^15.5.2",
+    "eslint": "^9.34.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0"
   }
 }

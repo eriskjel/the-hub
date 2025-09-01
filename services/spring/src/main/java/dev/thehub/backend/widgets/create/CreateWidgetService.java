@@ -3,8 +3,11 @@ package dev.thehub.backend.widgets.create;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.WidgetKind;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 /**
  * Service responsible for creating user widgets and enforcing business
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class CreateWidgetService {
+
+    private static final Logger log = LoggerFactory.getLogger(CreateWidgetService.class);
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
@@ -41,6 +46,9 @@ public class CreateWidgetService {
     }
 
     public void ensureNoDuplicate(UUID userId, WidgetKind kind, Map<String, Object> settings) {
+        if (log.isDebugEnabled()) {
+            log.debug("DupeCheck start userId={} kind={} summary={}", userId, kind, summarizeSettings(kind, settings));
+        }
         switch (kind) {
             case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings);
             case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings);
@@ -51,7 +59,11 @@ public class CreateWidgetService {
     public int countByUserAndKind(UUID userId, WidgetKind kind) {
         final String sql = "select count(*) from user_widgets where user_id = ? and kind = ?";
         Integer n = jdbc.queryForObject(sql, Integer.class, userId, kind.getValue());
-        return (n != null) ? n : 0;
+        int out = (n != null) ? n : 0;
+        if (log.isDebugEnabled()) {
+            log.debug("Count widgets userId={} kind={} count={}", userId, kind, out);
+        }
+        return out;
     }
 
     private void ensureNoDuplicateGroceries(UUID userId, WidgetKind kind, Map<String, Object> settings) {
@@ -59,30 +71,26 @@ public class CreateWidgetService {
             throw new IllegalArgumentException("settings_required");
 
         String query = optString(settings.get("query"));
-        String city = optString(settings.get("city")); // optional but useful for scoping
+        String city = optString(settings.get("city"));
 
         if (query == null || query.isBlank())
             throw new IllegalArgumentException("query_required");
 
-        // Normalize key parts
         String qNorm = query.trim().toLowerCase(Locale.ROOT);
-        String cNorm = city == null ? null : city.trim().toLowerCase(Locale.ROOT);
+        String cNorm = (city == null) ? null : city.trim().toLowerCase(Locale.ROOT);
 
-        // Consider two groceries widgets duplicates if same (query, city) for the same
-        // user.
-        // Tune as you like (you can also include lat/lon rounding).
         final String dupeSql = """
-                    select exists (
-                      select 1
-                      from user_widgets uw
-                      where uw.user_id = ?
-                        and uw.kind = ?
-                        and lower(uw.settings->>'query') = ?
-                        and (
-                             (? is null and jsonb_exists(uw.settings, 'city') = false)
-                          or (? is not null and lower(uw.settings->>'city') = ?)
-                        )
+                select exists (
+                  select 1
+                  from user_widgets uw
+                  where uw.user_id = ?
+                    and uw.kind = ?
+                    and lower(uw.settings->>'query') = ?
+                    and (
+                         (? is null and jsonb_exists(uw.settings, 'city') = false)
+                      or (? is not null and lower(uw.settings->>'city') = ?)
                     )
+                )
                 """;
 
         boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
@@ -96,8 +104,14 @@ public class CreateWidgetService {
             return ps;
         }, rs -> rs.next() && rs.getBoolean(1)));
 
-        if (exists)
+        if (exists) {
+            log.warn("Duplicate groceries widget userId={} kind={} query={} city={}", userId, kind, qNorm,
+                    (cNorm == null ? "<none>" : cNorm));
             throw new DuplicateException("A groceries widget with the same query/city already exists.");
+        } else if (log.isDebugEnabled()) {
+            log.debug("No duplicate groceries userId={} kind={} query={} city={}", userId, kind, qNorm,
+                    (cNorm == null ? "<none>" : cNorm));
+        }
     }
 
     /**
@@ -151,18 +165,23 @@ public class CreateWidgetService {
                 """;
 
         List<String> finalTargets = targets;
-        var anyExists = Boolean.TRUE.equals(jdbc.query(con -> {
+        boolean anyExists = Boolean.TRUE.equals(jdbc.query(con -> {
             var ps = con.prepareStatement(dupeSql);
             ps.setObject(1, userId);
-            ps.setString(2, kind.getValue()); // ← enum → DB string
+            ps.setString(2, kind.getValue());
             var arr = con.createArrayOf("text", finalTargets.toArray(new String[0]));
             ps.setArray(3, arr);
             ps.setArray(4, arr);
             return ps;
-        }, rs -> rs.next() ? rs.getBoolean(1) : Boolean.FALSE));
+        }, rs -> rs.next() && rs.getBoolean(1)));
 
-        if (anyExists)
+        if (anyExists) {
+            log.warn("Duplicate targets userId={} kind={} targetsCount={} example={}", userId, kind,
+                    finalTargets.size(), finalTargets.get(0));
             throw new DuplicateTargetException("duplicate_target");
+        } else if (log.isDebugEnabled()) {
+            log.debug("No duplicate targets userId={} kind={} targetsCount={}", userId, kind, finalTargets.size());
+        }
     }
 
     /**
@@ -197,7 +216,6 @@ public class CreateWidgetService {
             Map<String, Object> grid) {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
-
         Map<String, Object> safeSettings = (settings != null) ? settings : Map.of();
         Map<String, Object> safeGrid = (grid != null) ? grid : Map.of("x", 0, "y", 0, "w", 1, "h", 1);
 
@@ -210,25 +228,44 @@ public class CreateWidgetService {
 
         final String settingsJson;
         final String gridJson;
+
         try {
             settingsJson = json.writeValueAsString(safeSettings);
             gridJson = json.writeValueAsString(safeGrid);
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.error("JSON serialization failed userId={} kind={} titleLen={}", userId, kind,
+                    (title == null ? 0 : title.length()), e);
             throw new RuntimeException("Failed to serialize JSON", e);
         }
 
-        // 👇 this form gives you per-index TRACE logs and avoids “param 7 not set”
-        jdbc.update(insertSql, ps -> {
-            ps.setObject(1, id);
-            ps.setObject(2, instanceId);
-            ps.setObject(3, userId);
-            ps.setString(4, kind.getValue());
-            ps.setString(5, title);
-            ps.setString(6, settingsJson);
-            ps.setString(7, gridJson);
-        });
-
-        return new CreateWidgetResponse(id.toString(), instanceId.toString(), kind, title, safeGrid, safeSettings);
+        var sw = new StopWatch("createWidget");
+        sw.start("dbInsert");
+        try {
+            jdbc.update(insertSql, ps -> {
+                ps.setObject(1, id);
+                ps.setObject(2, instanceId);
+                ps.setObject(3, userId);
+                ps.setString(4, kind.getValue());
+                ps.setString(5, title);
+                ps.setString(6, settingsJson);
+                ps.setString(7, gridJson);
+            });
+            sw.stop();
+            log.info("Widget created userId={} kind={} instanceId={} ms={}", userId, kind, instanceId,
+                    sw.getLastTaskTimeMillis());
+            if (log.isDebugEnabled()) {
+                log.debug("Widget create details titleLen={} settingsSummary={} gridSummary={}",
+                        (title == null ? 0 : title.length()), summarizeSettings(kind, safeSettings),
+                        summarizeGrid(safeGrid));
+            }
+            return new CreateWidgetResponse(id.toString(), instanceId.toString(), kind, title, safeGrid, safeSettings);
+        } catch (Exception e) {
+            if (sw.isRunning())
+                sw.stop();
+            log.error("DB insert failed userId={} kind={} titleLen={} msSoFar={}", userId, kind,
+                    (title == null ? 0 : title.length()), sw.getTotalTimeMillis(), e);
+            throw e;
+        }
     }
 
     /**
@@ -315,5 +352,36 @@ public class CreateWidgetService {
         if (s.endsWith("/"))
             s = s.substring(0, s.length() - 1);
         return s;
+    }
+
+    private static String summarizeSettings(WidgetKind kind, Map<String, Object> s) {
+        if (s == null)
+            return "{}";
+        try {
+            return switch (kind) {
+                case GROCERY_DEALS -> {
+                    String q = optString(s.get("query"));
+                    String c = optString(s.get("city"));
+                    yield "query=" + (q == null ? "<none>" : q) + ", city=" + (c == null ? "<none>" : c);
+                }
+                case SERVER_PINGS -> {
+                    int t = extractTargets(s).size();
+                    yield "targetsCount=" + t;
+                }
+                default -> "n/a";
+            };
+        } catch (Exception ignore) {
+            return "n/a";
+        }
+    }
+
+    private static String summarizeGrid(Map<String, Object> g) {
+        if (g == null)
+            return "{}";
+        Object x = g.getOrDefault("x", "?");
+        Object y = g.getOrDefault("y", "?");
+        Object w = g.getOrDefault("w", "?");
+        Object h = g.getOrDefault("h", "?");
+        return "x=" + x + ",y=" + y + ",w=" + w + ",h=" + h;
     }
 }

@@ -3,13 +3,17 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +33,9 @@ public class GroceriesService {
 
     private final RestTemplate http;
     private final ObjectMapper mapper = new ObjectMapper();
+    private final MeterRegistry metrics;
+    private static final Pattern CSV_SPLIT = Pattern.compile("\\s*,\\s*");
+    private static final Pattern SEP_COLLAPSE = Pattern.compile("[\\s\\-_/]+");
 
     @Value("${etilbudsavis.base-url}")
     private String baseUrl;
@@ -51,6 +58,12 @@ public class GroceriesService {
     @Value("${groceries.preferred-vendors:}")
     private String preferredVendorsCsv;
 
+    @Value("#{${groceries.vendor-aliases:{}}}")
+    private Map<String, String> vendorAliases = Map.of();
+
+    @Value("${groceries.excluded-vendors:}")
+    private String excludedVendorsCsv;
+
     private static final int SAFETY_CAP = 50;
 
     private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
@@ -61,8 +74,9 @@ public class GroceriesService {
      * @param http
      *            RestTemplate used to call the external Etilbudsavis API
      */
-    public GroceriesService(RestTemplate http) {
+    public GroceriesService(RestTemplate http, MeterRegistry metrics) {
         this.http = http;
+        this.metrics = metrics;
     }
 
     /**
@@ -95,7 +109,8 @@ public class GroceriesService {
      *             if the response payload cannot be parsed
      */
     public List<DealDto> fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
-        final String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
+        final long t0 = System.nanoTime();
+        String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
         if (term.isEmpty())
             return List.of();
 
@@ -103,11 +118,14 @@ public class GroceriesService {
                 ? top
                 : Optional.ofNullable(s.maxResults()).orElse(getDefaultLimit());
         final int fetchLimit = Math.min(Math.max(desired, 1), SAFETY_CAP);
+        if (desired > SAFETY_CAP) {
+            log.warn("Groceries desired_limit_exceeds_safety desired={} cap={}", desired, SAFETY_CAP);
+        }
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
-            } catch (Exception e) {
-                throw new RuntimeException("Encoding payload failed", e);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Encoding payload failed", e);
             }
         };
 
@@ -134,6 +152,8 @@ public class GroceriesService {
         try {
             ResponseEntity<String> resp = http.exchange(baseUrl + "/", HttpMethod.POST, req, String.class);
             if (!resp.getStatusCode().is2xxSuccessful()) {
+                log.warn("Etilbudsavis non2xx status={} reason={}", resp.getStatusCode().value(), resp.getStatusCode());
+                recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
                 return List.of();
             }
             raw = Optional.ofNullable(resp.getBody()).orElse("");
@@ -143,10 +163,17 @@ public class GroceriesService {
             final String truncated = errBody.length() > max ? errBody.substring(0, max) + "...[truncated]" : errBody;
             log.warn("Etilbudsavis error status={} reason={} body={}", e.getStatusCode().value(), e.getStatusText(),
                     truncated);
+            recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
+            return List.of();
+        } catch (Exception e) {
+            log.error("Etilbudsavis call failed", e);
+            recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
+            throw e;
+        }
+        if (raw.isBlank()) {
+            recordMetrics(term, s.city(), fetchLimit, 0, t0, true);
             return List.of();
         }
-        if (raw.isBlank())
-            return List.of();
 
         List<Map<String, Object>> lines = parseNdjson(raw);
         if (lines.isEmpty())
@@ -154,7 +181,7 @@ public class GroceriesService {
 
         Map<String, Object> offersBlock = lines.stream().filter(b -> Objects.equals(b.get("key"), qOffers)).findFirst()
                 .orElseGet(() -> lines.stream().filter(b -> {
-                    Object v = ((Map<?, ?>) b.get("value"));
+                    Object v = b.get("value");
                     if (!(v instanceof Map<?, ?> vm))
                         return false;
                     Object d = vm.get("data");
@@ -174,18 +201,40 @@ public class GroceriesService {
         if (data == null || data.isEmpty())
             return List.of();
 
+        final Set<String> excluded = excludedVendorsNormalized();
+        final Set<String> preferred = preferredVendorsNormalized();
+
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
+                .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
                 .sorted(Comparator.comparingDouble(GroceriesService::metricForSort)).toList();
 
-        List<DealDto> capped = (top != null && top > 0) ? sorted.subList(0, Math.min(top, sorted.size())) : sorted;
+        List<DealDto> capped = (top != null && top > 0) ? sorted.stream().limit(top).toList() : sorted;
+
+        if (log.isDebugEnabled() || sample(0.02)) {
+            long ms = (System.nanoTime() - t0) / 1_000_000;
+            log.info("Groceries fetched term={} city={} fetchLimit={} returned={} ms={}", norm(term),
+                    norm(cityOrDefault(s)), fetchLimit, capped.size(), ms);
+        }
+
+        recordMetrics(term, s.city(), fetchLimit, capped.size(), t0, true);
 
         if (!preferFavoritesEnabled) {
             return capped;
         }
-
-        return applyPreferenceFilter(capped, preferredVendorsNormalized());
+        return applyPreferenceFilter(capped, preferred);
     }
 
+    /**
+     * Reorders deals so that favorite vendors are preferred unless a non-favorite
+     * item is strictly cheaper according to the sorting metric.
+     *
+     * @param deals
+     *            the input list already sorted by {@link #metricForSort(DealDto)}
+     * @param favorites
+     *            set of canonicalized favorite vendor names
+     * @return a new list where favorites are surfaced without hiding better priced
+     *         non-favorites
+     */
     private List<DealDto> applyPreferenceFilter(List<DealDto> deals, Set<String> favorites) {
         if (deals.isEmpty() || favorites.isEmpty())
             return deals;
@@ -219,6 +268,14 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Maps a raw offer map from the API into a typed {@link DealDto}. Filters out
+     * entries with missing/invalid price.
+     *
+     * @param m
+     *            raw map representing a single offer document
+     * @return a populated DealDto or null when essential fields are missing
+     */
     private DealDto toDeal(Map<String, Object> m) {
         String name = Objects.toString(m.get("name"), "");
 
@@ -255,7 +312,7 @@ public class GroceriesService {
             if (slugs instanceof List<?> list) {
                 for (Object s : list) {
                     if (s instanceof String slug && !slug.isBlank()) {
-                        String key = slug.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
+                        String key = SEP_COLLAPSE.matcher(slug.trim().toLowerCase(Locale.ROOT)).replaceAll("");
                         groceriesVendorAliases.computeIfAbsent(key, k -> storeName); // use final var
                     }
                 }
@@ -308,6 +365,13 @@ public class GroceriesService {
                 multipack);
     }
 
+    /**
+     * Attempts to parse an integer from a Number or String.
+     *
+     * @param o
+     *            number or numeric string
+     * @return Integer value or null if parsing fails
+     */
     private static Integer toInt(Object o) {
         if (o instanceof Number n)
             return n.intValue();
@@ -330,6 +394,16 @@ public class GroceriesService {
         return URLEncoder.encode(json, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parses an ndjson response body into a list of JSON objects. Blank lines and
+     * closing bracket tokens are ignored.
+     *
+     * @param raw
+     *            raw response body in NDJSON format
+     * @return list of parsed maps
+     * @throws IOException
+     *             if any line fails to parse as JSON
+     */
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> parseNdjson(String raw) throws IOException {
         List<Map<String, Object>> out = new ArrayList<>();
@@ -342,6 +416,14 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Attempts to parse a double from a Number or String, tolerating formats like
+     * "19,90" or "19.90" and ignoring currency symbols.
+     *
+     * @param o
+     *            number or numeric string
+     * @return Double value or null if parsing fails
+     */
     private static Double toDouble(Object o) {
         if (o instanceof Number n)
             return n.doubleValue();
@@ -358,6 +440,9 @@ public class GroceriesService {
         return null;
     }
 
+    /**
+     * Returns the first argument that is a non-blank String, or null if none.
+     */
     private static String firstNonBlank(Object... candidates) {
         for (Object c : candidates) {
             if (c instanceof String s && !s.isBlank())
@@ -366,35 +451,33 @@ public class GroceriesService {
         return null;
     }
 
+    /**
+     * Parses the preferred vendors CSV from configuration and returns a normalized
+     * set for comparisons.
+     */
     private Set<String> preferredVendorsNormalized() {
-        if (preferredVendorsCsv == null || preferredVendorsCsv.isBlank())
-            return Set.of();
-        String[] parts = preferredVendorsCsv.split(",");
-        Set<String> out = new HashSet<>();
-        for (String p : parts) {
-            String c = canonicalizeVendor(p);
-            if (!c.isBlank())
-                out.add(c);
-        }
-        return out;
+        return parseVendorCsvNormalized(preferredVendorsCsv);
     }
 
+    /**
+     * Normalizes a vendor/store name to a canonical lowercase form, applying
+     * configured aliases and collapsing whitespace and separators.
+     */
     private String canonicalizeVendor(String raw) {
         if (raw == null)
             return "";
         String s = raw.trim().toLowerCase(Locale.ROOT);
-        // collapse multiple spaces and punctuation variants
-        s = s.replaceAll("[\\s\\-_/]+", " ").trim();
+        s = SEP_COLLAPSE.matcher(s).replaceAll(" ").trim();
 
-        // alias map: normalize inputs like "rema1000" -> "rema 1000"
-        String aliasKey = s.replace(" ", "");
+        String aliasKey = SEP_COLLAPSE.matcher(s).replaceAll("");
         String alias = groceriesVendorAliases.get(aliasKey);
-        if (alias != null && !alias.isBlank()) {
-            return alias.trim().toLowerCase(Locale.ROOT);
-        }
-        return s;
+        return (alias != null && !alias.isBlank()) ? alias.trim().toLowerCase(Locale.ROOT) : s;
     }
 
+    /**
+     * Computes a sorting metric: prefer unit price when available, otherwise use
+     * the absolute price. If min/max unit prices exist, use their midpoint.
+     */
     private static double metricForSort(DealDto d) {
         // prefer unit price (per kg) if present; else fallback to absolute price
         Double up = d.unitPrice();
@@ -405,6 +488,76 @@ public class GroceriesService {
             return (d.unitPriceMin() + d.unitPriceMax()) / 2.0;
         }
         return d.price();
+    }
+
+    /**
+     * Parses the excluded vendors CSV from configuration and returns a normalized
+     * set for filtering results.
+     */
+    private Set<String> excludedVendorsNormalized() {
+        return parseVendorCsvNormalized(excludedVendorsCsv);
+    }
+
+    /**
+     * Initializes the runtime alias map for vendor normalization using the
+     * configured aliases. Executed once after bean construction.
+     */
+    @PostConstruct
+    void initVendorAliases() {
+        vendorAliases.forEach((k, v) -> {
+            if (k == null || v == null)
+                return;
+            String key = SEP_COLLAPSE.matcher(k.trim().toLowerCase(Locale.ROOT)).replaceAll("");
+            groceriesVendorAliases.putIfAbsent(key, v);
+        });
+    }
+
+    /**
+     * Records request metrics (count, latency, and result size) with
+     * low-cardinality tags.
+     */
+    private void recordMetrics(String term, String city, int limit, int outSize, long startNanos, boolean success) {
+        long ms = (System.nanoTime() - startNanos) / 1_000_000;
+        io.micrometer.core.instrument.Tags tags = io.micrometer.core.instrument.Tags.of("success",
+                Boolean.toString(success), "city", norm(city),
+                // keep term coarse to avoid cardinality explosions:
+                "term_class", termClass(term), "limit", Integer.toString(limit));
+        metrics.counter("thehub.groceries.requests", tags).increment();
+        metrics.summary("thehub.groceries.results.count", tags).record(outSize);
+        metrics.timer("thehub.groceries.latency", tags).record(ms, java.util.concurrent.TimeUnit.MILLISECONDS);
+    }
+
+    private static String norm(String s) {
+        return (s == null || s.isBlank()) ? "<none>" : s.toLowerCase(Locale.ROOT);
+    }
+    private static String cityOrDefault(GroceryDealsSettings s) {
+        return (s.city() == null || s.city().isBlank()) ? "<default>" : s.city();
+    }
+    private static String termClass(String term) {
+        if (term == null)
+            return "<none>";
+        int len = term.length();
+        if (len <= 3)
+            return "short";
+        if (len <= 8)
+            return "medium";
+        return "long";
+    }
+    private static boolean sample(double p) {
+        return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
+    }
+
+    private Set<String> parseVendorCsvNormalized(String csv) {
+        if (csv == null || csv.isBlank())
+            return Set.of();
+        String[] parts = CSV_SPLIT.split(csv);
+        Set<String> out = new HashSet<>(parts.length);
+        for (String p : parts) {
+            String c = canonicalizeVendor(p);
+            if (!c.isBlank())
+                out.add(c);
+        }
+        return out;
     }
 
 }

@@ -80,7 +80,9 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthConverter)
             throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable).cors(Customizer.withDefaults())
-                .authorizeHttpRequests(reg -> reg.requestMatchers("/health", "/actuator/**").permitAll()
+                .authorizeHttpRequests(reg -> reg
+                        .requestMatchers("/swagger-ui", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                        .permitAll().requestMatchers("/health", "/actuator/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/widgets/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)))
