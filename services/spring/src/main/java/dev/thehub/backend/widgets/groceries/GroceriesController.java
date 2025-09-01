@@ -101,9 +101,24 @@ public class GroceriesController {
         return ResponseEntity.ok(deals);
     }
 
+    /**
+     * Returns true with probability p.
+     *
+     * @param p
+     *            probability in the range [0,1]
+     * @return whether the event sampled as true
+     */
     private static boolean sample(double p) {
         return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
     }
+
+    /**
+     * Returns a safe representation of a possibly blank string for logging.
+     *
+     * @param s
+     *            input string (nullable)
+     * @return the input if non-blank, otherwise the literal "<none>"
+     */
     private static String safe(String s) {
         return (s == null || s.isBlank()) ? "<none>" : s;
     }

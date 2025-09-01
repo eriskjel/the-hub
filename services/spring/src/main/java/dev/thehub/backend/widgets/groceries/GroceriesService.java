@@ -220,6 +220,17 @@ public class GroceriesService {
         return applyPreferenceFilter(capped, preferred);
     }
 
+    /**
+     * Reorders deals so that favorite vendors are preferred unless a non-favorite
+     * item is strictly cheaper according to the sorting metric.
+     *
+     * @param deals
+     *            the input list already sorted by {@link #metricForSort(DealDto)}
+     * @param favorites
+     *            set of canonicalized favorite vendor names
+     * @return a new list where favorites are surfaced without hiding better priced
+     *         non-favorites
+     */
     private List<DealDto> applyPreferenceFilter(List<DealDto> deals, Set<String> favorites) {
         if (deals.isEmpty() || favorites.isEmpty())
             return deals;
@@ -253,6 +264,14 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Maps a raw offer map from the API into a typed {@link DealDto}. Filters out
+     * entries with missing/invalid price.
+     *
+     * @param m
+     *            raw map representing a single offer document
+     * @return a populated DealDto or null when essential fields are missing
+     */
     private DealDto toDeal(Map<String, Object> m) {
         String name = Objects.toString(m.get("name"), "");
 
@@ -342,6 +361,13 @@ public class GroceriesService {
                 multipack);
     }
 
+    /**
+     * Attempts to parse an integer from a Number or String.
+     *
+     * @param o
+     *            number or numeric string
+     * @return Integer value or null if parsing fails
+     */
     private static Integer toInt(Object o) {
         if (o instanceof Number n)
             return n.intValue();
@@ -364,6 +390,16 @@ public class GroceriesService {
         return URLEncoder.encode(json, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Parses an ndjson response body into a list of JSON objects. Blank lines and
+     * closing bracket tokens are ignored.
+     *
+     * @param raw
+     *            raw response body in NDJSON format
+     * @return list of parsed maps
+     * @throws IOException
+     *             if any line fails to parse as JSON
+     */
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> parseNdjson(String raw) throws IOException {
         List<Map<String, Object>> out = new ArrayList<>();
@@ -376,6 +412,14 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Attempts to parse a double from a Number or String, tolerating formats like
+     * "19,90" or "19.90" and ignoring currency symbols.
+     *
+     * @param o
+     *            number or numeric string
+     * @return Double value or null if parsing fails
+     */
     private static Double toDouble(Object o) {
         if (o instanceof Number n)
             return n.doubleValue();
@@ -392,6 +436,9 @@ public class GroceriesService {
         return null;
     }
 
+    /**
+     * Returns the first argument that is a non-blank String, or null if none.
+     */
     private static String firstNonBlank(Object... candidates) {
         for (Object c : candidates) {
             if (c instanceof String s && !s.isBlank())
@@ -400,6 +447,10 @@ public class GroceriesService {
         return null;
     }
 
+    /**
+     * Parses the preferred vendors CSV from configuration and returns a normalized
+     * set for comparisons.
+     */
     private Set<String> preferredVendorsNormalized() {
         if (preferredVendorsCsv == null || preferredVendorsCsv.isBlank())
             return Set.of();
@@ -413,6 +464,10 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Normalizes a vendor/store name to a canonical lowercase form, applying
+     * configured aliases and collapsing whitespace and separators.
+     */
     private String canonicalizeVendor(String raw) {
         if (raw == null)
             return "";
@@ -428,6 +483,10 @@ public class GroceriesService {
         return s;
     }
 
+    /**
+     * Computes a sorting metric: prefer unit price when available, otherwise use
+     * the absolute price. If min/max unit prices exist, use their midpoint.
+     */
     private static double metricForSort(DealDto d) {
         // prefer unit price (per kg) if present; else fallback to absolute price
         Double up = d.unitPrice();
@@ -440,6 +499,10 @@ public class GroceriesService {
         return d.price();
     }
 
+    /**
+     * Parses the excluded vendors CSV from configuration and returns a normalized
+     * set for filtering results.
+     */
     private Set<String> excludedVendorsNormalized() {
         if (excludedVendorsCsv == null || excludedVendorsCsv.isBlank())
             return Set.of();
@@ -453,6 +516,10 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Initializes the runtime alias map for vendor normalization using the
+     * configured aliases. Executed once after bean construction.
+     */
     @PostConstruct
     void initVendorAliases() {
         vendorAliases.forEach((k, v) -> {
@@ -463,6 +530,10 @@ public class GroceriesService {
         });
     }
 
+    /**
+     * Records request metrics (count, latency, and result size) with
+     * low-cardinality tags.
+     */
     private void recordMetrics(String term, String city, int limit, int outSize, long startNanos, boolean success) {
         long ms = (System.nanoTime() - startNanos) / 1_000_000;
         io.micrometer.core.instrument.Tags tags = io.micrometer.core.instrument.Tags.of("success",
