@@ -85,23 +85,41 @@ export default function MonsterPage() {
 
             <Roller monsters={repeatedMonsters} offset={offset} duration={animate ? duration : 0} />
 
-            {!rolling && selected && (
-                <div
-                    className={clsx(
-                        "mt-4 rounded-lg border-2 bg-black/50 p-6",
-                        RARITY_BORDERS[selected.rarity]
-                    )}
-                >
-                    <Image
-                        src={selected.image}
-                        alt={selected.name}
-                        className="mx-auto mb-2 w-32 rounded-lg"
-                        width={128}
-                        height={128}
-                    />
-                    <div className="mb-2 text-3xl font-bold">{selected.name}</div>
-                </div>
+            {/* Preload the selected image during the spin to avoid pop-in */}
+            {selected && rolling && (
+                <Image
+                    src={selected.image}
+                    alt=""
+                    width={128}
+                    height={128}
+                    priority
+                    className="hidden"
+                    aria-hidden
+                />
             )}
+
+            {/* Reserve space responsively so it fits on all devices */}
+            <div className="mt-4 min-h-[clamp(160px,28vh,260px)]">
+                {!rolling && selected && (
+                    <div
+                        className={clsx(
+                            "rounded-lg border-2 bg-black/50 p-4 sm:p-6",
+                            RARITY_BORDERS[selected.rarity]
+                        )}
+                    >
+                        <Image
+                            src={selected.image}
+                            alt={selected.name}
+                            className="mx-auto mb-2 h-auto w-[clamp(80px,24vw,128px)] rounded-lg"
+                            width={128}
+                            height={128}
+                            loading="eager"
+                            sizes="(max-width: 640px) 24vw, 128px"
+                        />
+                        <div className="mb-2 text-2xl font-bold sm:text-3xl">{selected.name}</div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
