@@ -3,6 +3,7 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +51,12 @@ public class GroceriesService {
 
     @Value("${groceries.preferred-vendors:}")
     private String preferredVendorsCsv;
+
+    @Value("#{${groceries.vendor-aliases:{}}}")
+    private Map<String, String> vendorAliases = Map.of();
+
+    @Value("${groceries.excluded-vendors:}")
+    private String excludedVendorsCsv;
 
     private static final int SAFETY_CAP = 50;
 
@@ -174,7 +181,11 @@ public class GroceriesService {
         if (data == null || data.isEmpty())
             return List.of();
 
+        final Set<String> excluded = excludedVendorsNormalized();
+        final Set<String> preferred = preferredVendorsNormalized();
+
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
+                .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
                 .sorted(Comparator.comparingDouble(GroceriesService::metricForSort)).toList();
 
         List<DealDto> capped = (top != null && top > 0) ? sorted.subList(0, Math.min(top, sorted.size())) : sorted;
@@ -183,7 +194,7 @@ public class GroceriesService {
             return capped;
         }
 
-        return applyPreferenceFilter(capped, preferredVendorsNormalized());
+        return applyPreferenceFilter(capped, preferred);
     }
 
     private List<DealDto> applyPreferenceFilter(List<DealDto> deals, Set<String> favorites) {
@@ -369,7 +380,7 @@ public class GroceriesService {
     private Set<String> preferredVendorsNormalized() {
         if (preferredVendorsCsv == null || preferredVendorsCsv.isBlank())
             return Set.of();
-        String[] parts = preferredVendorsCsv.split(",");
+        String[] parts = preferredVendorsCsv.split("\\s*,\\s*");
         Set<String> out = new HashSet<>();
         for (String p : parts) {
             String c = canonicalizeVendor(p);
@@ -383,11 +394,10 @@ public class GroceriesService {
         if (raw == null)
             return "";
         String s = raw.trim().toLowerCase(Locale.ROOT);
-        // collapse multiple spaces and punctuation variants
         s = s.replaceAll("[\\s\\-_/]+", " ").trim();
 
         // alias map: normalize inputs like "rema1000" -> "rema 1000"
-        String aliasKey = s.replace(" ", "");
+        String aliasKey = s.replaceAll("[\\s\\-_/]+", "");
         String alias = groceriesVendorAliases.get(aliasKey);
         if (alias != null && !alias.isBlank()) {
             return alias.trim().toLowerCase(Locale.ROOT);
@@ -407,4 +417,26 @@ public class GroceriesService {
         return d.price();
     }
 
+    private Set<String> excludedVendorsNormalized() {
+        if (excludedVendorsCsv == null || excludedVendorsCsv.isBlank())
+            return Set.of();
+        String[] parts = excludedVendorsCsv.split("\\s*,\\s*");
+        Set<String> out = new HashSet<>();
+        for (String p : parts) {
+            String c = canonicalizeVendor(p);
+            if (!c.isBlank())
+                out.add(c);
+        }
+        return out;
+    }
+
+    @PostConstruct
+    void initVendorAliases() {
+        vendorAliases.forEach((k, v) -> {
+            if (k == null || v == null)
+                return;
+            String key = k.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
+            groceriesVendorAliases.putIfAbsent(key, v);
+        });
+    }
 }
