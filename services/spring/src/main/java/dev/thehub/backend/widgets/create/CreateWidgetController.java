@@ -1,6 +1,13 @@
 package dev.thehub.backend.widgets.create;
 
 import dev.thehub.backend.widgets.WidgetKind;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.EnumSet;
 import java.util.Map;
@@ -24,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  * duplicate/limit checks before persisting the widget using
  * {@link CreateWidgetService}.
  */
+@Tag(name = "Widgets")
 @RestController
 @RequestMapping("/api/widgets")
 public class CreateWidgetController {
@@ -58,8 +66,15 @@ public class CreateWidgetController {
      *         invalid input; 403 when forbidden by role; 409 when duplicates/limits
      *         are violated
      */
+    @Operation(summary = "Create a widget instance", description = "Creates a widget for the current user. Non-admins can only create grocery-deals and are limited to 5.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = CreateWidgetResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "409", description = "Duplicate or limit reached")})
     @PostMapping
-    public ResponseEntity<?> create(JwtAuthenticationToken auth, @RequestBody CreateWidgetRequest body) {
+    public ResponseEntity<?> create(@Parameter(hidden = true) JwtAuthenticationToken auth,
+            @RequestBody CreateWidgetRequest body) {
         final UUID userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
 
         log.info("CreateWidget request received userId={} kind={} title.len={}", userId, body.kind(),

@@ -3,6 +3,14 @@ package dev.thehub.backend.widgets.groceries;
 import dev.thehub.backend.widgets.WidgetSettingsService;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * REST controller for grocery deals. Provides an endpoint to fetch deals either
  * from a saved widget instance or ad-hoc query parameters.
  */
+@Tag(name = "Grocery Deals")
 @RestController
 @RequestMapping("/api/widgets/grocery-deals")
 public class GroceriesController {
@@ -67,12 +76,20 @@ public class GroceriesController {
      * @return HTTP 200 with a list of deals, or 400 when required inputs are
      *         missing
      */
+    @Operation(summary = "Fetch grocery deals", description = "Fetches deals by a saved widget instance (instanceId) or by ad-hoc query parameters.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = DealDto.class)))),
+            @ApiResponse(responseCode = "400", description = "Missing required inputs")})
     @GetMapping
-    public ResponseEntity<List<DealDto>> deals(JwtAuthenticationToken auth,
-            @RequestParam(required = false) UUID instanceId, @RequestParam(name = "q", required = false) String q,
-            @RequestParam(required = false) Integer limit, @RequestParam(required = false) Double lat,
-            @RequestParam(required = false) Double lon, @RequestParam(required = false) String city,
-            @RequestParam(required = false) Integer top) throws IOException {
+    public ResponseEntity<List<DealDto>> deals(@Parameter(hidden = true) JwtAuthenticationToken auth,
+            @Parameter(description = "Widget instance id owned by the caller") @RequestParam(required = false) UUID instanceId,
+            @Parameter(description = "Search query when no instanceId is provided") @RequestParam(name = "q", required = false) String q,
+            @Parameter(description = "Result limit override") @RequestParam(required = false) Integer limit,
+            @Parameter(description = "Latitude override") @RequestParam(required = false) Double lat,
+            @Parameter(description = "Longitude override") @RequestParam(required = false) Double lon,
+            @Parameter(description = "City override") @RequestParam(required = false) String city,
+            @Parameter(description = "Cap on the number of items returned") @RequestParam(required = false) Integer top)
+            throws IOException {
         if (log.isDebugEnabled() || sample(0.02)) { // 2% sampled breadcrumb
             var uid = UUID.fromString(auth.getToken().getClaimAsString("sub"));
             log.debug("Groceries request uid={} instId={} q={} city={} limit={} top={}", uid, instanceId, safe(q),
