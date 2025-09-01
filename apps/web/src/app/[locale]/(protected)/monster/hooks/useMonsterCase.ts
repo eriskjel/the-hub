@@ -19,7 +19,6 @@ export function validateRarityWeightsDev() {
     if (process.env.NODE_ENV !== "development") return;
     const total = Object.values(RARITY_PROBABILITIES).reduce((a, b) => a + b, 0);
     if (Math.abs(total - 100) > 0.001) {
-        // eslint-disable-next-line no-console
         console.warn(`RARITY_PROBABILITIES sum to ${total}, expected 100`);
     }
 }
