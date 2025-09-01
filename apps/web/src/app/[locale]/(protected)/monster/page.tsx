@@ -94,7 +94,7 @@ export default function MonsterPage() {
                     height={128}
                     priority
                     className="hidden"
-                    aria-hidden
+                    aria-hidden={true}
                 />
             )}
 
