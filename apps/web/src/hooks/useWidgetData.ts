@@ -29,8 +29,8 @@ export function useWidgetData<D = unknown>(
     const inFlightRef = useRef(false);
     const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const mountedRef = useRef(true);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Namespace cache per widget instance
     const cacheKey = `hub:u:${userId ?? "anon"}:widget:${kind}:${widget.instanceId}`;
 
     const saveCache = useCallback(
@@ -38,9 +38,7 @@ export function useWidgetData<D = unknown>(
             try {
                 const payload = JSON.stringify({ ts: Date.now(), data });
                 localStorage.setItem(cacheKey, payload);
-            } catch {
-                // ignore quota/serialization errors
-            }
+            } catch {}
         },
         [cacheKey]
     );
@@ -54,6 +52,17 @@ export function useWidgetData<D = unknown>(
             return null;
         }
     }, [cacheKey]);
+
+    const stopPolling = useCallback(() => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+        if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+        }
+    }, []);
 
     const load = useCallback(
         async (retryCount = 0) => {
@@ -77,6 +86,18 @@ export function useWidgetData<D = unknown>(
                     saveCache(data);
                 }
             } catch (err) {
+                if (err instanceof HttpError && err.status === 404) {
+                    console.warn("[useWidgetData] 404 stop", kind, widget.instanceId);
+                    stopPolling();
+                    try {
+                        localStorage.removeItem(cacheKey);
+                    } catch {}
+                    if (mountedRef.current)
+                        setState({ status: "error", error: "deleted", retryCount });
+                    inFlightRef.current = false;
+                    return;
+                }
+
                 if (err instanceof DegradedError) {
                     const cached = loadCache<D>();
                     if (cached && mountedRef.current) {
@@ -94,7 +115,6 @@ export function useWidgetData<D = unknown>(
                         warnOnce(key, `[widget:${key}] degraded; no cache`);
                     }
                     inFlightRef.current = false;
-                    // No backoff in degraded mode; rely on interval tick
                     return;
                 }
 
@@ -107,8 +127,7 @@ export function useWidgetData<D = unknown>(
                 warnOnce(key, `[widget:${key}] fetch failed: ${msg}`);
 
                 if (retryCount < MAX_RETRIES && mountedRef.current) {
-                    // Exponential backoff with slight jitter to de-sync retries
-                    const jitter = 1 + Math.random() * 0.2; // +0–20%
+                    const jitter = 1 + Math.random() * 0.2;
                     const delay = Math.floor(BASE_RETRY_DELAY * 2 ** retryCount * jitter);
                     if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
                     retryTimeoutRef.current = setTimeout(() => load(retryCount + 1), delay);
@@ -128,29 +147,26 @@ export function useWidgetData<D = unknown>(
                 inFlightRef.current = false;
             }
         },
-        [entry, kind, widget.instanceId, loadCache, saveCache]
+        [entry, kind, widget.instanceId, loadCache, saveCache, stopPolling, cacheKey]
     );
 
     useEffect(() => {
         mountedRef.current = true;
 
-        // Seed with any cached data to avoid empty UI
         const cached = loadCache<D>();
         if (cached) setState({ status: "success", data: cached.data, stale: true });
 
-        // Kick off first load
         load();
 
-        // Guard against negative/NaN intervals and hard-clamp a minimum
         const pollEvery = Math.max(
             MIN_POLL_INTERVAL_MS,
             Number.isFinite(intervalMs) ? Math.floor(intervalMs) : DEFAULT_WIDGET_DATA_INTERVAL_MS
         );
-        const intervalId = pollEvery > 0 ? setInterval(() => load(), pollEvery) : null;
+        intervalRef.current = pollEvery > 0 ? setInterval(() => load(), pollEvery) : null;
 
         return () => {
             mountedRef.current = false;
-            if (intervalId) clearInterval(intervalId);
+            if (intervalRef.current) clearInterval(intervalRef.current);
             if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
         };
     }, [load, intervalMs, loadCache]);
