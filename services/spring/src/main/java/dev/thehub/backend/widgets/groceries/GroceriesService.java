@@ -6,12 +6,14 @@ import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +34,8 @@ public class GroceriesService {
     private final RestTemplate http;
     private final ObjectMapper mapper = new ObjectMapper();
     private final MeterRegistry metrics;
+    private static final Pattern CSV_SPLIT = Pattern.compile("\\s*,\\s*");
+    private static final Pattern SEP_COLLAPSE = Pattern.compile("[\\s\\-_/]+");
 
     @Value("${etilbudsavis.base-url}")
     private String baseUrl;
@@ -120,8 +124,8 @@ public class GroceriesService {
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
-            } catch (Exception e) {
-                throw new RuntimeException("Encoding payload failed", e);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Encoding payload failed", e);
             }
         };
 
@@ -177,7 +181,7 @@ public class GroceriesService {
 
         Map<String, Object> offersBlock = lines.stream().filter(b -> Objects.equals(b.get("key"), qOffers)).findFirst()
                 .orElseGet(() -> lines.stream().filter(b -> {
-                    Object v = ((Map<?, ?>) b.get("value"));
+                    Object v = b.get("value");
                     if (!(v instanceof Map<?, ?> vm))
                         return false;
                     Object d = vm.get("data");
@@ -204,7 +208,7 @@ public class GroceriesService {
                 .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
                 .sorted(Comparator.comparingDouble(GroceriesService::metricForSort)).toList();
 
-        List<DealDto> capped = (top != null && top > 0) ? sorted.subList(0, Math.min(top, sorted.size())) : sorted;
+        List<DealDto> capped = (top != null && top > 0) ? sorted.stream().limit(top).toList() : sorted;
 
         if (log.isDebugEnabled() || sample(0.02)) {
             long ms = (System.nanoTime() - t0) / 1_000_000;
@@ -308,7 +312,7 @@ public class GroceriesService {
             if (slugs instanceof List<?> list) {
                 for (Object s : list) {
                     if (s instanceof String slug && !slug.isBlank()) {
-                        String key = slug.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
+                        String key = SEP_COLLAPSE.matcher(slug.trim().toLowerCase(Locale.ROOT)).replaceAll("");
                         groceriesVendorAliases.computeIfAbsent(key, k -> storeName); // use final var
                     }
                 }
@@ -452,16 +456,7 @@ public class GroceriesService {
      * set for comparisons.
      */
     private Set<String> preferredVendorsNormalized() {
-        if (preferredVendorsCsv == null || preferredVendorsCsv.isBlank())
-            return Set.of();
-        String[] parts = preferredVendorsCsv.split("\\s*,\\s*");
-        Set<String> out = new HashSet<>();
-        for (String p : parts) {
-            String c = canonicalizeVendor(p);
-            if (!c.isBlank())
-                out.add(c);
-        }
-        return out;
+        return parseVendorCsvNormalized(preferredVendorsCsv);
     }
 
     /**
@@ -472,15 +467,11 @@ public class GroceriesService {
         if (raw == null)
             return "";
         String s = raw.trim().toLowerCase(Locale.ROOT);
-        s = s.replaceAll("[\\s\\-_/]+", " ").trim();
+        s = SEP_COLLAPSE.matcher(s).replaceAll(" ").trim();
 
-        // alias map: normalize inputs like "rema1000" -> "rema 1000"
-        String aliasKey = s.replaceAll("[\\s\\-_/]+", "");
+        String aliasKey = SEP_COLLAPSE.matcher(s).replaceAll("");
         String alias = groceriesVendorAliases.get(aliasKey);
-        if (alias != null && !alias.isBlank()) {
-            return alias.trim().toLowerCase(Locale.ROOT);
-        }
-        return s;
+        return (alias != null && !alias.isBlank()) ? alias.trim().toLowerCase(Locale.ROOT) : s;
     }
 
     /**
@@ -504,16 +495,7 @@ public class GroceriesService {
      * set for filtering results.
      */
     private Set<String> excludedVendorsNormalized() {
-        if (excludedVendorsCsv == null || excludedVendorsCsv.isBlank())
-            return Set.of();
-        String[] parts = excludedVendorsCsv.split("\\s*,\\s*");
-        Set<String> out = new HashSet<>();
-        for (String p : parts) {
-            String c = canonicalizeVendor(p);
-            if (!c.isBlank())
-                out.add(c);
-        }
-        return out;
+        return parseVendorCsvNormalized(excludedVendorsCsv);
     }
 
     /**
@@ -525,7 +507,7 @@ public class GroceriesService {
         vendorAliases.forEach((k, v) -> {
             if (k == null || v == null)
                 return;
-            String key = k.trim().toLowerCase(Locale.ROOT).replaceAll("[\\s\\-_/]+", "");
+            String key = SEP_COLLAPSE.matcher(k.trim().toLowerCase(Locale.ROOT)).replaceAll("");
             groceriesVendorAliases.putIfAbsent(key, v);
         });
     }
@@ -564,4 +546,18 @@ public class GroceriesService {
     private static boolean sample(double p) {
         return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
     }
+
+    private Set<String> parseVendorCsvNormalized(String csv) {
+        if (csv == null || csv.isBlank())
+            return Set.of();
+        String[] parts = CSV_SPLIT.split(csv);
+        Set<String> out = new HashSet<>(parts.length);
+        for (String p : parts) {
+            String c = canonicalizeVendor(p);
+            if (!c.isBlank())
+                out.add(c);
+        }
+        return out;
+    }
+
 }
