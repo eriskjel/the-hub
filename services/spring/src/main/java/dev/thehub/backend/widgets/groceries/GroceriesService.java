@@ -51,6 +51,9 @@ public class GroceriesService {
     @Value("${groceries.preferred-vendors:}")
     private String preferredVendorsCsv;
 
+    @Value("${groceries.excluded-vendors:}")
+    private String excludedVendorsCsv;
+
     private static final int SAFETY_CAP = 50;
 
     private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
@@ -174,7 +177,11 @@ public class GroceriesService {
         if (data == null || data.isEmpty())
             return List.of();
 
+        final Set<String> excluded = excludedVendorsNormalized();
+        final Set<String> preferred = preferredVendorsNormalized();
+
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
+                .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
                 .sorted(Comparator.comparingDouble(GroceriesService::metricForSort)).toList();
 
         List<DealDto> capped = (top != null && top > 0) ? sorted.subList(0, Math.min(top, sorted.size())) : sorted;
@@ -183,7 +190,7 @@ public class GroceriesService {
             return capped;
         }
 
-        return applyPreferenceFilter(capped, preferredVendorsNormalized());
+        return applyPreferenceFilter(capped, preferred);
     }
 
     private List<DealDto> applyPreferenceFilter(List<DealDto> deals, Set<String> favorites) {
@@ -369,7 +376,7 @@ public class GroceriesService {
     private Set<String> preferredVendorsNormalized() {
         if (preferredVendorsCsv == null || preferredVendorsCsv.isBlank())
             return Set.of();
-        String[] parts = preferredVendorsCsv.split(",");
+        String[] parts = preferredVendorsCsv.split("\\s*,\\s*");
         Set<String> out = new HashSet<>();
         for (String p : parts) {
             String c = canonicalizeVendor(p);
@@ -405,6 +412,19 @@ public class GroceriesService {
             return (d.unitPriceMin() + d.unitPriceMax()) / 2.0;
         }
         return d.price();
+    }
+
+    private Set<String> excludedVendorsNormalized() {
+        if (excludedVendorsCsv == null || excludedVendorsCsv.isBlank())
+            return Set.of();
+        String[] parts = excludedVendorsCsv.split("\\s*,\\s*");
+        Set<String> out = new HashSet<>();
+        for (String p : parts) {
+            String c = canonicalizeVendor(p);
+            if (!c.isBlank())
+                out.add(c);
+        }
+        return out;
     }
 
 }
