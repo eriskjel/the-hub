@@ -3,23 +3,36 @@
 import type { PingsData, PingsRow } from "@/widgets/server-pings/types";
 import { ReactElement } from "react";
 
-export default function ServerPingsView({ data }: { data: PingsData }): ReactElement {
-    const updated = new Date(data.updatedAt);
+export default function ServerPingsView({
+    data,
+}: {
+    data: PingsData | null | undefined;
+}): ReactElement {
+    if (!data || !Array.isArray(data.data)) {
+        return <div className="p-3 text-sm text-neutral-600">No ping data available</div>;
+    }
+
+    const updated = new Date(data.updatedAt ?? Date.now());
     const updatedStr = updated.toLocaleTimeString("no-NO", { hour: "2-digit", minute: "2-digit" });
+
+    if (data.data.length === 0) {
+        return (
+            <div>
+                <div className="mb-2 text-xs text-neutral-600">Oppdatert {updatedStr}</div>
+                <div className="p-3 text-sm text-neutral-600">Ingen endepunkter å vise</div>
+            </div>
+        );
+    }
 
     return (
         <div>
-            {/* subtle header */}
             <div className="mb-2 text-xs text-neutral-600">Oppdatert {updatedStr}</div>
-
             <ul className="divide-y divide-neutral-200">
                 {data.data.map((row: PingsRow) => {
                     const { host, path } = toParts(row.url);
                     const cls = statusClasses(row.status);
-
                     return (
                         <li key={row.url} className="flex items-center justify-between gap-3 py-2">
-                            {/* left: status dot + host/path */}
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className={`h-2 w-2 rounded-full ${cls.dot}`} />
                                 <div className="min-w-0">
@@ -33,8 +46,6 @@ export default function ServerPingsView({ data }: { data: PingsData }): ReactEle
                                     ) : null}
                                 </div>
                             </div>
-
-                            {/* right: status + latency pills */}
                             <div className="flex shrink-0 items-center gap-2">
                                 <span
                                     className={`rounded-md border px-1.5 py-0.5 text-[11px] tabular-nums ${cls.badge}`}
@@ -67,33 +78,15 @@ function toParts(url: string): { host: string; path: string } {
     }
 }
 
-/**
- * Tailwind classes tuned for a LIGHT (white) surface:
- * - dot: saturated solid for quick status scan
- * - badge: very light tinted bg + subtle border + darker text for contrast
- */
 function statusClasses(code: number) {
-    if (code >= 200 && code < 300) {
+    if (code >= 200 && code < 300)
         return {
             dot: "bg-emerald-500",
             badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
         };
-    }
-    if (code >= 300 && code < 400) {
-        return {
-            dot: "bg-sky-500",
-            badge: "border-sky-200 bg-sky-50 text-sky-700",
-        };
-    }
-    if (code >= 400 && code < 500) {
-        return {
-            dot: "bg-amber-500",
-            badge: "border-amber-200 bg-amber-50 text-amber-800",
-        };
-    }
-    // 5xx / error
-    return {
-        dot: "bg-rose-500",
-        badge: "border-rose-200 bg-rose-50 text-rose-700",
-    };
+    if (code >= 300 && code < 400)
+        return { dot: "bg-sky-500", badge: "border-sky-200 bg-sky-50 text-sky-700" };
+    if (code >= 400 && code < 500)
+        return { dot: "bg-amber-500", badge: "border-amber-200 bg-amber-50 text-amber-800" };
+    return { dot: "bg-rose-500", badge: "border-rose-200 bg-rose-50 text-rose-700" };
 }
