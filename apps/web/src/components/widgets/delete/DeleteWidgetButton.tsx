@@ -6,13 +6,19 @@ import { IconButton } from "@/components/ui/IconButton";
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DeleteWidgetModal } from "./DeleteWidgetModal";
+import { purgeWidgetLocalCache } from "@/lib/widgets/purgeCaches";
+import { WidgetKind } from "@/widgets/schema";
 
 export function DeleteWidgetButton({
     widgetId,
     widgetTitle,
+    userId,
+    kind,
 }: {
     widgetId: string;
     widgetTitle: string;
+    userId?: string | null;
+    kind: WidgetKind;
 }): ReactElement {
     const t = useTranslations("widgets.delete");
     const router = useRouter();
@@ -24,6 +30,7 @@ export function DeleteWidgetButton({
                 aria-label={t("ariaDelete")}
                 title={t("ariaDelete")}
                 onClick={() => setOpen(true)}
+                className="cursor-pointer"
             >
                 <Trash2 className="h-4 w-4" aria-hidden />
             </IconButton>
@@ -33,7 +40,10 @@ export function DeleteWidgetButton({
                 onClose={() => setOpen(false)}
                 widgetId={widgetId}
                 widgetTitle={widgetTitle}
-                onDeleted={() => router.refresh()}
+                onDeleted={() => {
+                    purgeWidgetLocalCache(userId, kind, widgetId);
+                    router.refresh();
+                }}
             />
         </>
     );

@@ -60,7 +60,12 @@ export default function WidgetContainer({
 
     const header: ReactElement = <Header title={title} />;
     const actions: ReactElement = (
-        <DeleteWidgetButton widgetId={widget.instanceId} widgetTitle={widgetTitle || kindLabel} />
+        <DeleteWidgetButton
+            widgetId={widget.instanceId}
+            widgetTitle={widgetTitle || kindLabel}
+            userId={userId}
+            kind={widget.kind}
+        />
     );
 
     return (
