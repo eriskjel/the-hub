@@ -26,21 +26,9 @@ export default function WidgetsGrid({
     widgetsResult,
     userId,
 }: {
-    widgetsResult: WidgetsResult | undefined;
+    widgetsResult: WidgetsResult;
     userId: string | null;
 }): ReactElement {
-    // Handle undefined widgetsResult
-    if (!widgetsResult) {
-        return (
-            <>
-                <div className="mb-4 flex items-center justify-center">
-                    <CreateWidgetButton />
-                </div>
-                <div className="p-3 text-sm text-neutral-600">Loading dashboard...</div>
-            </>
-        );
-    }
-
     const { widgets, rows, error, stale, offline } = widgetsResult;
 
     // Only seed the cookie with the "slim" rows when the data is fresh (not stale).
@@ -67,7 +55,7 @@ export default function WidgetsGrid({
         );
     }
 
-    // 3) True empty: we're online but the user simply has no widgets yet
+    // 3) True empty: we’re online but the user simply has no widgets yet
     if (!error && widgets.length === 0) {
         return <EmptyState />;
     }
