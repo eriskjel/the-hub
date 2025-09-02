@@ -35,7 +35,7 @@ export default function WidgetsGrid({
     // This allows the dashboard to show cached widget *list* if the backend is temporarily unreachable.
     const maybeSeed: ReactElement | null =
         !stale && widgets.length > 0 && rows && rows.length > 0 && userId ? (
-            <SeedWidgetsCacheWithRows rows={rows} userId={userId} />
+            <SeedWidgetsCacheWithRows rows={rows} />
         ) : null;
 
     // 1) Stale: we have cached values but the backend is degraded/offline right now
