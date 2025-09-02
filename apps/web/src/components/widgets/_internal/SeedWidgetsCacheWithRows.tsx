@@ -4,13 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { WidgetListItem } from "@/widgets/rows";
 import { API } from "@/lib/apiRoutes";
 
-export default function SeedWidgetsCacheWithRows({
-    rows,
-    userId,
-}: {
-    rows: WidgetListItem[];
-    userId: string;
-}) {
+export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListItem[] }) {
     // build a stable signature from instanceIds; order-insensitive
     const sig = useMemo(
         () =>
