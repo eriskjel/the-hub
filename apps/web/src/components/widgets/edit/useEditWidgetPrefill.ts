@@ -1,10 +1,10 @@
 "use client";
 
-import {useEffect} from "react";
-import type {UseFormReturn} from "react-hook-form";
-import type {AnyWidget} from "@/widgets/schema";
-import type {EditableKind} from "@/widgets/create/registry";
-import type {BaseForm} from "@/widgets/create/useCreateWidgetForm";
+import { useEffect } from "react";
+import type { UseFormReturn } from "react-hook-form";
+import type { AnyWidget } from "@/widgets/schema";
+import type { EditableKind } from "@/widgets/create/registry";
+import type { BaseForm } from "@/widgets/create/useCreateWidgetForm";
 
 type EditableWidget = Extract<AnyWidget, { kind: EditableKind }>;
 

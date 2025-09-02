@@ -61,18 +61,18 @@ export default function WidgetContainer({
     const title = right ? `${kindLabel} | ${right}` : kindLabel;
 
     const header: ReactElement = <Header title={title} />;
-    const actions: ReactElement = (
-        <>
-            {isEditableKind(widget.kind) ? (
+    const actions = (
+        <div className="flex items-center gap-2">
+            {isEditableKind(widget.kind) && (
                 <EditWidgetButton widget={widget} userId={userId ?? undefined} />
-            ) : null}
+            )}
             <DeleteWidgetButton
                 widgetId={widget.instanceId}
                 widgetTitle={widgetTitle || kindLabel}
                 userId={userId}
                 kind={widget.kind}
             />
-        </>
+        </div>
     );
 
     return (
