@@ -1,15 +1,17 @@
 "use client";
 
-import { ReactElement, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Button, FieldText } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
 import type { AnyWidget } from "@/widgets/schema";
-import { useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
-import { isEditableKind } from "@/widgets/create/registry";
+import { type BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
+import { type EditableKind, isEditableKind } from "@/widgets/create/registry";
 import { updateWidget } from "@/lib/widgets/updateWidget";
 import { purgeWidgetLocalCache } from "@/lib/widgets/purgeCaches";
+import { useEditWidgetPrefill } from "./useEditWidgetPrefill";
+
+type EditableWidget = Extract<AnyWidget, { kind: EditableKind }>;
 
 export default function EditWidgetModal({
     widget,
@@ -19,12 +21,11 @@ export default function EditWidgetModal({
     widget: AnyWidget;
     onClose: () => void;
     userId?: string | null;
-}): ReactElement {
+}) {
     const t = useTranslations("widgets.edit");
-    const router = useRouter();
 
+    // Guard here — no hooks called yet
     if (!isEditableKind(widget.kind)) {
-        // If opened somehow (deep link etc.), show a friendly message
         return (
             <Modal title={t("title", { default: "Edit widget" })} onClose={onClose}>
                 <div className="space-y-4">
@@ -43,17 +44,31 @@ export default function EditWidgetModal({
         );
     }
 
+    return (
+        <EditWidgetModalContent
+            widget={widget as EditableWidget}
+            onClose={onClose}
+            userId={userId}
+        />
+    );
+}
+
+function EditWidgetModalContent({
+    widget,
+    onClose,
+    userId,
+}: {
+    widget: EditableWidget;
+    onClose: () => void;
+    userId?: string | null;
+}) {
+    const t = useTranslations("widgets.edit");
+    const router = useRouter();
+
     const { form, active } = useCreateWidgetForm(widget.kind, t);
     const Settings = active.SettingsForm;
 
-    useEffect(() => {
-        // Seed in the same shape your SettingsForm expects (usually nested under `settings`)
-        form.reset({
-            title: widget.title ?? "",
-            kind: widget.kind,
-            settings: widget.settings ?? {},
-        } as any);
-    }, [form, widget]);
+    useEditWidgetPrefill(form, widget);
 
     return (
         <Modal
@@ -63,7 +78,7 @@ export default function EditWidgetModal({
         >
             <form
                 className="space-y-4 text-left"
-                onSubmit={form.handleSubmit(async (values) => {
+                onSubmit={form.handleSubmit(async (values: BaseForm) => {
                     const res = await updateWidget(widget.instanceId, values);
                     if (res.ok) {
                         onClose();
@@ -81,9 +96,11 @@ export default function EditWidgetModal({
                     {...form.register("title")}
                 />
 
+                {/* keep kind bound in the form state */}
                 <input type="hidden" {...form.register("kind")} value={widget.kind} />
 
-                {/* @ts-expect-error form is specialized per kind */}
+                {/* The Settings form is already typed per-kind in the registry */}
+                {/* @ts-expect-error: generic narrowing across union kinds */}
                 <Settings form={form} isEdit />
 
                 {form.formState.errors.root?.message ? (
