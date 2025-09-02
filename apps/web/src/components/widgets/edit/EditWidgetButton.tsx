@@ -10,7 +10,11 @@ import { isEditableKind } from "@/widgets/create/registry";
 
 type EditWidgetButtonProps = { widget: AnyWidget; forceDisabledTooltip?: string; userId?: string };
 
-export function EditWidgetButton({ widget, forceDisabledTooltip, userId }: EditWidgetButtonProps): ReactElement {
+export function EditWidgetButton({
+    widget,
+    forceDisabledTooltip,
+    userId,
+}: EditWidgetButtonProps): ReactElement {
     const t = useTranslations("widgets.edit");
     const [open, setOpen] = useState(false);
 
@@ -34,7 +38,9 @@ export function EditWidgetButton({ widget, forceDisabledTooltip, userId }: EditW
                 <Pencil className="h-4 w-4" aria-hidden />
             </IconButton>
 
-            {open ? <EditWidgetModal widget={widget} userId={userId} onClose={() => setOpen(false)} /> : null}
+            {open ? (
+                <EditWidgetModal widget={widget} userId={userId} onClose={() => setOpen(false)} />
+            ) : null}
         </>
     );
 }

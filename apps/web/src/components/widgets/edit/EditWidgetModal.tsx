@@ -9,12 +9,12 @@ import type { AnyWidget } from "@/widgets/schema";
 import { useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
 import { isEditableKind } from "@/widgets/create/registry";
 import { updateWidget } from "@/lib/widgets/updateWidget";
-import {purgeWidgetLocalCache} from "@/lib/widgets/purgeCaches";
+import { purgeWidgetLocalCache } from "@/lib/widgets/purgeCaches";
 
 export default function EditWidgetModal({
     widget,
     onClose,
-    userId
+    userId,
 }: {
     widget: AnyWidget;
     onClose: () => void;

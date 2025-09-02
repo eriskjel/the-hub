@@ -83,7 +83,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const json = ct.includes("application/json") ? await response.json().catch(() => ({})) : {};
 
     if (!response.ok) {
-        let message = (isRecord(json) && typeof json.error === "string" && json.error) || "Failed to update widget";
+        let message =
+            (isRecord(json) && typeof json.error === "string" && json.error) ||
+            "Failed to update widget";
         if (response.status === 401) message = "You need to sign in to edit widgets.";
         else if (response.status === 403) message = "You’re not allowed to edit this widget.";
         return NextResponse.json({ error: message }, { status: response.status });
