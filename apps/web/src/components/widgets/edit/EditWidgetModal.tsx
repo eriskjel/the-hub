@@ -9,13 +9,16 @@ import type { AnyWidget } from "@/widgets/schema";
 import { useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
 import { isEditableKind } from "@/widgets/create/registry";
 import { updateWidget } from "@/lib/widgets/updateWidget";
+import {purgeWidgetLocalCache} from "@/lib/widgets/purgeCaches";
 
 export default function EditWidgetModal({
     widget,
     onClose,
+    userId
 }: {
     widget: AnyWidget;
     onClose: () => void;
+    userId?: string | null;
 }): ReactElement {
     const t = useTranslations("widgets.edit");
     const router = useRouter();
@@ -64,6 +67,7 @@ export default function EditWidgetModal({
                     const res = await updateWidget(widget.instanceId, values);
                     if (res.ok) {
                         onClose();
+                        purgeWidgetLocalCache(userId, widget.kind, widget.instanceId);
                         router.refresh();
                     } else {
                         form.setError("root", { type: "server", message: res.error });

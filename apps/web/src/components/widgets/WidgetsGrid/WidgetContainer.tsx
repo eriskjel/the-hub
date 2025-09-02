@@ -63,7 +63,7 @@ export default function WidgetContainer({
     const header: ReactElement = <Header title={title} />;
     const actions: ReactElement = (
         <>
-            {isEditableKind(widget.kind) ? <EditWidgetButton widget={widget} /> : null}
+            {isEditableKind(widget.kind) ? <EditWidgetButton widget={widget} userId={userId ?? undefined} /> : null}
             <DeleteWidgetButton
                 widgetId={widget.instanceId}
                 widgetTitle={widgetTitle || kindLabel}

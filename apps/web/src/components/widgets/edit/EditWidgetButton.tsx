@@ -4,13 +4,13 @@ import { useState, type ReactElement } from "react";
 import type { AnyWidget } from "@/widgets/schema";
 import EditWidgetModal from "@/components/widgets/edit/EditWidgetModal";
 import { IconButton } from "@/components/ui/IconButton";
-import { Pencil, PencilLine } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { isEditableKind } from "@/widgets/create/registry"; // helper we added earlier
+import { isEditableKind } from "@/widgets/create/registry";
 
-type Props = { widget: AnyWidget; compact?: boolean; forceDisabledTooltip?: string };
+type EditWidgetButtonProps = { widget: AnyWidget; forceDisabledTooltip?: string; userId?: string };
 
-export function EditWidgetButton({ widget, compact, forceDisabledTooltip }: Props): ReactElement {
+export function EditWidgetButton({ widget, forceDisabledTooltip, userId }: EditWidgetButtonProps): ReactElement {
     const t = useTranslations("widgets.edit");
     const [open, setOpen] = useState(false);
 
@@ -34,7 +34,7 @@ export function EditWidgetButton({ widget, compact, forceDisabledTooltip }: Prop
                 <Pencil className="h-4 w-4" aria-hidden />
             </IconButton>
 
-            {open ? <EditWidgetModal widget={widget} onClose={() => setOpen(false)} /> : null}
+            {open ? <EditWidgetModal widget={widget} userId={userId} onClose={() => setOpen(false)} /> : null}
         </>
     );
 }
