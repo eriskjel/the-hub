@@ -10,7 +10,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
-    const { id } = await ctx.params; // await dynamic params
+    const { id } = await ctx.params;
 
     const backend = process.env.BACKEND_URL;
     if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
@@ -51,13 +51,10 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
 }
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
-    const { id } = await ctx.params; // await dynamic params
+    const { id } = await ctx.params;
     const backend = process.env.BACKEND_URL;
     if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
-
-    // server-side log (shows in your Node terminal)
-    console.log("[PATCH /api/widgets/:id] params.id=", id);
 
     const supabase = await createClient();
     const {
@@ -67,7 +64,6 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    console.log("[PATCH /api/widgets/:id] body=", body);
 
     const response = await fetch(`${backend}/api/widgets/${encodeURIComponent(id)}`, {
         method: "PATCH",
