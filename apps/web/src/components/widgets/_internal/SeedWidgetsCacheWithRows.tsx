@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { WidgetListItem } from "@/widgets/rows";
-import { API } from "@/lib/apiRoutes";
+import {useEffect, useMemo, useRef} from "react";
+import {WidgetListItem} from "@/widgets/rows";
+import {API} from "@/lib/apiRoutes";
 
-export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListItem[] }) {
+export default function SeedWidgetsCacheWithRows({rows}: { rows: WidgetListItem[] }) {
     // build a stable signature from instanceIds; order-insensitive
     const sig = useMemo(
-        () =>
-            JSON.stringify(
-                rows.map((r) => ({ id: r.id, instanceId: r.instanceId, title: r.title }))
-            ),
+        () => rows.map(r => r.instanceId).sort().join("|"),
         [rows]
     );
     const lastSig = useRef<string | null>(null);
@@ -20,7 +17,7 @@ export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListIte
         if (sig === lastSig.current) return;
         lastSig.current = sig;
 
-        const slim = rows.map(({ id, instanceId, kind, title, grid }) => ({
+        const slim = rows.map(({id, instanceId, kind, title, grid}) => ({
             id,
             instanceId,
             kind,
@@ -30,10 +27,11 @@ export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListIte
 
         fetch(API.widgets.seed, {
             method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ slim }),
+            headers: {"content-type": "application/json"},
+            body: JSON.stringify({slim}),
             credentials: "same-origin",
-        }).catch(() => {});
+        }).catch(() => {
+        });
     }, [sig, rows]);
 
     return null;
