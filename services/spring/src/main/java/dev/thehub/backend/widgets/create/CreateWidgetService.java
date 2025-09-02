@@ -114,6 +114,48 @@ public class CreateWidgetService {
         }
     }
 
+    private void ensureNoDuplicateGroceries(UUID userId, WidgetKind kind, Map<String, Object> settings, UUID exclude) {
+        if (settings == null)
+            throw new IllegalArgumentException("settings_required");
+        String query = optString(settings.get("query"));
+        String city = optString(settings.get("city"));
+        if (query == null || query.isBlank())
+            throw new IllegalArgumentException("query_required");
+
+        String qNorm = query.trim().toLowerCase(Locale.ROOT);
+        String cNorm = (city == null) ? null : city.trim().toLowerCase(Locale.ROOT);
+
+        final String dupeSql = """
+                    select exists (
+                      select 1
+                      from user_widgets uw
+                      where uw.user_id = ?
+                        and uw.kind = ?
+                        and uw.instance_id <> ?
+                        and lower(uw.settings->>'query') = ?
+                        and (
+                             (? is null and jsonb_exists(uw.settings, 'city') = false)
+                          or (? is not null and lower(uw.settings->>'city') = ?)
+                        )
+                    )
+                """;
+
+        boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
+            var ps = con.prepareStatement(dupeSql);
+            ps.setObject(1, userId);
+            ps.setString(2, kind.getValue());
+            ps.setObject(3, exclude);
+            ps.setString(4, qNorm);
+            ps.setString(5, cNorm);
+            ps.setString(6, cNorm);
+            ps.setString(7, cNorm);
+            return ps;
+        }, rs -> rs.next() && rs.getBoolean(1)));
+
+        if (exists)
+            throw new DuplicateException("A groceries widget with the same query/city already exists.");
+    }
+
     /**
      * Ensures that no duplicate target URLs exist for the given user and widget
      * kind.
@@ -182,6 +224,47 @@ public class CreateWidgetService {
         } else if (log.isDebugEnabled()) {
             log.debug("No duplicate targets userId={} kind={} targetsCount={}", userId, kind, finalTargets.size());
         }
+    }
+
+    private void ensureNoDuplicateTargets(UUID userId, WidgetKind kind, Map<String, Object> settings, UUID exclude) {
+        var targets = extractTargets(settings);
+        if (targets.isEmpty())
+            throw new IllegalArgumentException("target_required");
+
+        targets = targets.stream().map(CreateWidgetService::normalizeUrl).filter(Objects::nonNull).toList();
+
+        final String dupeSql = """
+                  select exists(
+                    select 1
+                    from user_widgets uw
+                    where uw.user_id = ?
+                      and uw.kind = ?
+                      and uw.instance_id <> ?
+                      and (
+                        (jsonb_exists(uw.settings, 'target')  and uw.settings->>'target' = any (?))
+                        or
+                        (jsonb_exists(uw.settings, 'targets') and exists (
+                           select 1 from jsonb_array_elements_text(uw.settings->'targets') t(v)
+                           where t.v = any (?)
+                        ))
+                      )
+                  )
+                """;
+
+        List<String> finalTargets = targets;
+        boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
+            var ps = con.prepareStatement(dupeSql);
+            ps.setObject(1, userId);
+            ps.setString(2, kind.getValue());
+            ps.setObject(3, exclude);
+            var arr = con.createArrayOf("text", finalTargets.toArray(new String[0]));
+            ps.setArray(4, arr);
+            ps.setArray(5, arr);
+            return ps;
+        }, rs -> rs.next() && rs.getBoolean(1)));
+
+        if (exists)
+            throw new DuplicateTargetException("duplicate_target");
     }
 
     /**
@@ -383,5 +466,14 @@ public class CreateWidgetService {
         Object w = g.getOrDefault("w", "?");
         Object h = g.getOrDefault("h", "?");
         return "x=" + x + ",y=" + y + ",w=" + w + ",h=" + h;
+    }
+
+    public void ensureNoDuplicateExceptInstance(UUID userId, WidgetKind kind, Map<String, Object> settings,
+            UUID excludeInstanceId) {
+        switch (kind) {
+            case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings, excludeInstanceId);
+            case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings, excludeInstanceId);
+            default -> throw new IllegalArgumentException("unsupported_kind");
+        }
     }
 }
