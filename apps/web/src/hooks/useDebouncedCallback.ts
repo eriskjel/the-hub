@@ -2,7 +2,6 @@ import { useCallback, useRef } from "react";
 
 export function useDebouncedCallback(delay: number) {
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     return useCallback(
         (fn: () => void) => {
             if (timer.current) clearTimeout(timer.current);
