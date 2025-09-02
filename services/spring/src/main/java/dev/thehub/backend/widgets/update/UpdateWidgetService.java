@@ -113,9 +113,12 @@ public class UpdateWidgetService {
             try {
                 createChecks.ensureNoDuplicateExceptInstance(userId, kind, newSettings, instanceId);
             } catch (CreateWidgetService.DuplicateException e) {
-                // Map to our service's DuplicateException so the controller returns 409 (not
-                // 500)
-                throw new DuplicateException(e.getMessage());
+                log.warn("UpdateWidget duplicate userId={} instanceId={} kind={} msg={}", userId, instanceId, kind,
+                        e.getMessage());
+                throw new DuplicateException(mapToConsistentErrorKey(kind));
+            } catch (CreateWidgetService.DuplicateTargetException e) {
+                // Handle the specific target duplicate case
+                throw new DuplicateException("duplicate_target");
             }
         }
 
@@ -151,6 +154,14 @@ public class UpdateWidgetService {
                     parseJson(rs.getString("settings")));
             return toCreateResponse(updated);
         });
+    }
+
+    private String mapToConsistentErrorKey(WidgetKind kind) {
+        return switch (kind) {
+            case SERVER_PINGS -> "duplicate_target";
+            case GROCERY_DEALS -> "duplicate_groceries";
+            default -> "duplicate_widget";
+        };
     }
 
     private String toJsonOrNull(Map<String, Object> m) {

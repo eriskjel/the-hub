@@ -107,7 +107,7 @@ public class CreateWidgetService {
         if (exists) {
             log.warn("Duplicate groceries widget userId={} kind={} query={} city={}", userId, kind, qNorm,
                     (cNorm == null ? "<none>" : cNorm));
-            throw new DuplicateException("A groceries widget with the same query/city already exists.");
+            throw new DuplicateException("duplicate_groceries");
         } else if (log.isDebugEnabled()) {
             log.debug("No duplicate groceries userId={} kind={} query={} city={}", userId, kind, qNorm,
                     (cNorm == null ? "<none>" : cNorm));
@@ -153,7 +153,7 @@ public class CreateWidgetService {
         }, rs -> rs.next() && rs.getBoolean(1)));
 
         if (exists)
-            throw new DuplicateException("A groceries widget with the same query/city already exists.");
+            throw new DuplicateException("duplicate_groceries");
     }
 
     /**
