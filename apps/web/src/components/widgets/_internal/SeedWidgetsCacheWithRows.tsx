@@ -7,11 +7,7 @@ import { API } from "@/lib/apiRoutes";
 export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListItem[] }) {
     // build a stable signature from instanceIds; order-insensitive
     const sig = useMemo(
-        () =>
-            rows
-                .map((r) => r.instanceId)
-                .sort()
-                .join("|"),
+        () => JSON.stringify(rows.map(r => ({ id: r.id, instanceId: r.instanceId, title: r.title }))),
         [rows]
     );
     const lastSig = useRef<string | null>(null);
