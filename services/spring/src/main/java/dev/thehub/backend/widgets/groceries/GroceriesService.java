@@ -212,22 +212,26 @@ public class GroceriesService {
         if (offersBlock == null)
             return List.of();
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> value = (Map<String, Object>) offersBlock.get("value");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> data = (List<Map<String, Object>>) value.get("data");
-        if (data == null || data.isEmpty())
+        Object valueObj = offersBlock.get("value");
+        if (!(valueObj instanceof Map<?, ?> vm))
             return List.of();
+
+        Object dataObj = vm.get("data");
+        if (!(dataObj instanceof List<?> dl) || dl.isEmpty())
+            return List.of();
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> data = (List<Map<String, Object>>) (List<?>) dl;
 
         if (log.isDebugEnabled()) {
             lines.stream().limit(5).forEach(b -> {
                 Object k = b.get("key");
                 Object v = b.get("value");
                 int count = 0;
-                if (v instanceof Map<?, ?> vm) {
-                    Object d = vm.get("data");
-                    if (d instanceof List<?> dl)
-                        count = dl.size();
+                if (v instanceof Map<?, ?> innerVm) {
+                    Object d = innerVm.get("data");
+                    if (d instanceof List<?> dl2)
+                        count = dl2.size();
                 }
                 log.debug("eta line key={} dataCount={}", k, count);
             });
