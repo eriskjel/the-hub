@@ -24,7 +24,6 @@ export default function EditWidgetModal({
 }) {
     const t = useTranslations("widgets.edit");
 
-    // Guard here — no hooks called yet
     if (!isEditableKind(widget.kind)) {
         return (
             <Modal title={t("title", { default: "Edit widget" })} onClose={onClose}>
@@ -101,7 +100,7 @@ function EditWidgetModalContent({
 
                 {/* The Settings form is already typed per-kind in the registry */}
                 {/* @ts-expect-error: generic narrowing across union kinds */}
-                <Settings form={form} isEdit />
+                <Settings form={form} isEdit initialSettings={widget.settings} />
 
                 {form.formState.errors.root?.message ? (
                     <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">

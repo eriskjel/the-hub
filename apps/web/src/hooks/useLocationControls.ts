@@ -17,18 +17,25 @@ type LocationServices = {
     reverseGeocode: typeof defReverseGeocode;
 };
 
+type UseLocationOptions = {
+    services?: LocationServices;
+    initial?: { city?: string; lat?: number; lon?: number };
+};
+
 export function useLocationControls(
     form: GroceryForm,
     t: ReturnType<typeof useTranslations>,
-    services: LocationServices = { geocodeCity: defGeocodeCity, reverseGeocode: defReverseGeocode }
+    options?: UseLocationOptions
 ) {
+    const geocodeCity = options?.services?.geocodeCity ?? defGeocodeCity;
+    const reverseGeocode = options?.services?.reverseGeocode ?? defReverseGeocode;
+
     const [locBusy, setLocBusy] = useState(false);
     const [geoErr, setGeoErr] = useState<string | null>(null);
     const [cityLookupBusy, setCityLookupBusy] = useState(false);
     const [cityLookupErr, setCityLookupErr] = useState<string | null>(null);
     const [cityInput, setCityInput] = useState("");
     const [mode, setMode] = useState<"gps" | "city" | null>(null);
-    const { geocodeCity, reverseGeocode } = services;
 
     const debounce = useDebouncedCallback(CITY_SEARCH_DEBOUNCE_MS);
     const activeCityRequest = useRef<AbortController | null>(null);
@@ -50,6 +57,51 @@ export function useLocationControls(
     const lat = form.watch("settings.lat");
     const lon = form.watch("settings.lon");
     const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+
+    const bootstrapped = useRef(false);
+    useEffect(() => {
+        if (bootstrapped.current) return;
+        bootstrapped.current = true;
+
+        const seed =
+            options?.initial ??
+            (form.getValues("settings") as
+                | { city?: string; lat?: number; lon?: number }
+                | undefined);
+
+        const savedCity = seed?.city?.trim() || "";
+        const savedHasCoords =
+            typeof seed?.lat === "number" &&
+            Number.isFinite(seed.lat) &&
+            typeof seed?.lon === "number" &&
+            Number.isFinite(seed.lon);
+
+        if (savedCity) setCityInput(savedCity);
+
+        if (savedHasCoords) {
+            setMode(savedCity ? "city" : "gps");
+            if (!savedCity) {
+                setCityLookupBusy(true);
+                reverseGeocode(seed!.lat!, seed!.lon!)
+                    .then(({ city }) => {
+                        if (city) {
+                            form.setValue("settings.city", city, {
+                                shouldValidate: false,
+                                shouldDirty: false,
+                            });
+                            setCityInput(city);
+                        }
+                    })
+                    .catch(() => {})
+                    .finally(() => setCityLookupBusy(false));
+            }
+        } else if (savedCity) {
+            setMode("city");
+        } else {
+            setMode(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const resetLocation = () => {
         setMode(null);
@@ -111,9 +163,10 @@ export function useLocationControls(
                             shouldValidate: true,
                             shouldDirty: true,
                         });
+                        setCityInput(city);
                     }
                 } catch {
-                    // ignore reverse lookup errors
+                    /* ignore */
                 }
             },
             () => {
