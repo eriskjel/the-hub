@@ -139,6 +139,28 @@
             "delete": "Delete",
             "deleting": "Deleting…",
             "genericError": "Something went wrong. Please try again."
+        },
+        "edit": {
+            "title": "Edit widget",
+            "subtitle": "Update the name or settings and save.",
+            "ariaEdit": "Edit widget",
+            "name": "Name",
+            "namePlaceholder": "My widget",
+            "save": "Save",
+            "saving": "Saving…",
+            "cancel": "Cancel",
+            "close": "Close",
+            "notEditable": "Not editable",
+            "notEditableTip": "Editing not available yet for this widget type.",
+            "unsupported": "Editing isn’t available for this widget type yet.",
+            "errors": {
+                "titleRequired": "Please enter a name.",
+                "updateFailed": "Failed to update widget.",
+                "unauthorized": "You need to sign in to edit widgets.",
+                "forbidden": "You’re not allowed to edit this widget.",
+                "network": "Network error while updating widget.",
+                "generic": "Something went wrong."
+            }
         }
     }
 }

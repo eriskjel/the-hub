@@ -75,5 +75,11 @@ export const creationRegistry = {
 export type CreationRegistry = typeof creationRegistry;
 export type CreationKind = keyof CreationRegistry;
 
+export type EditableKind = CreationKind;
+
+export function isEditableKind(kind: WidgetKind): kind is EditableKind {
+    return kind in creationRegistry;
+}
+
 // Derive the dropdown list at runtime
 export const ENABLED_KINDS = Object.keys(creationRegistry) as CreationKind[];

@@ -23,8 +23,25 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Service responsible for querying the external Etilbudsavis API and mapping
- * responses into domain DTOs for the grocery-deals widget.
+ * GroceriesService integrates with the external Etilbudsavis API to search for
+ * grocery offers and map them into the widget's domain DTOs. It handles:
+ * <ul>
+ * <li>Constructing the API request (GraphQL-like NDJSON) with location context
+ * via a cookie</li>
+ * <li>Parsing the NDJSON response and extracting the block that represents
+ * offers</li>
+ * <li>Mapping raw offer maps into {@link DealDto} with derived values (e.g.,
+ * per piece and per-kg ranges)</li>
+ * <li>Sorting by the best available metric (unit price preferred, otherwise
+ * absolute price)</li>
+ * <li>Filtering by excluded vendors and optionally surfacing preferred
+ * vendors</li>
+ * <li>Emitting Micrometer metrics with low-cardinality tags</li>
+ * </ul>
+ *
+ * Configuration is supplied via Spring @Value properties (see
+ * application-*.properties). The service is stateless with respect to requests;
+ * it keeps a small in-memory alias map to normalize vendor names.
  */
 @Service
 @Getter
@@ -69,10 +86,12 @@ public class GroceriesService {
     private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
 
     /**
-     * Constructs the groceries service with an HTTP client.
+     * Constructs the groceries service.
      *
      * @param http
      *            RestTemplate used to call the external Etilbudsavis API
+     * @param metrics
+     *            Micrometer registry for recording request metrics
      */
     public GroceriesService(RestTemplate http, MeterRegistry metrics) {
         this.http = http;
@@ -80,13 +99,16 @@ public class GroceriesService {
     }
 
     /**
-     * Convenience overload that delegates to
-     * {@link #fetchDeals(GroceryDealsSettings, Integer)} without applying a top-N
-     * limit.
+     * Fetches grocery deals for the given settings.
+     * <p>
+     * This overload delegates to {@link #fetchDeals(GroceryDealsSettings, Integer)}
+     * with no explicit top-N cap, so the effective limit will be taken from the
+     * settings or default configuration.
      *
      * @param s
      *            search and location settings
-     * @return a price-ascending list of deals; empty if term is blank or no data
+     * @return a price-ascending list of deals; empty if the query term is blank or
+     *         no data is returned
      * @throws IOException
      *             if network or parsing fails
      */
@@ -97,16 +119,23 @@ public class GroceriesService {
     /**
      * Queries the external Etilbudsavis API for grocery deals using the provided
      * settings and maps the response into a list of {@link DealDto}.
+     * <p>
+     * The method constructs the NDJSON request, sets a location cookie, performs
+     * the HTTP call, parses the NDJSON response, maps each offer into a DealDto,
+     * filters excluded vendors, sorts results by price metric, and optionally
+     * applies a favorite-vendor preference.
      *
      * @param s
-     *            search and location settings
+     *            search and location settings (query, city/lat/lon, optional max
+     *            results)
      * @param top
      *            optional cap on the number of deals to return (must be > 0 to
      *            apply); when null or invalid, {@code maxResults} from settings or
      *            the configured default limit is used
-     * @return a price-ascending list of deals; empty if term is blank or no data
+     * @return a price-ascending list of deals; empty if the search term is blank or
+     *         no data is available
      * @throws IOException
-     *             if the response payload cannot be parsed
+     *             if the response payload cannot be parsed as valid NDJSON/JSON
      */
     public List<DealDto> fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
         final long t0 = System.nanoTime();
@@ -140,7 +169,7 @@ public class GroceriesService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(List.of(MediaType.parseMediaType("application/x-ndjson"), MediaType.APPLICATION_JSON));
+        headers.setAccept(List.of(MediaType.parseMediaType("application/x-ndjson")));
         headers.add(HttpHeaders.COOKIE, "eta-location=" + etaCookie);
         headers.add(HttpHeaders.USER_AGENT, userAgent);
         headers.add(HttpHeaders.REFERER, baseUrl + "/");
@@ -179,27 +208,34 @@ public class GroceriesService {
         if (lines.isEmpty())
             return List.of();
 
-        Map<String, Object> offersBlock = lines.stream().filter(b -> Objects.equals(b.get("key"), qOffers)).findFirst()
-                .orElseGet(() -> lines.stream().filter(b -> {
-                    Object v = b.get("value");
-                    if (!(v instanceof Map<?, ?> vm))
-                        return false;
-                    Object d = vm.get("data");
-                    return (d instanceof List<?>) && !((List<?>) d).isEmpty();
-                }).findFirst().orElse(null));
-
+        Map<String, Object> offersBlock = pickOffersBlock(lines);
         if (offersBlock == null)
             return List.of();
 
-        @SuppressWarnings("unchecked")
-        Map<String, Object> value = (Map<String, Object>) offersBlock.get("value");
-        if (value == null)
+        Object valueObj = offersBlock.get("value");
+        if (!(valueObj instanceof Map<?, ?> vm))
+            return List.of();
+
+        Object dataObj = vm.get("data");
+        if (!(dataObj instanceof List<?> dl) || dl.isEmpty())
             return List.of();
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> data = (List<Map<String, Object>>) value.get("data");
-        if (data == null || data.isEmpty())
-            return List.of();
+        List<Map<String, Object>> data = (List<Map<String, Object>>) (List<?>) dl;
+
+        if (log.isDebugEnabled()) {
+            lines.stream().limit(5).forEach(b -> {
+                Object k = b.get("key");
+                Object v = b.get("value");
+                int count = 0;
+                if (v instanceof Map<?, ?> innerVm) {
+                    Object d = innerVm.get("data");
+                    if (d instanceof List<?> dl2)
+                        count = dl2.size();
+                }
+                log.debug("eta line key={} dataCount={}", k, count);
+            });
+        }
 
         final Set<String> excluded = excludedVendorsNormalized();
         final Set<String> preferred = preferredVendorsNormalized();
@@ -228,8 +264,14 @@ public class GroceriesService {
      * Reorders deals so that favorite vendors are preferred unless a non-favorite
      * item is strictly cheaper according to the sorting metric.
      *
+     * <p>
+     * The input list must already be sorted ascending by
+     * {@link #metricForSort(DealDto)}. The output preserves that order within the
+     * non-favorites that beat the cheapest favorite and within the favorites
+     * themselves.
+     *
      * @param deals
-     *            the input list already sorted by {@link #metricForSort(DealDto)}
+     *            input list sorted by {@link #metricForSort(DealDto)}
      * @param favorites
      *            set of canonicalized favorite vendor names
      * @return a new list where favorites are surfaced without hiding better priced
@@ -269,12 +311,14 @@ public class GroceriesService {
     }
 
     /**
-     * Maps a raw offer map from the API into a typed {@link DealDto}. Filters out
-     * entries with missing/invalid price.
+     * Maps a raw offer map from the API into a typed {@link DealDto} and computes
+     * several derived attributes (e.g., per-piece price, min/max per-kg unit price
+     * range). Entries with missing/invalid price are ignored (return null).
      *
      * @param m
      *            raw map representing a single offer document
-     * @return a populated DealDto or null when essential fields are missing
+     * @return a populated DealDto or null when essential fields are missing (e.g.,
+     *         price)
      */
     private DealDto toDeal(Map<String, Object> m) {
         String name = Objects.toString(m.get("name"), "");
@@ -366,7 +410,8 @@ public class GroceriesService {
     }
 
     /**
-     * Attempts to parse an integer from a Number or String.
+     * Attempts to parse an integer from a Number or String. Accepts numeric strings
+     * with optional surrounding whitespace.
      *
      * @param o
      *            number or numeric string
@@ -385,22 +430,34 @@ public class GroceriesService {
     }
 
     /**
-     * Builds an encoded value for the "eta-location" cookie consumed by the API.
+     * Builds an encoded value for the "eta-location" cookie consumed by the
+     * Etilbudsavis API. The cookie carries latitude, longitude, geohash, city and
+     * country, and is URL-encoded.
+     *
+     * @param lat
+     *            latitude in decimal degrees
+     * @param lon
+     *            longitude in decimal degrees
+     * @param city
+     *            city name to include (falls back to default if null)
+     * @return URL-encoded JSON payload accepted by the API as eta-location cookie
+     *         value
      */
     private String buildEtaLocationCookie(double lat, double lon, String city) {
-        String json = String.format(Locale.ROOT,
-                "{\"latitude\":%.6f,\"longitude\":%.6f,\"city\":\"%s\",\"country\":\"%s\",\"mode\":\"fallback\"}", lat,
-                lon, city.replace("\"", "\\\""), countryCode);
-        return URLEncoder.encode(json, StandardCharsets.UTF_8);
+        String c = (city == null ? defaultCity : city).trim();
+        String payload = String.format(Locale.ROOT,
+                "{\"latitude\":%.7f,\"longitude\":%.7f,\"geohash\":\"%s\",\"city\":\"%s\",\"country\":\"%s\",\"mode\":\"manual\",\"text\":\"%s\"}",
+                lat, lon, geoHash(lat, lon), c.replace("\"", "\\\""), countryCode, c.replace("\"", "\\\""));
+        return URLEncoder.encode(payload, StandardCharsets.UTF_8);
     }
 
     /**
-     * Parses an ndjson response body into a list of JSON objects. Blank lines and
-     * closing bracket tokens are ignored.
+     * Parses an NDJSON response body into a list of JSON objects (as maps). Blank
+     * lines and solitary closing bracket tokens are ignored.
      *
      * @param raw
      *            raw response body in NDJSON format
-     * @return list of parsed maps
+     * @return list of parsed maps (one entry per non-empty line)
      * @throws IOException
      *             if any line fails to parse as JSON
      */
@@ -418,7 +475,7 @@ public class GroceriesService {
 
     /**
      * Attempts to parse a double from a Number or String, tolerating formats like
-     * "19,90" or "19.90" and ignoring currency symbols.
+     * "19,90" or "19.90" and ignoring currency symbols/spaces.
      *
      * @param o
      *            number or numeric string
@@ -442,6 +499,10 @@ public class GroceriesService {
 
     /**
      * Returns the first argument that is a non-blank String, or null if none.
+     *
+     * @param candidates
+     *            values to inspect in order
+     * @return first non-blank String or null
      */
     private static String firstNonBlank(Object... candidates) {
         for (Object c : candidates) {
@@ -453,7 +514,10 @@ public class GroceriesService {
 
     /**
      * Parses the preferred vendors CSV from configuration and returns a normalized
-     * set for comparisons.
+     * set for comparisons. Normalization applies canonicalization and alias
+     * resolution so comparisons become stable.
+     *
+     * @return set of normalized vendor names marked as preferred
      */
     private Set<String> preferredVendorsNormalized() {
         return parseVendorCsvNormalized(preferredVendorsCsv);
@@ -461,7 +525,12 @@ public class GroceriesService {
 
     /**
      * Normalizes a vendor/store name to a canonical lowercase form, applying
-     * configured aliases and collapsing whitespace and separators.
+     * configured aliases and collapsing whitespace and common separators (space,
+     * dash, underscore, slash).
+     *
+     * @param raw
+     *            original store/vendor name
+     * @return normalized canonical name used for comparisons
      */
     private String canonicalizeVendor(String raw) {
         if (raw == null)
@@ -475,8 +544,16 @@ public class GroceriesService {
     }
 
     /**
-     * Computes a sorting metric: prefer unit price when available, otherwise use
-     * the absolute price. If min/max unit prices exist, use their midpoint.
+     * Computes a sorting metric for an offer. Preference order:
+     * <ol>
+     * <li>Explicit unitPrice (per base unit, e.g., per kg) if present</li>
+     * <li>Midpoint of computed unitPriceMin/unitPriceMax when available</li>
+     * <li>Absolute price as a fallback</li>
+     * </ol>
+     *
+     * @param d
+     *            deal
+     * @return numeric metric used for ascending sorting
      */
     private static double metricForSort(DealDto d) {
         // prefer unit price (per kg) if present; else fallback to absolute price
@@ -492,7 +569,9 @@ public class GroceriesService {
 
     /**
      * Parses the excluded vendors CSV from configuration and returns a normalized
-     * set for filtering results.
+     * set used for filtering results from the API.
+     *
+     * @return set of normalized vendor names to exclude from results
      */
     private Set<String> excludedVendorsNormalized() {
         return parseVendorCsvNormalized(excludedVendorsCsv);
@@ -514,7 +593,21 @@ public class GroceriesService {
 
     /**
      * Records request metrics (count, latency, and result size) with
-     * low-cardinality tags.
+     * low-cardinality tags. Tags include success flag, a coarse city name, a coarse
+     * term length class, and the limit used.
+     *
+     * @param term
+     *            raw search term
+     * @param city
+     *            city used for the request (may be null)
+     * @param limit
+     *            fetch limit requested
+     * @param outSize
+     *            number of deals returned after filtering/capping
+     * @param startNanos
+     *            monotonic start time for latency measurement
+     * @param success
+     *            whether the HTTP call and parsing were successful
      */
     private void recordMetrics(String term, String city, int limit, int outSize, long startNanos, boolean success) {
         long ms = (System.nanoTime() - startNanos) / 1_000_000;
@@ -527,12 +620,35 @@ public class GroceriesService {
         metrics.timer("thehub.groceries.latency", tags).record(ms, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Returns a normalized string for tags/logging: lower-cased or <none> when
+     * blank/null.
+     *
+     * @param s
+     *            input
+     * @return normalized string or <none>
+     */
     private static String norm(String s) {
         return (s == null || s.isBlank()) ? "<none>" : s.toLowerCase(Locale.ROOT);
     }
+    /**
+     * Returns the city value used for logging: "<default>" when not provided.
+     *
+     * @param s
+     *            settings
+     * @return city or <default>
+     */
     private static String cityOrDefault(GroceryDealsSettings s) {
         return (s.city() == null || s.city().isBlank()) ? "<default>" : s.city();
     }
+    /**
+     * Coarsely classifies the search term length for metrics tagging to avoid
+     * cardinality explosions.
+     *
+     * @param term
+     *            input term
+     * @return one of: <none>, short (<=3), medium (<=8), long (>8)
+     */
     private static String termClass(String term) {
         if (term == null)
             return "<none>";
@@ -543,10 +659,27 @@ public class GroceriesService {
             return "medium";
         return "long";
     }
+    /**
+     * Bernoulli sampler used to occasionally enable info-level logs without
+     * flooding the logs.
+     *
+     * @param p
+     *            probability in [0,1)
+     * @return true with probability p
+     */
     private static boolean sample(double p) {
         return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
     }
 
+    /**
+     * Parses a CSV list of vendors and returns a normalized set using
+     * {@link #canonicalizeVendor(String)}. Empty or blank inputs return an empty
+     * set.
+     *
+     * @param csv
+     *            comma-separated vendor names
+     * @return normalized set
+     */
     private Set<String> parseVendorCsvNormalized(String csv) {
         if (csv == null || csv.isBlank())
             return Set.of();
@@ -560,4 +693,81 @@ public class GroceriesService {
         return out;
     }
 
+    /**
+     * Heuristically picks the block that contains "offers" from a list of NDJSON
+     * lines. It looks for a value.data list whose entries resemble offer documents
+     * (contain business/store and price/unitPrice).
+     *
+     * @param lines
+     *            parsed NDJSON lines
+     * @return the first matching block map, or null if none found
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> pickOffersBlock(List<Map<String, Object>> lines) {
+        for (Map<String, Object> b : lines) {
+            Object v = b.get("value");
+            if (!(v instanceof Map<?, ?> vm))
+                continue;
+            Object data = vm.get("data");
+            if (!(data instanceof List<?> list) || list.isEmpty())
+                continue;
+
+            // Heuristic: the offers "data" entries contain "business" and a "price".
+            Object first = list.get(0);
+            if (first instanceof Map<?, ?> m) {
+                boolean looksLikeOffer = (m.containsKey("business") || m.containsKey("store"))
+                        && (m.containsKey("price") || m.containsKey("unitPrice"));
+                if (looksLikeOffer)
+                    return b;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Encodes latitude/longitude into a geohash string with fixed precision.
+     *
+     * @param lat
+     *            latitude in decimal degrees
+     * @param lon
+     *            longitude in decimal degrees
+     * @return base32 geohash (precision 7)
+     */
+    private static String geoHash(double lat, double lon) {
+        final String BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
+        int precision = 7; // matches their example
+        double minLat = -90, maxLat = 90, minLon = -180, maxLon = 180;
+        boolean evenBit = true;
+        int bit = 0, ch = 0;
+        StringBuilder hash = new StringBuilder();
+
+        while (hash.length() < precision) {
+            if (evenBit) {
+                double mid = (minLon + maxLon) / 2;
+                if (lon >= mid) {
+                    ch = (ch << 1) | 1;
+                    minLon = mid;
+                } else {
+                    ch = (ch << 1);
+                    maxLon = mid;
+                }
+            } else {
+                double mid = (minLat + maxLat) / 2;
+                if (lat >= mid) {
+                    ch = (ch << 1) | 1;
+                    minLat = mid;
+                } else {
+                    ch = (ch << 1);
+                    maxLat = mid;
+                }
+            }
+            evenBit = !evenBit;
+            if (++bit == 5) {
+                hash.append(BASE32.charAt(ch));
+                bit = 0;
+                ch = 0;
+            }
+        }
+        return hash.toString();
+    }
 }

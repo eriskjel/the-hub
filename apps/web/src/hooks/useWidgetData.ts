@@ -5,10 +5,10 @@ import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { DegradedError, HttpError } from "@/lib/widgets/fetchJson";
 import {
-    MIN_POLL_INTERVAL_MS,
+    BASE_RETRY_DELAY,
     DEFAULT_WIDGET_DATA_INTERVAL_MS,
     MAX_RETRIES,
-    BASE_RETRY_DELAY,
+    MIN_POLL_INTERVAL_MS,
 } from "@/utils/timers";
 import { warnOnce } from "@/utils/warnOnce";
 
@@ -25,6 +25,8 @@ export function useWidgetData<D = unknown>(
     const kind = widget.kind;
     const entry = registry[widget.kind];
 
+    const settingsSig = JSON.stringify(widget.settings ?? {});
+
     const [state, setState] = useState<State<D>>({ status: "loading" });
     const inFlightRef = useRef(false);
     const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -36,22 +38,23 @@ export function useWidgetData<D = unknown>(
     const saveCache = useCallback(
         (data: unknown) => {
             try {
-                const payload = JSON.stringify({ ts: Date.now(), data });
+                const payload = JSON.stringify({ ts: Date.now(), sig: settingsSig, data });
                 localStorage.setItem(cacheKey, payload);
             } catch {}
         },
-        [cacheKey]
+        [cacheKey, settingsSig]
     );
 
     const loadCache = useCallback(<T>(): { ts: number; data: T } | null => {
         try {
             const raw = localStorage.getItem(cacheKey);
             if (!raw) return null;
-            return JSON.parse(raw) as { ts: number; data: T };
+            const parsed = JSON.parse(raw) as { ts: number; sig?: string; data: T };
+            return parsed.sig === settingsSig ? { ts: parsed.ts, data: parsed.data as T } : null;
         } catch {
             return null;
         }
-    }, [cacheKey]);
+    }, [cacheKey, settingsSig]);
 
     const stopPolling = useCallback(() => {
         if (intervalRef.current) {

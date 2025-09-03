@@ -9,12 +9,21 @@ import { useLocationControls } from "@/hooks/useLocationControls";
 import { GroceryErrors, GroceryForm } from "./types";
 import { fmtCoord } from "@/widgets/grocery-deals/format";
 
-export function GroceryDealsSettings({ form }: { form: GroceryForm }): ReactElement {
+type GroceryDealsSettingsProps = {
+    form: GroceryForm;
+    initialSettings?: { city?: string; lat?: number; lon?: number };
+};
+
+export function GroceryDealsSettings({
+    form,
+    initialSettings,
+}: GroceryDealsSettingsProps): ReactElement {
     const t = useTranslations("widgets.create.groceryDeals");
     const errs: GroceryErrors = form.formState.errors as GroceryErrors;
 
-    const locationControls = useLocationControls(form, t);
-
+    const locationControls = useLocationControls(form, t, {
+        initial: initialSettings,
+    });
     return (
         <div className="space-y-4">
             <FieldText
