@@ -1,14 +1,25 @@
 import { WidgetKind } from "@/widgets/schema";
 
 export function purgeWidgetLocalCache(
-    userId?: string | null,
-    kind?: WidgetKind | string,
-    instanceId?: string
+    userId: string | null | undefined,
+    kind: WidgetKind | string | undefined,
+    instanceId: string | undefined
 ): void {
-    if (!userId || !kind || !instanceId) return;
+    if (!kind || !instanceId) return;
+
+    const keys = new Set<string>();
+
+    // If we have a concrete userId, purge that key
+    if (userId) keys.add(`hub:u:${userId}:widget:${kind}:${instanceId}`);
+
+    // Always purge the anon key too (covers edits done when userId was missing in props)
+    keys.add(`hub:u:anon:widget:${kind}:${instanceId}`);
+
     try {
-        const key = `hub:u:${userId}:widget:${kind}:${instanceId}`;
-        localStorage.removeItem(key);
+        for (const k of keys) {
+            localStorage.removeItem(k);
+            // console.debug("[purge] removed", k);
+        }
     } catch {
         /* ignore */
     }

@@ -139,6 +139,28 @@
             "delete": "Slett",
             "deleting": "Sletter…",
             "genericError": "Noe gikk galt. Prøv igjen."
+        },
+        "edit": {
+            "title": "Rediger widget",
+            "subtitle": "Oppdater navn eller innstillinger og lagre.",
+            "ariaEdit": "Rediger widget",
+            "name": "Navn",
+            "namePlaceholder": "Min widget",
+            "save": "Lagre",
+            "saving": "Lagrer…",
+            "cancel": "Avbryt",
+            "close": "Lukk",
+            "notEditable": "Kan ikke redigeres",
+            "notEditableTip": "Redigering er foreløpig ikke tilgjengelig for denne widget-typen.",
+            "unsupported": "Redigering er ikke tilgjengelig for denne widget-typen ennå.",
+            "errors": {
+                "titleRequired": "Skriv inn et navn.",
+                "updateFailed": "Kunne ikke oppdatere widget.",
+                "unauthorized": "Du må være innlogget for å redigere widgets.",
+                "forbidden": "Du har ikke tilgang til å redigere denne widgeten.",
+                "network": "Nettverksfeil under oppdatering.",
+                "generic": "Noe gikk galt."
+            }
         }
     }
 }

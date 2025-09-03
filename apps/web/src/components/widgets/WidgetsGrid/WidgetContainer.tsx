@@ -6,6 +6,8 @@ import WidgetCard from "@/components/widgets/WidgetCard";
 import GlassCard from "@/components/ui/GlassCard";
 import { DeleteWidgetButton } from "@/components/widgets/delete/DeleteWidgetButton";
 import { useTranslations } from "next-intl";
+import { EditWidgetButton } from "@/components/widgets/edit/EditWidgetButton";
+import { isEditableKind } from "@/widgets/create/registry";
 
 type TitleMode = "title" | "query" | "auto";
 
@@ -59,13 +61,18 @@ export default function WidgetContainer({
     const title = right ? `${kindLabel} | ${right}` : kindLabel;
 
     const header: ReactElement = <Header title={title} />;
-    const actions: ReactElement = (
-        <DeleteWidgetButton
-            widgetId={widget.instanceId}
-            widgetTitle={widgetTitle || kindLabel}
-            userId={userId}
-            kind={widget.kind}
-        />
+    const actions = (
+        <div className="flex items-center gap-2">
+            {isEditableKind(widget.kind) && (
+                <EditWidgetButton widget={widget} userId={userId ?? undefined} />
+            )}
+            <DeleteWidgetButton
+                widgetId={widget.instanceId}
+                widgetTitle={widgetTitle || kindLabel}
+                userId={userId}
+                kind={widget.kind}
+            />
+        </div>
     );
 
     return (
