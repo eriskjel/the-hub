@@ -1,15 +1,15 @@
 import { ReactElement, Suspense } from "react";
 import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
-import { getWidgetsSafe } from "@/lib/widgets/getWidgets.server";
+import { getDashboardWidgets, type WidgetsResult } from "@/lib/widgets/getWidgets.server";
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
 import CreateWidgetButton from "@/components/widgets/CreateWidgetButton";
-import { HeaderSkeleton } from "@/app/[locale]/(protected)/dashboard/Header";
-import { Header } from "./Header";
+import { Header, HeaderSkeleton } from "./Header";
 import WidgetCardSkeleton from "@/components/widgets/WidgetCardSkeleton";
 
 export default async function DashboardPage() {
     const userPromise = getCurrentUserAndProfile();
-    const widgetsPromise = getWidgetsSafe(null);
+
+    const widgetsPromise: Promise<WidgetsResult> = getDashboardWidgets(userPromise);
 
     return (
         <div className="min-h-full">
@@ -37,21 +37,16 @@ async function WidgetsSection({
     widgetsPromise,
 }: {
     userPromise: ReturnType<typeof getCurrentUserAndProfile>;
-    widgetsPromise: ReturnType<typeof getWidgetsSafe>;
+    widgetsPromise: Promise<WidgetsResult>;
 }) {
     const [{ user }, widgetsResult] = await Promise.all([userPromise, widgetsPromise]);
     const userId = user?.id ?? null;
-
     return <WidgetsGrid widgetsResult={widgetsResult} userId={userId} />;
 }
 
-async function ActionsBar({
-    widgetsPromise,
-}: {
-    widgetsPromise: ReturnType<typeof getWidgetsSafe>;
-}) {
+async function ActionsBar({ widgetsPromise }: { widgetsPromise: Promise<WidgetsResult> }) {
     const result = await widgetsPromise;
-    if (result.widgets.length === 0 && result.offline) return null;
+    if (result.widgets.length === 0 && result.offline) return <div className="h-10" />;
     return <CreateWidgetButton />;
 }
 
