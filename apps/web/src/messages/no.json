@@ -86,8 +86,22 @@
             "submit": "Opprett widget",
             "submitting": "Oppretter…",
             "errors": {
+                "duplicate_provider": "Du har allerede en widget for denne tilbyderen.",
+                "duplicate_target": "Du har allerede en widget med dette målet.",
+                "duplicate_groceries": "Du har allerede en dagligvare-widget med dette søket og byen.",
+                "limit_reached": "Du har nådd grensen for denne widget-typen.",
+                "forbidden": "Du har ikke lov til å opprette denne widget-typen.",
+                "unsupported_kind": "Denne widget-typen støttes ikke.",
+                "settings_required": "Innstillinger er påkrevd.",
+                "target_required": "Mål-URL er påkrevd.",
+                "provider_required": "Velg en tilbyder.",
+                "query_required": "Skriv inn en søkestreng.",
+                "invalid_request": "Ugyldig forespørsel.",
+                "internal_error": "Noe gikk galt hos oss.",
+                "network": "Nettverksfeil. Prøv igjen.",
+                "generic": "Noe gikk galt.",
                 "titleRequired": "Skriv inn et navn",
-                "failed": "Kunne ikke opprette widget"
+                "duplicate": "Denne widget'en finnes allerede."
             },
             "serverPings": {
                 "title": "Server-pings",
@@ -188,7 +202,11 @@
                     "help": "Velg enten en spesifikk dag i måneden, eller en ukedag med posisjon (f.eks. siste torsdag)."
                 },
                 "provider": {
-                    "label": "Tilbyder"
+                    "label": "Tilbyder",
+                    "options": {
+                        "trippelTrumf": "Trippel-Trumf",
+                        "dnbSupertibud": "DNB Supertilbud"
+                    }
                 },
                 "showHours": "Vis timer/minutter i nedtellingen",
                 "errors": {
@@ -198,7 +216,12 @@
                 }
             },
             "view": {
-                "noDate": "Ingen dato"
+                "providerNames": {
+                    "trippelTrumf": "Trippel-Trumf",
+                    "dnbSupertibud": "DNB Supertilbud"
+                },
+                "nextNotAnnounced": "Neste dato ikke annonsert.",
+                "nextNotAnnouncedWithDays": "Neste dato ikke annonsert. {days, plural, one {# dag} other {# dager}} siden forrige."
             }
         }
     }

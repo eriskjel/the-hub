@@ -86,8 +86,22 @@
             "submit": "Create widget",
             "submitting": "Creating…",
             "errors": {
+                "duplicate_provider": "You already have a widget for this provider.",
+                "duplicate_target": "You already have a widget with this target.",
+                "duplicate_groceries": "You already have a grocery widget with that search and city.",
+                "limit_reached": "You reached the limit for this widget type.",
+                "forbidden": "You’re not allowed to create this widget type.",
+                "unsupported_kind": "This widget type isn’t supported.",
+                "settings_required": "Settings are required.",
+                "target_required": "Target is required.",
+                "provider_required": "Please choose a provider.",
+                "query_required": "Please enter a search term.",
+                "invalid_request": "Invalid request.",
+                "internal_error": "Something went wrong on our side.",
+                "network": "Network error. Please try again.",
+                "generic": "Something went wrong.",
                 "titleRequired": "Please enter a name",
-                "failed": "Failed to create widget"
+                "duplicate": "This item already exists."
             },
             "serverPings": {
                 "title": "Server pings",
@@ -188,7 +202,11 @@
                     "help": "Choose either a specific day of the month, or a weekday with a position (e.g., last Thursday)."
                 },
                 "provider": {
-                    "label": "Provider"
+                    "label": "Provider",
+                    "options": {
+                        "trippelTrumf": "Trippel-Trumf",
+                        "dnbSupertibud": "DNB Supertilbud"
+                    }
                 },
                 "showHours": "Show hours/minutes in countdown",
                 "errors": {
@@ -198,7 +216,12 @@
                 }
             },
             "view": {
-                "noDate": "No date"
+                "providerNames": {
+                    "trippelTrumf": "Trippel-Trumf",
+                    "dnbSupertibud": "DNB Supertilbud"
+                },
+                "nextNotAnnounced": "Next date not announced.",
+                "nextNotAnnouncedWithDays": "Next date not announced. {days, plural, one {# day} other {# days}} since last."
             }
         }
     }

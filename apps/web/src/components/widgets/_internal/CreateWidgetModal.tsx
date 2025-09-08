@@ -20,6 +20,15 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
     const { form, active } = useCreateWidgetForm(kind, t);
     const Settings = active.SettingsForm;
 
+    const setFieldErr = (
+        name: "settings.provider" | "settings.targetIso" | "settings.query",
+        code: string
+    ) =>
+        form.setError(name as any, {
+            type: "server",
+            message: t(`errors.${code}`),
+        });
+
     return (
         <Modal title={t("title")} subtitle={t("subtitle")} onClose={onClose}>
             <form
@@ -30,7 +39,25 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                             onClose();
                             router.refresh();
                         },
-                        onError: (message) => form.setError("root", { type: "server", message }),
+                        onError: (code) => {
+                            if (code === "duplicate_provider" || code === "provider_required") {
+                                setFieldErr("settings.provider", code);
+                                return;
+                            }
+                            if (code === "target_required") {
+                                setFieldErr("settings.targetIso", code);
+                                return;
+                            }
+                            if (code === "query_required") {
+                                setFieldErr("settings.query", code);
+                                return;
+                            }
+                            // fallback
+                            form.setError("root", {
+                                type: "server",
+                                message: t(`errors.${code}`, { fallback: t("errors.generic") }),
+                            });
+                        },
                     })
                 )}
             >
