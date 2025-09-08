@@ -25,6 +25,8 @@ export function Settings({ form }: { form: FormType }): ReactElement {
     const targetIsoErr = form.getFieldState("settings.targetIso").error?.message;
     const timeErr = form.getFieldState("settings.time").error?.message;
 
+    const providerErr = form.getFieldState("settings.provider").error?.message;
+
     return (
         <div className="space-y-4">
             <FieldSelect
@@ -92,21 +94,18 @@ export function Settings({ form }: { form: FormType }): ReactElement {
             )}
 
             {source === "provider" && (
-                <>
-                    <FieldSelect
-                        label={t("provider.label")}
-                        value={String(form.watch("settings.provider") ?? "")}
-                        onChange={(v) =>
-                            form.setValue("settings.provider", v as Provider, {
-                                shouldValidate: true,
-                            })
-                        }
-                        options={[
-                            { value: "trippel-trumf", label: "Trippel-Trumf" },
-                            { value: "dnb-supertibud", label: "DNB Supertilbud" },
-                        ]}
-                    />
-                </>
+                <FieldSelect
+                    label={t("provider.label")}
+                    value={String(form.watch("settings.provider") ?? "")}
+                    onChange={(v) =>
+                        form.setValue("settings.provider", v as Provider, { shouldValidate: true })
+                    }
+                    options={[
+                        { value: "trippel-trumf", label: t("provider.options.trippelTrumf") },
+                        { value: "dnb-supertibud", label: t("provider.options.dnbSupertibud") },
+                    ]}
+                    error={providerErr}
+                />
             )}
 
             <FieldRow>

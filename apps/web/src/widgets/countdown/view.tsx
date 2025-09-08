@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CountdownWidget } from "@/widgets/schema";
 import { CountdownData } from "@/widgets/countdown/types";
+import { useTranslations } from "next-intl";
 
 function parseTime(t: string) {
     const [h, m] = t.split(":").map((n) => parseInt(n, 10));
@@ -85,7 +86,6 @@ function computeNext(now: Date, w: CountdownWidget): Date | null {
 }
 
 function fmtRemain(ms: number, showHours: boolean) {
-    if (ms <= 0) return "0d 00:00";
     const sec = Math.floor(ms / 1000);
     const d = Math.floor(sec / 86400);
     const h = Math.floor((sec % 86400) / 3600);
@@ -102,8 +102,9 @@ export default function CountdownView({
     widget: CountdownWidget;
     data: CountdownData;
 }): ReactElement {
-    const [now, setNow] = useState<Date>(new Date());
+    const t = useTranslations("widgets.countdown.view");
 
+    const [now, setNow] = useState<Date>(new Date());
     const tickRef = useRef<number | null>(null);
 
     useEffect(() => {
@@ -113,42 +114,54 @@ export default function CountdownView({
         };
     }, []);
 
-    const next = useMemo(() => {
-        if (data?.nextIso) return new Date(data.nextIso);
-        return computeNext(now, widget);
-    }, [data?.nextIso, now, widget]);
-    const remaining = next ? Math.max(0, +next - +now) : 0;
-
     const label = useMemo(() => {
         if (widget.settings.source === "provider") {
-            const map: Record<string, string> = {
-                "trippel-trumf": "Trippel-Trumf",
-                "dnb-supertibud": "DNB Supertilbud",
-            };
-            return map[widget.settings.provider] ?? widget.title;
+            const id = widget.settings.provider;
+            if (id === "trippel-trumf") return t("providerNames.trippelTrumf");
+            if (id === "dnb-supertibud") return t("providerNames.dnbSupertibud");
         }
         return widget.title;
-    }, [widget]);
+    }, [t, widget]);
+
+    const next = data?.nextIso ? new Date(data.nextIso) : null;
+    const prev = data?.previousIso ? new Date(data.previousIso) : null;
+
+    const nextDate = next && next.getTime() > now.getTime() ? next : null;
+
+    const remaining = nextDate ? nextDate.getTime() - now.getTime() : 0;
+    const daysSincePrev = prev
+        ? Math.floor((now.getTime() - prev.getTime()) / (24 * 3600 * 1000))
+        : null;
 
     return (
         <div className="flex flex-col items-center gap-2 p-2 text-center">
             <div className="text-xs tracking-wide uppercase opacity-70">{label}</div>
-            <div className="text-3xl font-bold tabular-nums">
-                {fmtRemain(remaining, widget.settings.showHours ?? true)}
-            </div>
-            <div className="text-xs opacity-70">
-                {next
-                    ? next.toLocaleString(undefined, { dateStyle: "full", timeStyle: "short" })
-                    : "No date"}
-            </div>
-            {remaining > 0 && (
-                <div className="mt-2 h-1 w-full rounded-full bg-black/10">
-                    <div
-                        className="h-1 rounded-full bg-black/30"
-                        style={{
-                            width: `${Math.max(0, 100 - (remaining / (7 * 24 * 3600 * 1000)) * 100)}%`,
-                        }}
-                    />
+
+            {nextDate ? (
+                <>
+                    <div className="text-3xl font-bold tabular-nums">
+                        {fmtRemain(remaining, widget.settings.showHours ?? true)}
+                    </div>
+                    <div className="text-xs opacity-70">
+                        {nextDate.toLocaleString(undefined, {
+                            dateStyle: "full",
+                            timeStyle: "short",
+                        })}
+                    </div>
+                    <div className="mt-2 h-1 w-full rounded-full bg-black/10">
+                        <div
+                            className="h-1 rounded-full bg-black/30"
+                            style={{
+                                width: `${Math.max(0, 100 - (remaining / (7 * 24 * 3600 * 1000)) * 100)}%`,
+                            }}
+                        />
+                    </div>
+                </>
+            ) : (
+                <div className="text-xs opacity-70">
+                    {prev
+                        ? t("nextNotAnnouncedWithDays", { days: daysSincePrev ?? 0 })
+                        : t("nextNotAnnounced")}
                 </div>
             )}
         </div>
