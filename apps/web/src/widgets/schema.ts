@@ -1,9 +1,10 @@
 import type { ReactElement } from "react";
 import type { PingsData } from "@/widgets/server-pings/types";
 import { Deal } from "@/widgets/grocery-deals/types";
+import { CountdownData } from "@/widgets/countdown/types";
 
 /* 1) Allowed kinds (extend over time) */
-export const WIDGET_KINDS = ["server-pings", "pi-health", "grocery-deals"] as const;
+export const WIDGET_KINDS = ["server-pings", "pi-health", "grocery-deals", "countdown"] as const;
 export type WidgetKind = (typeof WIDGET_KINDS)[number];
 
 /* 2) Grid (camelCase on the client) */
@@ -27,6 +28,24 @@ export type GroceryDealsSettings = {
     lon?: number; // optional
 };
 
+export type CountdownSource =
+    | { source: "fixed-date"; targetIso: string }
+    | {
+          source: "monthly-rule";
+          time: string; // "08:00" (client local)
+          byWeekday?: "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
+          bySetPos?: number; // e.g., 1, 2, -1
+          dayOfMonth?: number; // alternative to weekday+setpos
+      }
+    | {
+          source: "provider";
+          provider: "trippel-trumf" | "dnb-supertibud";
+      };
+
+export type CountdownSettings = {
+    showHours?: boolean;
+} & CountdownSource;
+
 /* 4) Discriminated widget type (from API /widgets/list) */
 export type BaseWidget<K extends WidgetKind, S> = {
     id: string;
@@ -40,14 +59,16 @@ export type BaseWidget<K extends WidgetKind, S> = {
 export type ServerPingsWidget = BaseWidget<"server-pings", ServerPingsSettings>;
 export type PiHealthWidget = BaseWidget<"pi-health", PiHealthSettings>;
 export type GroceryDealsWidget = BaseWidget<"grocery-deals", GroceryDealsSettings>;
+export type CountdownWidget = BaseWidget<"countdown", CountdownSettings>;
 
-export type AnyWidget = ServerPingsWidget | PiHealthWidget | GroceryDealsWidget;
+export type AnyWidget = ServerPingsWidget | PiHealthWidget | GroceryDealsWidget | CountdownWidget;
 
 /* 5) Data returned by each widget's fetch */
 export type DataByKind = {
     "server-pings": PingsData;
     "pi-health": unknown;
     "grocery-deals": Deal[];
+    countdown: CountdownData;
 };
 
 /* 6) Registry contracts */

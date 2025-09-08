@@ -79,7 +79,8 @@
             "kindHelp": "Choose what to create. More types coming soon.",
             "kinds": {
                 "server-pings": "Server pings",
-                "grocery-deals": "Grocery deals"
+                "grocery-deals": "Grocery deals",
+                "countdown": "Countdown"
             },
             "cancel": "Cancel",
             "submit": "Create widget",
@@ -160,6 +161,44 @@
                 "forbidden": "You’re not allowed to edit this widget.",
                 "network": "Network error while updating widget.",
                 "generic": "Something went wrong."
+            }
+        },
+        "countdown": {
+            "kindLabel": "Countdown",
+            "create": {
+                "label": "Label",
+                "labelPlaceholder": "e.g., Trippel-Trumf",
+                "sourceLabel": "Source",
+                "source": {
+                    "fixed": "Fixed date",
+                    "monthlyRule": "Monthly rule",
+                    "provider": "Provider (Trippel-Trumf / DNB)"
+                },
+                "fixed": {
+                    "target": "Target date & time (ISO 8601)"
+                },
+                "rule": {
+                    "time": "Time (HH:MM)",
+                    "dayOfMonth": "Day of month",
+                    "dayOfMonthPh": "e.g., 15 (leave empty if using weekday + position)",
+                    "byWeekday": "Weekday",
+                    "bySetPos": "Set position (e.g., 1, 2, -1)",
+                    "bySetPosPh": "1 = first, 2 = second, -1 = last",
+                    "none": "None",
+                    "help": "Choose either a specific day of the month, or a weekday with a position (e.g., last Thursday)."
+                },
+                "provider": {
+                    "label": "Provider"
+                },
+                "showHours": "Show hours/minutes in countdown",
+                "errors": {
+                    "chooseDateTime": "Choose a date/time",
+                    "rulePickOne": "Pick either dayOfMonth OR (weekday + set position)",
+                    "ruleMutuallyExclusive": "Use dayOfMonth OR weekday+setpos, not both"
+                }
+            },
+            "view": {
+                "noDate": "No date"
             }
         }
     }

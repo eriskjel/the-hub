@@ -79,7 +79,8 @@
             "kindHelp": "Velg hva du vil lage. Flere typer kommer.",
             "kinds": {
                 "server-pings": "Server-pings",
-                "grocery-deals": "Dagligvarekupp"
+                "grocery-deals": "Dagligvarekupp",
+                "countdown": "Nedtelling"
             },
             "cancel": "Avbryt",
             "submit": "Opprett widget",
@@ -160,6 +161,44 @@
                 "forbidden": "Du har ikke tilgang til å redigere denne widgeten.",
                 "network": "Nettverksfeil under oppdatering.",
                 "generic": "Noe gikk galt."
+            }
+        },
+        "countdown": {
+            "kindLabel": "Nedtelling",
+            "create": {
+                "label": "Etikett",
+                "labelPlaceholder": "f.eks. Trippel-Trumf",
+                "sourceLabel": "Kilde",
+                "source": {
+                    "fixed": "Fast dato",
+                    "monthlyRule": "Månedlig regel",
+                    "provider": "Tilbyder (Trippel-Trumf / DNB)"
+                },
+                "fixed": {
+                    "target": "Mål-dato og -tid (ISO 8601)"
+                },
+                "rule": {
+                    "time": "Tid (HH:MM)",
+                    "dayOfMonth": "Dag i måneden",
+                    "dayOfMonthPh": "f.eks. 15 (la stå tom hvis du bruker ukedag + posisjon)",
+                    "byWeekday": "Ukedag",
+                    "bySetPos": "Posisjon (f.eks. 1, 2, -1)",
+                    "bySetPosPh": "1 = første, 2 = andre, -1 = siste",
+                    "none": "Ingen",
+                    "help": "Velg enten en spesifikk dag i måneden, eller en ukedag med posisjon (f.eks. siste torsdag)."
+                },
+                "provider": {
+                    "label": "Tilbyder"
+                },
+                "showHours": "Vis timer/minutter i nedtellingen",
+                "errors": {
+                    "chooseDateTime": "Velg dato/tid",
+                    "rulePickOne": "Velg enten dag i måneden ELLER (ukedag + posisjon)",
+                    "ruleMutuallyExclusive": "Bruk dag i måneden ELLER ukedag+posisjon, ikke begge"
+                }
+            },
+            "view": {
+                "noDate": "Ingen dato"
             }
         }
     }
