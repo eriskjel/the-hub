@@ -150,6 +150,7 @@ public class GroceriesService {
         if (desired > SAFETY_CAP) {
             log.warn("Groceries desired_limit_exceeds_safety desired={} cap={}", desired, SAFETY_CAP);
         }
+
         Function<Object[], String> enc = parts -> {
             try {
                 return Base64.getEncoder().encodeToString(mapper.writeValueAsBytes(parts));
@@ -160,7 +161,6 @@ public class GroceriesService {
 
         final String qOffers = enc.apply(new Object[]{"offers", Map.of("hideUpcoming", false, "pagination",
                 Map.of("limit", fetchLimit, "offset", 0), "searchTerm", term, "sort", List.of("score_desc"))});
-
         final Map<String, Object> payload = Map.of("data", List.of(qOffers));
 
         String etaCookie = buildEtaLocationCookie(s.lat() != null ? s.lat() : defaultLat,
@@ -207,7 +207,6 @@ public class GroceriesService {
         List<Map<String, Object>> lines = parseNdjson(raw);
         if (lines.isEmpty())
             return List.of();
-
         Map<String, Object> offersBlock = pickOffersBlock(lines);
         if (offersBlock == null)
             return List.of();
@@ -215,7 +214,6 @@ public class GroceriesService {
         Object valueObj = offersBlock.get("value");
         if (!(valueObj instanceof Map<?, ?> vm))
             return List.of();
-
         Object dataObj = vm.get("data");
         if (!(dataObj instanceof List<?> dl) || dl.isEmpty())
             return List.of();
@@ -240,9 +238,15 @@ public class GroceriesService {
         final Set<String> excluded = excludedVendorsNormalized();
         final Set<String> preferred = preferredVendorsNormalized();
 
-        Comparator<DealDto> cmp = Comparator
-                .comparing((DealDto d) -> !preferred.contains(canonicalizeVendor(d.store())))
-                .thenComparingDouble(GroceriesService::metricForSort);
+        // Base comparator: cheapest first by metric
+        Comparator<DealDto> byMetric = Comparator.comparingDouble(GroceriesService::metricForSort);
+
+        // If favorites are enabled, group favorites first (but still sort by price
+        // inside groups).
+        Comparator<DealDto> cmp = preferFavoritesEnabled
+                ? Comparator.<DealDto, Boolean>comparing(d -> !preferred.contains(canonicalizeVendor(d.store())))
+                        .thenComparing(byMetric)
+                : byMetric;
 
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
                 .filter(d -> !excluded.contains(canonicalizeVendor(d.store()))).sorted(cmp).toList();
@@ -256,7 +260,6 @@ public class GroceriesService {
         }
 
         recordMetrics(term, s.city(), fetchLimit, capped.size(), t0, true);
-
         return capped;
     }
 
