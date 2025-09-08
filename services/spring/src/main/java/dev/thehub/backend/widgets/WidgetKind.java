@@ -13,7 +13,9 @@ public enum WidgetKind {
     /** Raspberry Pi health widget kind (value "pi-health"). */
     PI_HEALTH("pi-health"),
     /** Grocery deals widget kind (value "grocery-deals"). */
-    GROCERY_DEALS("grocery-deals");
+    GROCERY_DEALS("grocery-deals"),
+    /** Countdown widget kind (value "countdown"). */
+    COUNTDOWN("countdown");
 
     private final String value;
 
