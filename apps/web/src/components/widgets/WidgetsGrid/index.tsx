@@ -8,7 +8,6 @@ import EmptyState from "./states/EmptyState";
 import ErrorState from "./states/ErrorState";
 import SeedWidgetsCacheWithRows from "@/components/widgets/_internal/SeedWidgetsCacheWithRows";
 import { WidgetsResult } from "@/lib/widgets/getWidgets.server";
-import CreateWidgetButton from "@/components/widgets/CreateWidgetButton";
 
 /**
  * WidgetsGrid
@@ -47,9 +46,6 @@ export default function WidgetsGrid({
     if (widgets.length === 0 && offline) {
         return (
             <>
-                <div className="mb-4 flex items-center justify-center">
-                    <CreateWidgetButton />
-                </div>
                 <OfflineState />
             </>
         );
@@ -69,9 +65,6 @@ export default function WidgetsGrid({
     return (
         <>
             {maybeSeed}
-            <div className="mb-4 flex items-center justify-center">
-                <CreateWidgetButton />
-            </div>
             <GridList widgets={widgets} userId={userId} />
         </>
     );
