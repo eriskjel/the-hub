@@ -6,9 +6,12 @@ import { Modal } from "@/components/ui/Modal";
 import { Button, FieldText } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
 import { creationRegistry, type CreationKind } from "@/widgets/create/registry";
-import { useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
+import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
 import { onSubmitCreateWidget } from "@/widgets/create/onSubmitCreateWidget";
 import { KindSelect } from "@/widgets/create/KindSelect";
+import type { Path } from "react-hook-form";
+
+type AllowedErrorPaths = "settings.provider" | "settings.targetIso" | "settings.query";
 
 export default function CreateWidgetModal({ onClose }: { onClose: () => void }): ReactElement {
     const t = useTranslations("widgets.create");
@@ -20,11 +23,8 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
     const { form, active } = useCreateWidgetForm(kind, t);
     const Settings = active.SettingsForm;
 
-    const setFieldErr = (
-        name: "settings.provider" | "settings.targetIso" | "settings.query",
-        code: string
-    ) =>
-        form.setError(name as any, {
+    const setFieldErr = (name: AllowedErrorPaths, code: string) =>
+        form.setError(name as unknown as Path<BaseForm>, {
             type: "server",
             message: t(`errors.${code}`),
         });
