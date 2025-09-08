@@ -34,19 +34,25 @@ export default function CountdownView({
         const intervalMs = showHours ? 1000 : 60_000;
 
         const start = () => {
-            if (!tickRef.current) tickRef.current = window.setInterval(() => setNow(new Date()), intervalMs);
+            if (!tickRef.current) {
+                tickRef.current = window.setInterval(() => setNow(new Date()), intervalMs);
+            }
         };
         const stop = () => {
-            if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
+            if (tickRef.current) {
+                window.clearInterval(tickRef.current);
+                tickRef.current = null;
+            }
         };
         const onVis = () => (document.visibilityState === "visible" ? start() : stop());
 
         start();
         document.addEventListener("visibilitychange", onVis);
-        return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
+        return () => {
+            stop();
+            document.removeEventListener("visibilitychange", onVis);
+        };
     }, [showHours]);
-
-
 
     const label = useMemo(() => {
         if (widget.settings.source === "provider") {
@@ -61,7 +67,7 @@ export default function CountdownView({
     const prev = data?.previousIso ? new Date(data.previousIso) : null;
 
     const nextDate = next && next.getTime() > now.getTime() ? next : null;
-    const remaining = Math.max(0, nextDate ? nextDate.getTime() - now.getTime() : 0);
+    const remaining = nextDate ? nextDate.getTime() - now.getTime() : 0;
     const daysSincePrev = prev
         ? Math.floor((now.getTime() - prev.getTime()) / (24 * 3600 * 1000))
         : null;
