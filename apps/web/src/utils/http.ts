@@ -19,7 +19,7 @@ export function isAbortError(e: unknown): e is DOMException {
 export async function parseError(res: Response): Promise<string> {
     try {
         const j = await res.json();
-        return j?.error || j?.message || `HTTP ${res.status}`;
+        return (j?.message as string) || (j?.error as string) || `HTTP ${res.status}`;
     } catch {
         return `HTTP ${res.status}`;
     }

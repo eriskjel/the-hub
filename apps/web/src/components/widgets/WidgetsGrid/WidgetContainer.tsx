@@ -22,6 +22,7 @@ const KIND_KEYS: Record<WidgetKind, string> = {
     "server-pings": "server-pings",
     "pi-health": "pi-health",
     "grocery-deals": "grocery-deals",
+    countdown: "countdown",
 };
 
 function isGrocery(widget: AnyWidget): widget is GroceryDealsWidget {

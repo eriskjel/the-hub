@@ -1,5 +1,6 @@
 import {
     AnyWidget,
+    CountdownSettings,
     Grid,
     GroceryDealsSettings,
     PiHealthSettings,
@@ -15,6 +16,8 @@ export type WidgetListItem = {
     grid: Grid;
     settings: unknown;
 };
+
+type Provider = Extract<CountdownSettings, { source: "provider" }>["provider"];
 
 export function toAnyWidget(row: WidgetListItem): AnyWidget {
     if (row.kind === "server-pings") {
@@ -35,6 +38,37 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
             lon: typeof o.lon === "number" ? o.lon : undefined,
         };
         return { ...row, kind: "grocery-deals", settings } as AnyWidget;
+    }
+    if (row.kind === "countdown") {
+        const o = (row.settings ?? {}) as Partial<CountdownSettings>;
+
+        let settings: CountdownSettings;
+        if (o.source === "fixed-date" && typeof o.targetIso === "string") {
+            settings = {
+                source: "fixed-date",
+                targetIso: o.targetIso,
+                showHours: typeof o.showHours === "boolean" ? o.showHours : true,
+            };
+        } else if (o.source === "monthly-rule" && typeof o.time === "string") {
+            settings = {
+                source: "monthly-rule",
+                time: o.time,
+                byWeekday: o.byWeekday,
+                bySetPos: o.bySetPos,
+                dayOfMonth: o.dayOfMonth,
+                showHours: typeof o.showHours === "boolean" ? o.showHours : true,
+            };
+        } else if (o.source === "provider" && typeof o.provider === "string") {
+            settings = {
+                source: "provider",
+                provider: o.provider as Provider,
+                showHours: typeof o.showHours === "boolean" ? o.showHours : true,
+            };
+        } else {
+            settings = { source: "fixed-date", targetIso: "", showHours: true };
+        }
+
+        return { ...row, kind: "countdown", settings } as AnyWidget;
     }
     return row as unknown as AnyWidget;
 }
