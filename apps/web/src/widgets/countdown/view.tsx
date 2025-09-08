@@ -29,13 +29,24 @@ export default function CountdownView({
     const showHours = widget.settings.showHours ?? true;
     const [now, setNow] = useState<Date>(new Date());
     const tickRef = useRef<number | null>(null);
+
     useEffect(() => {
         const intervalMs = showHours ? 1000 : 60_000;
-        tickRef.current = window.setInterval(() => setNow(new Date()), intervalMs);
-        return () => {
-            if (tickRef.current) window.clearInterval(tickRef.current);
+
+        const start = () => {
+            if (!tickRef.current) tickRef.current = window.setInterval(() => setNow(new Date()), intervalMs);
         };
+        const stop = () => {
+            if (tickRef.current) { window.clearInterval(tickRef.current); tickRef.current = null; }
+        };
+        const onVis = () => (document.visibilityState === "visible" ? start() : stop());
+
+        start();
+        document.addEventListener("visibilitychange", onVis);
+        return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
     }, [showHours]);
+
+
 
     const label = useMemo(() => {
         if (widget.settings.source === "provider") {
@@ -50,7 +61,7 @@ export default function CountdownView({
     const prev = data?.previousIso ? new Date(data.previousIso) : null;
 
     const nextDate = next && next.getTime() > now.getTime() ? next : null;
-    const remaining = nextDate ? nextDate.getTime() - now.getTime() : 0;
+    const remaining = Math.max(0, nextDate ? nextDate.getTime() - now.getTime() : 0);
     const daysSincePrev = prev
         ? Math.floor((now.getTime() - prev.getTime()) / (24 * 3600 * 1000))
         : null;
