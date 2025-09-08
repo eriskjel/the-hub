@@ -37,8 +37,8 @@ export function Settings({ form }: { form: FormType }): ReactElement {
                 }
                 options={[
                     { value: "provider", label: t("source.provider") },
-                    { value: "fixed-date", label: t("source.fixed") },
-                    { value: "monthly-rule", label: t("source.monthlyRule") },
+                    //{ value: "fixed-date", label: t("source.fixed") },
+                    //{ value: "monthly-rule", label: t("source.monthlyRule") },
                 ]}
             />
 
