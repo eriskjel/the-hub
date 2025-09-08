@@ -240,9 +240,12 @@ public class GroceriesService {
         final Set<String> excluded = excludedVendorsNormalized();
         final Set<String> preferred = preferredVendorsNormalized();
 
+        Comparator<DealDto> cmp = Comparator
+                .comparing((DealDto d) -> !preferred.contains(canonicalizeVendor(d.store())))
+                .thenComparingDouble(GroceriesService::metricForSort);
+
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
-                .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
-                .sorted(Comparator.comparingDouble(GroceriesService::metricForSort)).toList();
+                .filter(d -> !excluded.contains(canonicalizeVendor(d.store()))).sorted(cmp).toList();
 
         List<DealDto> capped = (top != null && top > 0) ? sorted.stream().limit(top).toList() : sorted;
 
@@ -254,10 +257,7 @@ public class GroceriesService {
 
         recordMetrics(term, s.city(), fetchLimit, capped.size(), t0, true);
 
-        if (!preferFavoritesEnabled) {
-            return capped;
-        }
-        return applyPreferenceFilter(capped, preferred);
+        return capped;
     }
 
     /**
