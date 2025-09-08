@@ -66,7 +66,7 @@ public class CreateWidgetController {
      *         invalid input; 403 when forbidden by role; 409 when duplicates/limits
      *         are violated
      */
-    @Operation(summary = "Create a widget instance", description = "Creates a widget for the current user. Non-admins can only create grocery-deals and are limited to 5.")
+    @Operation(summary = "Create a widget instance", description = "Creates a widget for the current user. Non-admins can only create grocery-deals and countdown; grocery-deals limited to 5 per user.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = CreateWidgetResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -85,7 +85,9 @@ public class CreateWidgetController {
             return ResponseEntity.badRequest().body(Map.of("error", "invalid_request"));
         }
 
-        EnumSet<WidgetKind> supported = EnumSet.of(WidgetKind.SERVER_PINGS, WidgetKind.GROCERY_DEALS);
+        EnumSet<WidgetKind> supported = EnumSet.of(WidgetKind.SERVER_PINGS, WidgetKind.GROCERY_DEALS,
+                WidgetKind.COUNTDOWN);
+
         if (!supported.contains(body.kind())) {
             log.warn("CreateWidget unsupported_kind userId={} kind={}", userId, body.kind());
             return ResponseEntity.badRequest().body(Map.of("error", "unsupported_kind", "message",
@@ -95,7 +97,7 @@ public class CreateWidgetController {
         boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
 
-        if (!isAdmin && body.kind() != WidgetKind.GROCERY_DEALS) {
+        if (!isAdmin && body.kind() != WidgetKind.GROCERY_DEALS && body.kind() != WidgetKind.COUNTDOWN) {
             log.warn("CreateWidget forbidden_non_admin userId={} kind={}", userId, body.kind());
             return ResponseEntity.status(403)
                     .body(Map.of("error", "forbidden", "message", "Only admins can create this widget type."));
@@ -117,7 +119,7 @@ public class CreateWidgetController {
             return ResponseEntity.created(URI.create("/api/widgets/" + resp.instanceId())).body(resp);
         } catch (CreateWidgetService.DuplicateException | CreateWidgetService.DuplicateTargetException e) {
             log.warn("CreateWidget duplicate userId={} kind={} msg={}", userId, body.kind(), e.getMessage());
-            return ResponseEntity.status(409).body(Map.of("error", "duplicate", "message", e.getMessage()));
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (IllegalArgumentException e) {
             log.warn("CreateWidget bad_request userId={} msg={}", userId, e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

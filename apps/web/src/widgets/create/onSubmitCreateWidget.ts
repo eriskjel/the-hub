@@ -1,6 +1,18 @@
 import { createWidget } from "@/lib/widgets/createWidget";
 import type { BaseForm } from "./useCreateWidgetForm";
 
+function normalizeCreateCode(code: string, v: BaseForm): string {
+    if (code !== "duplicate") return code;
+
+    if (v.kind === "countdown") {
+        const src = (v.settings as { source?: string } | undefined)?.source;
+        if (src === "provider") return "duplicate_provider";
+    }
+    if (v.kind === "server-pings") return "duplicate_target";
+    if (v.kind === "grocery-deals") return "duplicate_groceries";
+    return code;
+}
+
 export async function onSubmitCreateWidget(
     v: BaseForm,
     opts: { onSuccess: () => void; onError: (message: string) => void }
@@ -15,6 +27,7 @@ export async function onSubmitCreateWidget(
     if (res.ok) {
         opts.onSuccess();
     } else {
-        opts.onError(res.error);
+        const normalized = normalizeCreateCode(res.error, v);
+        opts.onError(normalized);
     }
 }

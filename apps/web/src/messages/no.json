@@ -79,14 +79,29 @@
             "kindHelp": "Velg hva du vil lage. Flere typer kommer.",
             "kinds": {
                 "server-pings": "Server-pings",
-                "grocery-deals": "Dagligvarekupp"
+                "grocery-deals": "Dagligvarekupp",
+                "countdown": "Nedtelling"
             },
             "cancel": "Avbryt",
             "submit": "Opprett widget",
             "submitting": "Oppretter…",
             "errors": {
+                "duplicate_provider": "Du har allerede en widget for denne tilbyderen.",
+                "duplicate_target": "Du har allerede en widget med dette målet.",
+                "duplicate_groceries": "Du har allerede en dagligvare-widget med dette søket og byen.",
+                "limit_reached": "Du har nådd grensen for denne widget-typen.",
+                "forbidden": "Du har ikke lov til å opprette denne widget-typen.",
+                "unsupported_kind": "Denne widget-typen støttes ikke.",
+                "settings_required": "Innstillinger er påkrevd.",
+                "target_required": "Mål-URL er påkrevd.",
+                "provider_required": "Velg en tilbyder.",
+                "query_required": "Skriv inn en søkestreng.",
+                "invalid_request": "Ugyldig forespørsel.",
+                "internal_error": "Noe gikk galt hos oss.",
+                "network": "Nettverksfeil. Prøv igjen.",
+                "generic": "Noe gikk galt.",
                 "titleRequired": "Skriv inn et navn",
-                "failed": "Kunne ikke opprette widget"
+                "duplicate": "Denne widget'en finnes allerede."
             },
             "serverPings": {
                 "title": "Server-pings",
@@ -160,6 +175,53 @@
                 "forbidden": "Du har ikke tilgang til å redigere denne widgeten.",
                 "network": "Nettverksfeil under oppdatering.",
                 "generic": "Noe gikk galt."
+            }
+        },
+        "countdown": {
+            "kindLabel": "Nedtelling",
+            "create": {
+                "label": "Etikett",
+                "labelPlaceholder": "f.eks. Trippel-Trumf",
+                "sourceLabel": "Kilde",
+                "source": {
+                    "fixed": "Fast dato",
+                    "monthlyRule": "Månedlig regel",
+                    "provider": "Tilbyder (Trippel-Trumf / DNB)"
+                },
+                "fixed": {
+                    "target": "Mål-dato og -tid (ISO 8601)"
+                },
+                "rule": {
+                    "time": "Tid (HH:MM)",
+                    "dayOfMonth": "Dag i måneden",
+                    "dayOfMonthPh": "f.eks. 15 (la stå tom hvis du bruker ukedag + posisjon)",
+                    "byWeekday": "Ukedag",
+                    "bySetPos": "Posisjon (f.eks. 1, 2, -1)",
+                    "bySetPosPh": "1 = første, 2 = andre, -1 = siste",
+                    "none": "Ingen",
+                    "help": "Velg enten en spesifikk dag i måneden, eller en ukedag med posisjon (f.eks. siste torsdag)."
+                },
+                "provider": {
+                    "label": "Tilbyder",
+                    "options": {
+                        "trippelTrumf": "Trippel-Trumf",
+                        "dnbSupertilbud": "DNB Supertilbud"
+                    }
+                },
+                "showHours": "Vis timer/minutter i nedtellingen",
+                "errors": {
+                    "chooseDateTime": "Velg dato/tid",
+                    "rulePickOne": "Velg enten dag i måneden ELLER (ukedag + posisjon)",
+                    "ruleMutuallyExclusive": "Bruk dag i måneden ELLER ukedag+posisjon, ikke begge"
+                }
+            },
+            "view": {
+                "providerNames": {
+                    "trippelTrumf": "Trippel-Trumf",
+                    "dnbSupertilbud": "DNB Supertilbud"
+                },
+                "nextNotAnnounced": "Neste dato ikke annonsert.",
+                "nextNotAnnouncedWithDays": "Neste dato ikke annonsert. {days, plural, one {# dag} other {# dager}} siden forrige."
             }
         }
     }

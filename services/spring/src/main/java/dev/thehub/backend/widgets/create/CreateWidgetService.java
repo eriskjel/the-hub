@@ -52,6 +52,7 @@ public class CreateWidgetService {
         switch (kind) {
             case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings);
             case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings);
+            case COUNTDOWN -> ensureNoDuplicateCountdown(userId, kind, settings);
             default -> throw new IllegalArgumentException("unsupported_kind");
         }
     }
@@ -451,6 +452,12 @@ public class CreateWidgetService {
                     int t = extractTargets(s).size();
                     yield "targetsCount=" + t;
                 }
+                case COUNTDOWN -> {
+                    String source = optString(s.get("source"));
+                    String provider = optString(s.get("provider"));
+                    yield "source=" + (source == null ? "<none>" : source)
+                            + (provider != null ? ", provider=" + provider : "");
+                }
                 default -> "n/a";
             };
         } catch (Exception ignore) {
@@ -473,7 +480,83 @@ public class CreateWidgetService {
         switch (kind) {
             case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings, excludeInstanceId);
             case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings, excludeInstanceId);
+            case COUNTDOWN -> ensureNoDuplicateCountdown(userId, kind, settings, excludeInstanceId); // 👈 new
             default -> throw new IllegalArgumentException("unsupported_kind");
         }
+    }
+
+    private void ensureNoDuplicateCountdown(UUID userId, WidgetKind kind, Map<String, Object> settings) {
+        if (settings == null)
+            throw new IllegalArgumentException("settings_required");
+
+        String source = optString(settings.get("source"));
+        if (!"provider".equals(source)) {
+            // For fixed-date / monthly-rule we allow multiple instances (no dupe check)
+            return;
+        }
+        String provider = optString(settings.get("provider"));
+        if (provider == null)
+            throw new IllegalArgumentException("provider_required");
+
+        final String sql = """
+                    select exists (
+                      select 1
+                      from user_widgets uw
+                      where uw.user_id = ?
+                        and uw.kind = ?
+                        and lower(uw.settings->>'source') = 'provider'
+                        and lower(uw.settings->>'provider') = ?
+                    )
+                """;
+
+        boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
+            var ps = con.prepareStatement(sql);
+            ps.setObject(1, userId);
+            ps.setString(2, kind.getValue());
+            ps.setString(3, provider.toLowerCase());
+            return ps;
+        }, rs -> rs.next() && rs.getBoolean(1)));
+
+        if (exists) {
+            log.warn("Duplicate countdown provider userId={} provider={}", userId, provider);
+            throw new DuplicateException("duplicate_provider");
+        }
+    }
+
+    private void ensureNoDuplicateCountdown(UUID userId, WidgetKind kind, Map<String, Object> settings, UUID exclude) {
+        if (settings == null)
+            throw new IllegalArgumentException("settings_required");
+
+        String source = optString(settings.get("source"));
+        if (!"provider".equals(source))
+            return;
+
+        String provider = optString(settings.get("provider"));
+        if (provider == null)
+            throw new IllegalArgumentException("provider_required");
+
+        final String sql = """
+                    select exists (
+                      select 1
+                      from user_widgets uw
+                      where uw.user_id = ?
+                        and uw.kind = ?
+                        and uw.instance_id <> ?
+                        and lower(uw.settings->>'source') = 'provider'
+                        and lower(uw.settings->>'provider') = ?
+                    )
+                """;
+
+        boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
+            var ps = con.prepareStatement(sql);
+            ps.setObject(1, userId);
+            ps.setString(2, kind.getValue());
+            ps.setObject(3, exclude);
+            ps.setString(4, provider.toLowerCase());
+            return ps;
+        }, rs -> rs.next() && rs.getBoolean(1)));
+
+        if (exists)
+            throw new DuplicateException("duplicate_provider");
     }
 }

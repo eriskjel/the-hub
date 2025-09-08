@@ -6,9 +6,12 @@ import { Modal } from "@/components/ui/Modal";
 import { Button, FieldText } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
 import { creationRegistry, type CreationKind } from "@/widgets/create/registry";
-import { useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
+import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
 import { onSubmitCreateWidget } from "@/widgets/create/onSubmitCreateWidget";
 import { KindSelect } from "@/widgets/create/KindSelect";
+import type { Path } from "react-hook-form";
+
+type AllowedErrorPaths = "settings.provider" | "settings.targetIso" | "settings.query";
 
 export default function CreateWidgetModal({ onClose }: { onClose: () => void }): ReactElement {
     const t = useTranslations("widgets.create");
@@ -20,6 +23,12 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
     const { form, active } = useCreateWidgetForm(kind, t);
     const Settings = active.SettingsForm;
 
+    const setFieldErr = (name: AllowedErrorPaths, code: string) =>
+        form.setError(name as unknown as Path<BaseForm>, {
+            type: "server",
+            message: t(`errors.${code}`),
+        });
+
     return (
         <Modal title={t("title")} subtitle={t("subtitle")} onClose={onClose}>
             <form
@@ -30,7 +39,25 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                             onClose();
                             router.refresh();
                         },
-                        onError: (message) => form.setError("root", { type: "server", message }),
+                        onError: (code) => {
+                            if (code === "duplicate_provider" || code === "provider_required") {
+                                setFieldErr("settings.provider", code);
+                                return;
+                            }
+                            if (code === "target_required") {
+                                setFieldErr("settings.targetIso", code);
+                                return;
+                            }
+                            if (code === "query_required") {
+                                setFieldErr("settings.query", code);
+                                return;
+                            }
+                            // fallback
+                            form.setError("root", {
+                                type: "server",
+                                message: t(`errors.${code}`, { fallback: t("errors.generic") }),
+                            });
+                        },
                     })
                 )}
             >
