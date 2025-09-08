@@ -10,9 +10,6 @@ import { SPIN_ROUNDS } from "@/app/[locale]/(protected)/monster/constants";
 import clsx from "clsx";
 import { RARITY_BORDERS } from "@/app/[locale]/(protected)/monster/rarityStyles";
 
-// if you later need to fetch user info from session you need this:
-// export const dynamic = "force-dynamic";
-
 const monsters: Monster[] = [
     // Blue rarity (79.92% - most common)
     { name: "Original", image: "/monsters/original.png", rarity: "blue" },

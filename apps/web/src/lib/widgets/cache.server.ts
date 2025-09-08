@@ -100,3 +100,22 @@ export async function readWidgetsCookie(currentUid: string | null): Promise<{
         return null;
     }
 }
+
+export async function writeWidgetsCookieServer(uid: string, rows: WidgetListItem[]) {
+    const slim = rows.map(({ id, instanceId, kind, title, grid }) => ({
+        id,
+        instanceId,
+        kind,
+        title,
+        grid,
+    }));
+
+    const jar = await cookies();
+    jar.set(widgetsCookieKeyFor(uid), JSON.stringify({ ts: Date.now(), slim, v: 1 }), {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        secure: process.env.NODE_ENV === "production",
+    });
+}
