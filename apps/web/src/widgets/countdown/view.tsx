@@ -25,15 +25,17 @@ export default function CountdownView({
 }): ReactElement {
     const t = useTranslations("widgets.countdown.view");
 
+    // Tick every minute (or every second only if hours:minutes are shown)
+    const showHours = widget.settings.showHours ?? true;
     const [now, setNow] = useState<Date>(new Date());
     const tickRef = useRef<number | null>(null);
-
     useEffect(() => {
-        tickRef.current = window.setInterval(() => setNow(new Date()), 1000);
+        const intervalMs = showHours ? 1000 : 60_000;
+        tickRef.current = window.setInterval(() => setNow(new Date()), intervalMs);
         return () => {
             if (tickRef.current) window.clearInterval(tickRef.current);
         };
-    }, []);
+    }, [showHours]);
 
     const label = useMemo(() => {
         if (widget.settings.source === "provider") {
@@ -48,7 +50,6 @@ export default function CountdownView({
     const prev = data?.previousIso ? new Date(data.previousIso) : null;
 
     const nextDate = next && next.getTime() > now.getTime() ? next : null;
-
     const remaining = nextDate ? nextDate.getTime() - now.getTime() : 0;
     const daysSincePrev = prev
         ? Math.floor((now.getTime() - prev.getTime()) / (24 * 3600 * 1000))
@@ -61,7 +62,7 @@ export default function CountdownView({
             {nextDate ? (
                 <>
                     <div className="text-3xl font-bold tabular-nums">
-                        {fmtRemain(remaining, widget.settings.showHours ?? true)}
+                        {fmtRemain(remaining, showHours)}
                     </div>
                     <div className="text-xs opacity-70">
                         {nextDate.toLocaleString(undefined, {
