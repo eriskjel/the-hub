@@ -205,7 +205,7 @@
                     "label": "Tilbyder",
                     "options": {
                         "trippelTrumf": "Trippel-Trumf",
-                        "dnbSupertibud": "DNB Supertilbud"
+                        "dnbSupertilbud": "DNB Supertilbud"
                     }
                 },
                 "showHours": "Vis timer/minutter i nedtellingen",
@@ -218,7 +218,7 @@
             "view": {
                 "providerNames": {
                     "trippelTrumf": "Trippel-Trumf",
-                    "dnbSupertibud": "DNB Supertilbud"
+                    "dnbSupertilbud": "DNB Supertilbud"
                 },
                 "nextNotAnnounced": "Neste dato ikke annonsert.",
                 "nextNotAnnouncedWithDays": "Neste dato ikke annonsert. {days, plural, one {# dag} other {# dager}} siden forrige."

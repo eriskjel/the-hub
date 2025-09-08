@@ -37,7 +37,7 @@ public class DNBSupertilbudProvider implements CountdownProvider {
 
     @Override
     public String id() {
-        return "dnb-supertibud";
+        return "dnb-supertilbud";
     }
 
     @Override

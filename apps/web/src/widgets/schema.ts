@@ -39,7 +39,7 @@ export type CountdownSource =
       }
     | {
           source: "provider";
-          provider: "trippel-trumf" | "dnb-supertibud";
+          provider: "trippel-trumf" | "dnb-supertilbud";
       };
 
 export type CountdownSettings = {

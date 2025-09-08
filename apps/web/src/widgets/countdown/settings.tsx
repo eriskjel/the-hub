@@ -102,7 +102,7 @@ export function Settings({ form }: { form: FormType }): ReactElement {
                     }
                     options={[
                         { value: "trippel-trumf", label: t("provider.options.trippelTrumf") },
-                        { value: "dnb-supertibud", label: t("provider.options.dnbSupertibud") },
+                        { value: "dnb-supertilbud", label: t("provider.options.dnbSupertilbud") },
                     ]}
                     error={providerErr}
                 />

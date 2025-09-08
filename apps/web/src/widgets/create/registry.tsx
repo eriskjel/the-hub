@@ -52,7 +52,7 @@ const countdownMonthlyRule = z.object({
 
 const countdownProvider = z.object({
     source: z.literal("provider"),
-    provider: z.enum(["trippel-trumf", "dnb-supertibud"]),
+    provider: z.enum(["trippel-trumf", "dnb-supertilbud"]),
 });
 
 export const countdownSettingsSchemaBase = z.object({

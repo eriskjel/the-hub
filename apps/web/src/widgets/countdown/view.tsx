@@ -39,7 +39,7 @@ export default function CountdownView({
         if (widget.settings.source === "provider") {
             const id = widget.settings.provider;
             if (id === "trippel-trumf") return t("providerNames.trippelTrumf");
-            if (id === "dnb-supertibud") return t("providerNames.dnbSupertibud");
+            if (id === "dnb-supertilbud") return t("providerNames.dnbSupertilbud");
         }
         return widget.title;
     }, [t, widget]);
