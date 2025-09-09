@@ -217,7 +217,11 @@
             },
             "view": {
                 "timeRemaining": "Gjenstående tid",
-                "duration": "{d, plural, =0 {} one {# dag} other {# dager}}{h, plural, =0 {} other {{d, plural, =0 {} other {, }}{h, plural, one {# time} other {# timer}}}}{m, plural, =0 {0 minutter} other {{d, plural, =0 { } other { og }}{h, plural, =0 { } other { og }}{m, plural, one {# minutt} other {# minutter}}}}",
+                "units": {
+                    "day": "{count, plural, one {# dag} other {# dager}}",
+                    "hour": "{count, plural, one {# time} other {# timer}}",
+                    "minute": "{count, plural, one {# minutt} other {# minutter}}"
+                },
                 "providerNames": {
                     "trippelTrumf": "Trippel-Trumf",
                     "dnbSupertilbud": "DNB Supertilbud"
