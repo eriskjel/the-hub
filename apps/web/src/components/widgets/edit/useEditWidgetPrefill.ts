@@ -10,7 +10,6 @@ type EditableWidget = Extract<AnyWidget, { kind: EditableKind }>;
 
 function buildEditDefaults(widget: EditableWidget): BaseForm {
     return {
-        title: widget.title ?? "",
         kind: widget.kind,
         settings: widget.settings ?? {},
     };

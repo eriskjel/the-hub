@@ -52,7 +52,7 @@ public class WidgetsListController {
      *            {@link WidgetKind#from(String)})
      * @param includeSettings
      *            whether to include the settings JSON in the response
-     * @return list of maps containing id, instanceId, kind, title, grid, settings
+     * @return list of maps containing id, instanceId, kind, grid, settings
      */
     @GetMapping("/list")
     public List<Map<String, Object>> list(JwtAuthenticationToken auth, @RequestParam(required = false) String kind,
@@ -60,7 +60,7 @@ public class WidgetsListController {
         var userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
 
         String sql = """
-                select id, instance_id, kind, title, grid, settings
+                select id, instance_id, kind, grid, settings
                 from user_widgets
                 where user_id = ?
                 %s
@@ -98,8 +98,7 @@ public class WidgetsListController {
             }
 
             return Map.of("id", rs.getString("id"), "instanceId", rs.getObject("instance_id", UUID.class).toString(),
-                    "kind", rs.getString("kind"), "title", rs.getString("title"), "grid", grid, "settings",
-                    includeSettings ? settings : Map.of());
+                    "kind", rs.getString("kind"), "grid", grid, "settings", includeSettings ? settings : Map.of());
         });
 
         return rows;

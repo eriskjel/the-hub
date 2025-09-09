@@ -43,7 +43,7 @@ public class WidgetSettingsRepository {
      */
     public Optional<WidgetRow> findWidget(UUID userId, UUID instanceId) {
         final String sql = """
-                select id, instance_id, kind, title, grid, settings
+                select id, instance_id, kind, grid, settings
                 from user_widgets
                 where user_id = ? and instance_id = ?
                 limit 1
@@ -53,7 +53,7 @@ public class WidgetSettingsRepository {
                 JsonNode grid = parseJson(rs.getString("grid"));
                 JsonNode settings = parseJson(rs.getString("settings"));
                 return new WidgetRow(rs.getObject("id", UUID.class), rs.getObject("instance_id", UUID.class),
-                        rs.getString("kind"), rs.getString("title"), grid, settings);
+                        rs.getString("kind"), grid, settings);
             }, userId, instanceId));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();

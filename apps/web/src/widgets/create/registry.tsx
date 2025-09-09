@@ -88,7 +88,7 @@ export type CreateEntry<K extends WidgetKind, S extends z.ZodTypeAny> = {
     schema: S;
     defaults: z.infer<S>;
     SettingsForm: (props: {
-        form: UseFormReturn<{ title: string; kind: K; settings: z.infer<S> }>;
+        form: UseFormReturn<{ kind: K; settings: z.infer<S> }>;
     }) => ReactElement;
 };
 

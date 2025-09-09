@@ -5,7 +5,6 @@ import { serverPingsSettingsSchema } from "@/widgets/create/registry";
 import { z } from "zod";
 
 type ServerPingsForm = UseFormReturn<{
-    title: string;
     kind: "server-pings";
     settings: z.infer<typeof serverPingsSettingsSchema>;
 }>;

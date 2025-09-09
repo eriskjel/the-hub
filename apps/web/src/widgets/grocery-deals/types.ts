@@ -25,7 +25,6 @@ export type Deal = {
 };
 
 export type GroceryForm = UseFormReturn<{
-    title: string;
     kind: "grocery-deals";
     settings: z.infer<typeof grocerySettingsSchema>;
 }>;

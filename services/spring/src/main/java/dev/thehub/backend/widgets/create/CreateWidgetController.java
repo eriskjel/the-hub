@@ -77,10 +77,9 @@ public class CreateWidgetController {
             @RequestBody CreateWidgetRequest body) {
         final UUID userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
 
-        log.info("CreateWidget request received userId={} kind={} title.len={}", userId, body.kind(),
-                body.title() == null ? 0 : body.title().length());
+        log.info("CreateWidget request received userId={} kind={}", userId, body.kind());
 
-        if (body.kind() == null || body.title() == null || body.title().isBlank()) {
+        if (body.kind() == null) {
             log.warn("CreateWidget invalid_request userId={}", userId);
             return ResponseEntity.badRequest().body(Map.of("error", "invalid_request"));
         }
@@ -114,7 +113,7 @@ public class CreateWidgetController {
 
         try {
             service.ensureNoDuplicate(userId, body.kind(), body.settings());
-            var resp = service.create(userId, body.kind(), body.title(), body.settings(), body.grid());
+            var resp = service.create(userId, body.kind(), body.settings(), body.grid());
             log.info("CreateWidget success userId={} instanceId={} kind={}", userId, resp.instanceId(), body.kind());
             return ResponseEntity.created(URI.create("/api/widgets/" + resp.instanceId())).body(resp);
         } catch (CreateWidgetService.DuplicateException | CreateWidgetService.DuplicateTargetException e) {
