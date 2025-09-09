@@ -11,7 +11,7 @@ export function widgetsCookieKeyFor(uid: string) {
 /**
  * Shape persisted in the cookie. We support two payload forms:
  *  - "rows": full array of WidgetListItem-like objects
- *  - "slim": minimal array (id, instanceId, kind, title, grid)
+ *  - "slim": minimal array (id, instanceId, kind, grid)
  *    (settings may be omitted for "slim")
  */
 type WidgetsCachePayload = {
@@ -25,7 +25,6 @@ function isSlimRow(x: unknown): x is {
     id: string;
     instanceId: string;
     kind: WidgetListItem["kind"];
-    title: string;
     grid: WidgetListItem["grid"];
     settings?: unknown;
 } {
@@ -36,7 +35,6 @@ function isSlimRow(x: unknown): x is {
         typeof obj.id === "string" &&
         typeof obj.instanceId === "string" &&
         typeof obj.kind === "string" &&
-        typeof obj.title === "string" &&
         typeof obj.grid === "object" &&
         obj.grid !== null
     );
@@ -67,7 +65,6 @@ export function normalizeCachedToRows(payload: {
             id: item.id,
             instanceId: item.instanceId,
             kind: item.kind,
-            title: item.title,
             grid: item.grid,
             // settings can be absent in "slim"; the consumer (toAnyWidget) will fill defaults per kind
             settings: item.settings ?? undefined,
@@ -102,11 +99,10 @@ export async function readWidgetsCookie(currentUid: string | null): Promise<{
 }
 
 export async function writeWidgetsCookieServer(uid: string, rows: WidgetListItem[]) {
-    const slim = rows.map(({ id, instanceId, kind, title, grid }) => ({
+    const slim = rows.map(({ id, instanceId, kind, grid }) => ({
         id,
         instanceId,
         kind,
-        title,
         grid,
     }));
 

@@ -3,7 +3,7 @@
 import { ReactElement, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
-import { Button, FieldText } from "@/components/ui/Fields";
+import { Button } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
 import { creationRegistry, type CreationKind } from "@/widgets/create/registry";
 import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
@@ -61,13 +61,6 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                     })
                 )}
             >
-                <FieldText
-                    label={t("name")}
-                    placeholder={t("namePlaceholder")}
-                    error={form.formState.errors.title?.message}
-                    {...form.register("title")}
-                />
-
                 {/* hidden field to bind RHF value to state */}
                 <input type="hidden" {...form.register("kind")} value={kind} />
                 <KindSelect value={kind} onChange={setKind} t={t} />

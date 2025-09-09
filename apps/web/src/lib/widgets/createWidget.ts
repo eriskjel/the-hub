@@ -2,7 +2,6 @@ import { API } from "@/lib/apiRoutes";
 import { parseError } from "@/utils/http";
 
 export async function createWidget(payload: {
-    title: string;
     kind: string;
     settings: unknown;
     grid?: { x: number; y: number; w: number; h: number };

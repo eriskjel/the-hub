@@ -12,7 +12,6 @@ export type WidgetListItem = {
     id: string;
     instanceId: string;
     kind: WidgetKind;
-    title: string;
     grid: Grid;
     settings: unknown;
 };

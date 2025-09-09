@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
-import { Button, FieldText } from "@/components/ui/Fields";
+import { Button } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
 import type { AnyWidget } from "@/widgets/schema";
 import { type BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
@@ -88,13 +88,6 @@ function EditWidgetModalContent({
                     }
                 })}
             >
-                <FieldText
-                    label={t("name", { default: "Name" })}
-                    placeholder={t("namePlaceholder", { default: "My widget" })}
-                    error={form.formState.errors.title?.message}
-                    {...form.register("title")}
-                />
-
                 {/* keep kind bound in the form state */}
                 <input type="hidden" {...form.register("kind")} value={widget.kind} />
 

@@ -9,15 +9,6 @@ import { useTranslations } from "next-intl";
 import { EditWidgetButton } from "@/components/widgets/edit/EditWidgetButton";
 import { isEditableKind } from "@/widgets/create/registry";
 
-type TitleMode = "title" | "query" | "auto";
-
-/** CHANGE THIS to switch behavior globally:
- *  - "title":  Dagligvarekupp | <widget.title>  (fresh & cached)
- *  - "query":  Dagligvarekupp | <settings.query> (fresh & cached)
- *  - "auto":   fresh→query, cached→title
- */
-const DEFAULT_TITLE_MODE: TitleMode = "title";
-
 const KIND_KEYS: Record<WidgetKind, string> = {
     "server-pings": "server-pings",
     "pi-health": "pi-health",
@@ -25,39 +16,46 @@ const KIND_KEYS: Record<WidgetKind, string> = {
     countdown: "countdown",
 };
 
-function isGrocery(widget: AnyWidget): widget is GroceryDealsWidget {
-    return widget.kind === "grocery-deals";
+function toPascalCase(s: string): string {
+    return s.length ? s[0].toUpperCase() + s.slice(1).toLowerCase() : "";
+}
+
+function resolveRightTitle(widget: AnyWidget): string {
+    switch (widget.kind) {
+        case "grocery-deals": {
+            const query = (widget as GroceryDealsWidget).settings?.query;
+            return query ? toPascalCase(query.trim()) : "";
+        }
+        case "countdown": {
+            const s = widget.settings;
+            if (s?.source === "provider") {
+                if (s.provider === "trippel-trumf") return "Trippel-Trumf";
+                if (s.provider === "dnb-supertilbud") return "DNB Supertilbud";
+            }
+            return "";
+        }
+        case "server-pings": {
+            const target = widget.settings?.target;
+            return typeof target === "string" ? target : "";
+        }
+        default:
+            return "";
+    }
 }
 
 export default function WidgetContainer({
     widget,
     userId,
     stale = false,
-    titleMode = DEFAULT_TITLE_MODE,
 }: {
     widget: AnyWidget;
     userId: string | null;
     stale?: boolean;
-    titleMode?: TitleMode;
 }): ReactElement {
     const tKinds = useTranslations("widgets.create.kinds");
     const kindLabel = tKinds(KIND_KEYS[widget.kind]);
 
-    const query =
-        isGrocery(widget) && typeof widget.settings?.query === "string"
-            ? widget.settings.query.trim()
-            : "";
-
-    const widgetTitle = widget.title.trim();
-
-    const right =
-        titleMode === "query"
-            ? query
-            : titleMode === "title"
-              ? widgetTitle
-              : /* auto */ stale
-                ? widgetTitle
-                : query;
+    const right = resolveRightTitle(widget);
 
     const title = right ? `${kindLabel} | ${right}` : kindLabel;
 
@@ -69,7 +67,7 @@ export default function WidgetContainer({
             )}
             <DeleteWidgetButton
                 widgetId={widget.instanceId}
-                widgetTitle={widgetTitle || kindLabel}
+                widgetTitle={title}
                 userId={userId}
                 kind={widget.kind}
             />

@@ -10,7 +10,7 @@ import {
     creationRegistry,
 } from "@/widgets/create/registry";
 
-export type BaseForm = { title: string; kind: CreationKind; settings: unknown };
+export type BaseForm = { kind: CreationKind; settings: unknown };
 
 export function useCreateWidgetForm(kind: CreationKind, t: (k: string) => string) {
     const active = creationRegistry[kind];
@@ -22,11 +22,10 @@ export function useCreateWidgetForm(kind: CreationKind, t: (k: string) => string
     const schema = useMemo(
         () =>
             z.object({
-                title: z.string().min(1, t("errors.titleRequired")),
                 kind: z.literal(active.kind),
                 settings: settingsSchema,
             }),
-        [active.kind, settingsSchema, t]
+        [active.kind, settingsSchema]
     );
 
     // bridge resolver types without `any`
@@ -35,17 +34,14 @@ export function useCreateWidgetForm(kind: CreationKind, t: (k: string) => string
     const form = useForm<BaseForm>({
         resolver,
         defaultValues: {
-            title: "",
             kind: active.kind,
             settings: active.defaults,
         },
     });
 
-    // when kind changes, swap defaults but keep title
     useEffect(() => {
         const next = creationRegistry[kind];
         form.reset({
-            title: form.getValues("title"),
             kind: next.kind,
             settings: next.defaults,
         });

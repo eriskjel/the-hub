@@ -21,11 +21,10 @@ export default function SeedWidgetsCacheWithRows({ rows }: { rows: WidgetListIte
         if (sig === lastSig.current) return;
         lastSig.current = sig;
 
-        const slim = rows.map(({ id, instanceId, kind, title, grid }) => ({
+        const slim = rows.map(({ id, instanceId, kind, grid }) => ({
             id,
             instanceId,
             kind,
-            title,
             grid,
         }));
 
