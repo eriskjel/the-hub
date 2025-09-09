@@ -6,10 +6,15 @@ import java.util.ArrayList;
 
 /**
  * Utility for computing the next monthly occurrence based on a simple rule.
- * Supported settings: - time: "HH:mm" (default 08:00) - dayOfMonth: number
- * 1..31 (clamped to month's last day) - byWeekday: "MO", "TU", "WE", "TH",
- * "FR", "SA", "SU" - bySetPos: nth match within month (1..n) or negative for
- * from-end (-1 = last)
+ * <p>
+ * Supported settings:
+ * <ul>
+ *   <li>time: "HH:mm" (default 08:00)</li>
+ *   <li>dayOfMonth: number 1..31 (clamped to the month's last day)</li>
+ *   <li>byWeekday: "MO","TU","WE","TH","FR","SA","SU" together with bySetPos</li>
+ *   <li>bySetPos: nth match within month (1..n) or negative for from-end (-1 = last)</li>
+ * </ul>
+ * Notes: This utility is stateless and thread-safe. All calculations use Europe/Oslo time.
  */
 final class Monthly {
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");

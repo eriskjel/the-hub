@@ -39,4 +39,29 @@ public interface CountdownProvider {
     default Optional<Instant> previous(Instant now) {
         return Optional.empty();
     }
+    /**
+     * Whether the provided dates are tentative (subject to change).
+     */
+    default boolean isTentative() {
+        return false;
+    }
+    /**
+     * Confidence 0..100 indicating how reliable the dates are.
+     */
+    default int confidence() {
+        return 100;
+    }
+    /**
+     * Optional source URL used to derive the dates.
+     */
+    default Optional<String> sourceUrl() {
+        return Optional.empty();
+    }
+    /**
+     * Optional validity bound; after this time, the cache should be considered stale
+     * and a refetch performed.
+     */
+    default Optional<Instant> validUntil(Instant now) {
+        return Optional.empty();
+    }
 }
