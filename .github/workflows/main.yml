@@ -1,0 +1,22 @@
+name: Apply Supabase migrations
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  migrate-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g supabase@latest
+      - name: Link PROD and push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref hylzfmtajfzttvxrsvxp
+          supabase db push
