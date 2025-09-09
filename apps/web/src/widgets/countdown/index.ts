@@ -9,5 +9,5 @@ export const entry: Entry<"countdown"> = {
         return fetchJson(`${API.widgets.countdown}?${qs}`);
     },
     Component: CountdownView,
-    pollMs: 3 * 60 * 60 * 1000, // 12 hours
+    pollMs: 6 * 60 * 60 * 1000, // 6 hours
 };
