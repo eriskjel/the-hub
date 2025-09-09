@@ -216,6 +216,8 @@
                 }
             },
             "view": {
+                "timeRemaining": "Time remaining",
+                "duration": "{d, plural, =0 {} one {# day} other {# days}}{h, plural, =0 {} other {{d, plural, =0 {} other {, }}{h, plural, one {# hour} other {# hours}}}}{m, plural, =0 {0 minutes} other {{d, plural, =0 { } other { and }}{h, plural, =0 { } other { and }}{m, plural, one {# minute} other {# minutes}}}}",
                 "providerNames": {
                     "trippelTrumf": "Trippel-Trumf",
                     "dnbSupertilbud": "DNB Supertilbud"
