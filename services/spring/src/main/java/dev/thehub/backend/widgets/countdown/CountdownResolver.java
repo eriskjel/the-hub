@@ -10,13 +10,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Resolves countdown instants from external providers with a small caching layer.
+ * Resolves countdown instants from external providers with a small caching
+ * layer.
  * <p>
  * Resolution order:
  * <ol>
- *   <li>Use admin manual override if present.</li>
- *   <li>Use fresh cache entry if valid.</li>
- *   <li>Fetch from the underlying provider, upsert cache, then return.</li>
+ * <li>Use admin manual override if present.</li>
+ * <li>Use fresh cache entry if valid.</li>
+ * <li>Fetch from the underlying provider, upsert cache, then return.</li>
  * </ol>
  */
 @Service
@@ -35,8 +36,10 @@ public class CountdownResolver {
     /**
      * Resolve next and previous instants for a provider at a given reference time.
      *
-     * @param providerId stable provider identifier (see ProviderRegistry)
-     * @param now reference timestamp used when deciding freshness/fetching
+     * @param providerId
+     *            stable provider identifier (see ProviderRegistry)
+     * @param now
+     *            reference timestamp used when deciding freshness/fetching
      * @return a pair (next, previous); either side may be null if unknown
      */
     public Pair<Instant, Instant> resolveProvider(String providerId, Instant now) {
@@ -44,8 +47,8 @@ public class CountdownResolver {
 
         // 1) Admin override wins
         if (cached != null && cached.manualOverrideNextIso() != null) {
-            log.info("CountdownResolver: using ADMIN OVERRIDE for provider={} nextIso={} prevIso={}",
-                    providerId, cached.manualOverrideNextIso(), cached.previousIso());
+            log.info("CountdownResolver: using ADMIN OVERRIDE for provider={} nextIso={} prevIso={}", providerId,
+                    cached.manualOverrideNextIso(), cached.previousIso());
             return Pair.of(cached.manualOverrideNextIso(), cached.previousIso());
         }
 
@@ -61,32 +64,23 @@ public class CountdownResolver {
         var next = p.next(now).orElse(null);
         var prev = p.previous(now).orElse(null);
 
-        log.info("CountdownResolver: FETCHING from provider={} nextIso={} prevIso={}",
-                providerId, next, prev);
+        log.info("CountdownResolver: FETCHING from provider={} nextIso={} prevIso={}", providerId, next, prev);
 
-        cache.upsert(new ProviderCacheDao.Row(
-                providerId,
-                next,
-                prev,
-                p.isTentative(),
-                p.confidence(),
-                p.sourceUrl().orElse(null),
-                now,
-                p.validUntil(now).orElse(null),
-                null,
-                null
-        ));
+        cache.upsert(new ProviderCacheDao.Row(providerId, next, prev, p.isTentative(), p.confidence(),
+                p.sourceUrl().orElse(null), now, p.validUntil(now).orElse(null), null, null));
 
         return Pair.of(next, prev);
     }
 
     /**
-     * Determines if a cached entry is considered fresh at a given time.
-     * Prefers provider-supplied {@code validUntil}; otherwise falls back to
-     * a fixed staleness window.
+     * Determines if a cached entry is considered fresh at a given time. Prefers
+     * provider-supplied {@code validUntil}; otherwise falls back to a fixed
+     * staleness window.
      *
-     * @param c cached row
-     * @param now reference timestamp
+     * @param c
+     *            cached row
+     * @param now
+     *            reference timestamp
      * @return true if cache is fresh and may be used
      */
     private boolean isFresh(ProviderCacheDao.Row c, Instant now) {

@@ -34,7 +34,8 @@ public class DNBSupertilbudProvider implements CountdownProvider {
     /**
      * Creates a DNB Supertilbud provider using the given RestTemplate.
      *
-     * @param http HTTP client used to fetch the overview page
+     * @param http
+     *            HTTP client used to fetch the overview page
      */
     public DNBSupertilbudProvider(RestTemplate http) {
         this.http = http;

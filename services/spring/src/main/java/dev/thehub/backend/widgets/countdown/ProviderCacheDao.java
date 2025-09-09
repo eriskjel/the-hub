@@ -22,7 +22,8 @@ public class ProviderCacheDao {
     /**
      * Fetch a cached row by provider id.
      *
-     * @param providerId stable provider identifier
+     * @param providerId
+     *            stable provider identifier
      * @return Optional row if present
      */
     public Optional<Row> find(String providerId) {
@@ -38,7 +39,8 @@ public class ProviderCacheDao {
     /**
      * Insert or update a cache row for a provider.
      *
-     * @param r row to persist (manual override fields are not modified by upsert)
+     * @param r
+     *            row to persist (manual override fields are not modified by upsert)
      */
     public void upsert(Row r) {
         var sql = """
@@ -78,16 +80,26 @@ public class ProviderCacheDao {
     /**
      * Represents one cache row for a provider.
      *
-     * @param providerId provider identifier
-     * @param nextIso next occurrence instant (nullable)
-     * @param previousIso previous occurrence instant (nullable)
-     * @param tentative true if dates are tentative
-     * @param confidence confidence 0..100
-     * @param sourceUrl source of data if applicable
-     * @param fetchedAt when the provider was last fetched
-     * @param validUntil optional validity bound; beyond this a refetch is required
-     * @param manualOverrideNextIso optional admin override for nextIso
-     * @param manualOverrideReason optional reason for override
+     * @param providerId
+     *            provider identifier
+     * @param nextIso
+     *            next occurrence instant (nullable)
+     * @param previousIso
+     *            previous occurrence instant (nullable)
+     * @param tentative
+     *            true if dates are tentative
+     * @param confidence
+     *            confidence 0..100
+     * @param sourceUrl
+     *            source of data if applicable
+     * @param fetchedAt
+     *            when the provider was last fetched
+     * @param validUntil
+     *            optional validity bound; beyond this a refetch is required
+     * @param manualOverrideNextIso
+     *            optional admin override for nextIso
+     * @param manualOverrideReason
+     *            optional reason for override
      */
     public record Row(String providerId, Instant nextIso, Instant previousIso, boolean tentative, int confidence,
             String sourceUrl, Instant fetchedAt, Instant validUntil, Instant manualOverrideNextIso,

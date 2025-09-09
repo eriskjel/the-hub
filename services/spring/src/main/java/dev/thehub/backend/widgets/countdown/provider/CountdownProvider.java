@@ -58,8 +58,8 @@ public interface CountdownProvider {
         return Optional.empty();
     }
     /**
-     * Optional validity bound; after this time, the cache should be considered stale
-     * and a refetch performed.
+     * Optional validity bound; after this time, the cache should be considered
+     * stale and a refetch performed.
      */
     default Optional<Instant> validUntil(Instant now) {
         return Optional.empty();

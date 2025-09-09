@@ -34,8 +34,10 @@ public class CountdownController {
      * Returns current server time (nowIso), and if available the next target
      * instant (nextIso) and the most recent previous target (previousIso).
      *
-     * @param auth JwtAuthenticationToken providing the user's subject (sub)
-     * @param instanceId Widget instance ID (UUID) belonging to the user
+     * @param auth
+     *            JwtAuthenticationToken providing the user's subject (sub)
+     * @param instanceId
+     *            Widget instance ID (UUID) belonging to the user
      * @return CountdownDto with nowIso, nextIso, previousIso
      */
     @Operation(summary = "Get countdown data", description = "Resolves current server time, and (if available) the next and previous target instants for the given widget instance.")
