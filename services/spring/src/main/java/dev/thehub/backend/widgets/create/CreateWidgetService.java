@@ -1,5 +1,6 @@
 package dev.thehub.backend.widgets.create;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.WidgetKind;
 import java.util.*;
@@ -285,8 +286,6 @@ public class CreateWidgetService {
      *            the owner of the widget
      * @param kind
      *            the widget kind; persisted via {@link WidgetKind#getValue()}
-     * @param title
-     *            the widget title
      * @param settings
      *            arbitrary settings map; will be serialized to JSON (jsonb)
      * @param grid
@@ -296,7 +295,7 @@ public class CreateWidgetService {
      * @throws RuntimeException
      *             if JSON serialization fails
      */
-    public CreateWidgetResponse create(UUID userId, WidgetKind kind, String title, Map<String, Object> settings,
+    public CreateWidgetResponse create(UUID userId, WidgetKind kind, Map<String, Object> settings,
             Map<String, Object> grid) {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
@@ -305,9 +304,9 @@ public class CreateWidgetService {
 
         final String insertSql = """
                 insert into user_widgets
-                  (id, instance_id, user_id, kind, title, settings, grid)
+                  (id, instance_id, user_id, kind, settings, grid)
                 values
-                  (?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
+                  (?, ?, ?, ?, ?::jsonb, ?::jsonb)
                 """;
 
         final String settingsJson;
@@ -316,9 +315,8 @@ public class CreateWidgetService {
         try {
             settingsJson = json.writeValueAsString(safeSettings);
             gridJson = json.writeValueAsString(safeGrid);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            log.error("JSON serialization failed userId={} kind={} titleLen={}", userId, kind,
-                    (title == null ? 0 : title.length()), e);
+        } catch (JsonProcessingException e) {
+            log.error("JSON serialization failed userId={} kind={}", userId, kind, e);
             throw new RuntimeException("Failed to serialize JSON", e);
         }
 
@@ -330,24 +328,21 @@ public class CreateWidgetService {
                 ps.setObject(2, instanceId);
                 ps.setObject(3, userId);
                 ps.setString(4, kind.getValue());
-                ps.setString(5, title);
-                ps.setString(6, settingsJson);
-                ps.setString(7, gridJson);
+                ps.setString(5, settingsJson);
+                ps.setString(6, gridJson);
             });
             sw.stop();
             log.info("Widget created userId={} kind={} instanceId={} ms={}", userId, kind, instanceId,
                     sw.getLastTaskTimeMillis());
             if (log.isDebugEnabled()) {
-                log.debug("Widget create details titleLen={} settingsSummary={} gridSummary={}",
-                        (title == null ? 0 : title.length()), summarizeSettings(kind, safeSettings),
-                        summarizeGrid(safeGrid));
+                log.debug("Widget create details settingsSummary={} gridSummary={}",
+                        summarizeSettings(kind, safeSettings), summarizeGrid(safeGrid));
             }
-            return new CreateWidgetResponse(id.toString(), instanceId.toString(), kind, title, safeGrid, safeSettings);
+            return new CreateWidgetResponse(id.toString(), instanceId.toString(), kind, safeGrid, safeSettings);
         } catch (Exception e) {
             if (sw.isRunning())
                 sw.stop();
-            log.error("DB insert failed userId={} kind={} titleLen={} msSoFar={}", userId, kind,
-                    (title == null ? 0 : title.length()), sw.getTotalTimeMillis(), e);
+            log.error("DB insert failed userId={} kind={} msSoFar={}", userId, kind, sw.getTotalTimeMillis(), e);
             throw e;
         }
     }

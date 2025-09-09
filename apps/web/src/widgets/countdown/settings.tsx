@@ -7,7 +7,6 @@ import { countdownSettingsSchema } from "@/widgets/create/registry";
 import { useTranslations } from "next-intl";
 
 type FormType = UseFormReturn<{
-    title: string;
     kind: "countdown";
     settings: z.infer<typeof countdownSettingsSchema>;
 }>;

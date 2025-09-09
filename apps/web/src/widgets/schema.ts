@@ -51,7 +51,6 @@ export type BaseWidget<K extends WidgetKind, S> = {
     id: string;
     instanceId: string;
     kind: K;
-    title: string;
     grid: Grid;
     settings: S;
 };

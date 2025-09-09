@@ -18,7 +18,6 @@ export async function onSubmitCreateWidget(
     opts: { onSuccess: () => void; onError: (message: string) => void }
 ) {
     const res = await createWidget({
-        title: v.title,
         kind: v.kind,
         settings: v.settings,
         grid: { x: 0, y: 0, w: 1, h: 1 },

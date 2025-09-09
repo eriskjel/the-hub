@@ -5,7 +5,7 @@ import { widgetsCookieKeyFor } from "@/lib/widgets/cache.server";
 
 const CACHE_TTL_S = 60 * 60 * 24 * 7;
 
-type SlimWidget = Pick<WidgetListItem, "id" | "instanceId" | "kind" | "title" | "grid">;
+type SlimWidget = Pick<WidgetListItem, "id" | "instanceId" | "kind" | "grid">;
 
 function isSlimWidgetArray(x: unknown): x is SlimWidget[] {
     if (!Array.isArray(x)) return false;
@@ -16,7 +16,6 @@ function isSlimWidgetArray(x: unknown): x is SlimWidget[] {
             typeof o.id === "string" &&
             typeof o.instanceId === "string" &&
             typeof o.kind === "string" &&
-            typeof o.title === "string" &&
             typeof o.grid === "object" &&
             o.grid !== null
         );

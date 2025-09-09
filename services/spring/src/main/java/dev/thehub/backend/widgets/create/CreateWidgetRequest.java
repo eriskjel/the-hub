@@ -6,8 +6,6 @@ import java.util.Map;
 /**
  * Request payload for creating a new widget.
  *
- * @param title
- *            the widget title (required, non-blank)
  * @param kind
  *            the kind of widget to create (currently supports
  *            {@link WidgetKind#SERVER_PINGS} and
@@ -18,6 +16,5 @@ import java.util.Map;
  * @param grid
  *            optional grid configuration for client layout (e.g., x, y, w, h)
  */
-public record CreateWidgetRequest(String title, WidgetKind kind, Map<String, Object> settings,
-        Map<String, Object> grid) {
+public record CreateWidgetRequest(WidgetKind kind, Map<String, Object> settings, Map<String, Object> grid) {
 }
