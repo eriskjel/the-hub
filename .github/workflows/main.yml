@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: supabase/setup-cli@v1
         with:
-          node-version: 20
-      - run: npm install -g supabase@latest
+          version: latest
       - name: Link PROD and push migrations
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF_PROD }}
         run: |
-          supabase link --project-ref hylzfmtajfzttvxrsvxp
+          supabase link --project-ref $SUPABASE_PROJECT_REF
           supabase db push
