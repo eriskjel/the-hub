@@ -4,10 +4,13 @@ import { ReactElement } from "react";
 
 export async function Header({
     userPromise,
+    locale,
 }: {
     userPromise: ReturnType<typeof getCurrentUserAndProfile>;
-}): Promise<ReactElement> {
-    const [{ user, profile }, t] = await Promise.all([userPromise, getTranslations("dashboard")]);
+    locale: string;
+}) {
+    const { user, profile } = await userPromise;
+    const t = await getTranslations({ locale, namespace: "dashboard" });
     const name = profile?.full_name ?? user?.email?.split("@")[0] ?? "User";
 
     return (
