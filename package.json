@@ -15,7 +15,10 @@
       "vitest": "2.1.9",
       "vite": "5.4.11",
       "zod": "^3.25.7"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "supabase"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

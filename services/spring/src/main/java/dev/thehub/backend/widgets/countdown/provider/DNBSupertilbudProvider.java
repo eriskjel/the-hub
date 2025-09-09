@@ -31,6 +31,12 @@ public class DNBSupertilbudProvider implements CountdownProvider {
             Map.entry("oktober", Month.OCTOBER), Map.entry("november", Month.NOVEMBER),
             Map.entry("desember", Month.DECEMBER));
 
+    /**
+     * Creates a DNB Supertilbud provider using the given RestTemplate.
+     *
+     * @param http
+     *            HTTP client used to fetch the overview page
+     */
     public DNBSupertilbudProvider(RestTemplate http) {
         this.http = http;
     }

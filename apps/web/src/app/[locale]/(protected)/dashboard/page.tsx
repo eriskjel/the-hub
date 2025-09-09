@@ -6,15 +6,15 @@ import CreateWidgetButton from "@/components/widgets/CreateWidgetButton";
 import { Header, HeaderSkeleton } from "./Header";
 import WidgetCardSkeleton from "@/components/widgets/WidgetCardSkeleton";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = await params;
     const userPromise = getCurrentUserAndProfile();
-
     const widgetsPromise: Promise<WidgetsResult> = getDashboardWidgets(userPromise);
 
     return (
         <div className="min-h-full">
             <Suspense fallback={<HeaderSkeleton />}>
-                <Header userPromise={userPromise} />
+                <Header userPromise={userPromise} locale={locale} />
             </Suspense>
 
             <main className="mx-auto max-w-6xl p-4">

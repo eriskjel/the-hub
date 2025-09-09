@@ -216,6 +216,12 @@
                 }
             },
             "view": {
+                "timeRemaining": "Time remaining",
+                "units": {
+                    "day": "{count, plural, one {# day} other {# days}}",
+                    "hour": "{count, plural, one {# hour} other {# hours}}",
+                    "minute": "{count, plural, one {# minute} other {# minutes}}"
+                },
                 "providerNames": {
                     "trippelTrumf": "Trippel-Trumf",
                     "dnbSupertilbud": "DNB Supertilbud"

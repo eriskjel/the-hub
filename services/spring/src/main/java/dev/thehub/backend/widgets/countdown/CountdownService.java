@@ -3,8 +3,8 @@ package dev.thehub.backend.widgets.countdown;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.thehub.backend.widgets.WidgetRow;
 import dev.thehub.backend.widgets.WidgetSettingsService;
-import dev.thehub.backend.widgets.countdown.provider.ProviderRegistry;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,7 +22,7 @@ public class CountdownService {
     private static final Logger log = LoggerFactory.getLogger(CountdownService.class);
 
     private final WidgetSettingsService settings;
-    private final ProviderRegistry providers;
+    private final CountdownResolver resolver;
 
     /**
      * Resolves the widget into a DTO containing the current time and the next
@@ -53,9 +53,9 @@ public class CountdownService {
             case "provider" -> {
                 String provider = s.hasNonNull("provider") ? s.get("provider").asText() : null;
                 if (provider != null && !provider.isBlank()) {
-                    var p = providers.get(provider);
-                    nextIso = p.next(now).map(Instant::toString).orElse(null);
-                    previousIso = p.previous(now).map(Instant::toString).orElse(null);
+                    var pair = resolver.resolveProvider(provider, now);
+                    nextIso = Optional.ofNullable(pair.getLeft()).map(Instant::toString).orElse(null);
+                    previousIso = Optional.ofNullable(pair.getRight()).map(Instant::toString).orElse(null);
                 }
             }
             default -> {
