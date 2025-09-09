@@ -72,8 +72,6 @@ public class UpdateWidgetService {
      * <p>
      * Behavior:
      * <ul>
-     * <li>title: If provided and non-blank after trim, updates the title; blank
-     * triggers 400.</li>
      * <li>grid: If provided, replaces the grid JSON.</li>
      * <li>settings: If provided, merges into existing settings (null values
      * stripped) and enforces duplicate rules.</li>
@@ -91,23 +89,19 @@ public class UpdateWidgetService {
      * @throws DuplicateException
      *             if settings would conflict with uniqueness constraints
      * @throws IllegalArgumentException
-     *             for invalid inputs (e.g., blank title, invalid JSON)
+     *             for invalid inputs (e.g., invalid JSON)
      */
     public CreateWidgetResponse partialUpdate(UUID userId, UUID instanceId, UpdateWidgetRequest body) {
         log.debug("UpdateWidgetService.enter userId={} instanceId={}", userId, instanceId);
         var row = readRepo.findWidget(userId, instanceId).orElseThrow(NotFoundOrNotOwned::new);
 
         WidgetKind kind = WidgetKind.from(row.kind());
-        String newTitle = (body.title() == null) ? null : body.title().trim();
-        if (newTitle != null && newTitle.isEmpty()) {
-            throw new IllegalArgumentException("title_required");
-        }
 
         Map<String, Object> newSettings = body.settings();
         Map<String, Object> newGrid = body.grid();
 
-        log.debug("UpdateWidgetService.validate kind={} titleChanged={} settingsChanged={} gridChanged={}", kind,
-                newTitle != null, newSettings != null, newGrid != null);
+        log.debug("UpdateWidgetService.validate kind={} settingsChanged={} gridChanged={}", kind, newSettings != null,
+                newGrid != null);
 
         if (newSettings != null && !jsonEquals(newSettings, row.settings())) {
             try {
@@ -124,14 +118,13 @@ public class UpdateWidgetService {
 
         final String sql = """
                     update user_widgets
-                       set title   = coalesce(?, title),
-                           grid    = coalesce(?::jsonb, grid),
+                           set grid = coalesce(?::jsonb, grid),
                            settings = case
                                         when ?::jsonb is null then settings
                                         else jsonb_strip_nulls(settings || ?::jsonb)
                                       end
                      where user_id = ? and instance_id = ?
-                     returning id, instance_id, kind, title, grid, settings
+                     returning id, instance_id, kind, grid, settings
                 """;
 
         String gridJson = toJsonOrNull(newGrid);
@@ -139,19 +132,18 @@ public class UpdateWidgetService {
 
         return jdbc.query(con -> {
             var ps = con.prepareStatement(sql);
-            ps.setString(1, newTitle); // nullable
-            ps.setString(2, gridJson); // nullable
-            ps.setString(3, settingsJson); // nullable check
-            ps.setString(4, settingsJson); // merge payload
-            ps.setObject(5, userId);
-            ps.setObject(6, instanceId);
+            ps.setString(1, gridJson);
+            ps.setString(2, settingsJson);
+            ps.setString(3, settingsJson);
+            ps.setObject(4, userId);
+            ps.setObject(5, instanceId);
+
             return ps;
         }, rs -> {
             if (!rs.next())
                 throw new NotFoundOrNotOwned();
             var updated = new WidgetRow(rs.getObject("id", UUID.class), rs.getObject("instance_id", UUID.class),
-                    rs.getString("kind"), rs.getString("title"), parseJson(rs.getString("grid")),
-                    parseJson(rs.getString("settings")));
+                    rs.getString("kind"), parseJson(rs.getString("grid")), parseJson(rs.getString("settings")));
             return toCreateResponse(updated);
         });
     }
@@ -177,7 +169,7 @@ public class UpdateWidgetService {
     private CreateWidgetResponse toCreateResponse(WidgetRow row) {
         // Reuse your existing response format
         return new CreateWidgetResponse(row.id().toString(), row.instanceId().toString(), WidgetKind.from(row.kind()),
-                row.title(), json.convertValue(row.grid(), Map.class), json.convertValue(row.settings(), Map.class));
+                json.convertValue(row.grid(), Map.class), json.convertValue(row.settings(), Map.class));
     }
 
     private JsonNode parseJson(String s) {

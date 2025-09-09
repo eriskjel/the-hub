@@ -12,13 +12,11 @@ import java.util.Map;
  *            client-facing instance identifier (UUID string)
  * @param kind
  *            the widget kind
- * @param title
- *            the widget title
  * @param grid
  *            the stored grid configuration
  * @param settings
  *            the stored settings
  */
-public record CreateWidgetResponse(String id, String instanceId, WidgetKind kind, String title,
-        Map<String, Object> grid, Map<String, Object> settings) {
+public record CreateWidgetResponse(String id, String instanceId, WidgetKind kind, Map<String, Object> grid,
+        Map<String, Object> settings) {
 }

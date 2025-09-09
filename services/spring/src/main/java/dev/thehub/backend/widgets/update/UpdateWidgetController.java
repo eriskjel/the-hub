@@ -43,13 +43,13 @@ public class UpdateWidgetController {
      * <ul>
      * <li>200 with the updated widget payload on success.</li>
      * <li>404 if the instance does not exist or is not owned by the user.</li>
-     * <li>400 for validation errors (e.g., blank title, invalid JSON).</li>
+     * <li>400 for validation errors (e.g. JSON).</li>
      * <li>409 if the update would result in a duplicate according to business
      * rules.</li>
      * <li>500 on unexpected errors.</li>
      * </ul>
      */
-    @Operation(summary = "Partially update a widget", description = "Updates title, grid, and/or settings for a widget owned by the current user. Null fields are ignored. Settings are merged and nulls are stripped.")
+    @Operation(summary = "Partially update a widget", description = "Updates grid, and/or settings for a widget owned by the current user. Null fields are ignored. Settings are merged and nulls are stripped.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Updated", content = @Content(schema = @Schema(implementation = dev.thehub.backend.widgets.create.CreateWidgetResponse.class))),
             @ApiResponse(responseCode = "400", description = "Bad request"),
@@ -60,8 +60,8 @@ public class UpdateWidgetController {
     public ResponseEntity<?> patch(@Parameter(hidden = true) JwtAuthenticationToken auth, @PathVariable UUID instanceId,
             @RequestBody UpdateWidgetRequest body) {
         final UUID userId = UUID.fromString(auth.getToken().getClaimAsString("sub"));
-        log.info("UpdateWidget PATCH start userId={} instanceId={} title?={} settings?={} grid?={}", userId, instanceId,
-                body.title() != null, body.settings() != null, body.grid() != null);
+        log.info("UpdateWidget PATCH start userId={} instanceId={} settings?={} grid?={}", userId, instanceId,
+                body.settings() != null, body.grid() != null);
 
         try {
             var resp = service.partialUpdate(userId, instanceId, body);
