@@ -9,8 +9,10 @@ export async function Header({
     userPromise: ReturnType<typeof getCurrentUserAndProfile>;
     locale: string;
 }) {
-    const { user, profile } = await userPromise;
-    const t = await getTranslations({ locale, namespace: "dashboard" });
+    const [{ user, profile }, t] = await Promise.all([
+        userPromise,
+        getTranslations({ locale, namespace: "dashboard" }),
+    ]);
     const name = profile?.full_name ?? user?.email?.split("@")[0] ?? "User";
 
     return (
