@@ -1,7 +1,7 @@
--- First drop the view that depends on title
+-- Drop the old view that depends on title
 drop view if exists public.widgets_with_profiles;
 
--- Now drop the column safely
+-- Drop the title column from user_widgets
 alter table public.user_widgets drop column if exists title;
 
 -- Recreate the view without title
@@ -13,6 +13,10 @@ select
     uw.grid,
     uw.settings,
     p.id as profile_id,
-    p.user_id as profile_user_id
+    p.username,
+    p.full_name,
+    p.avatar_url,
+    p.created_at,
+    p.updated_at
 from public.user_widgets uw
-join public.profiles p on p.user_id = uw.user_id;
+         join public.profiles p on p.id = uw.user_id;
