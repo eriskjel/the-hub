@@ -13,19 +13,25 @@ export default function GridList({
 }): ReactElement {
     return (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {widgets.map((widget) => (
-                <div
-                    key={widget.instanceId}
-                    // On mobile: don't care about DB coords
-                    className="contents lg:block"
-                    style={{
-                        gridColumn: `${widget.grid.x + 1} / span ${widget.grid.w ?? 1}`,
-                        gridRow: `${widget.grid.y + 1} / span ${widget.grid.h ?? 1}`,
-                    }}
-                >
-                    <WidgetContainer widget={widget} userId={userId} />
-                </div>
-            ))}
+            {widgets.map((widget: AnyWidget): ReactElement => {
+                const x: number = (widget.grid?.x ?? 0) + 1;
+                const y: number = (widget.grid?.y ?? 0) + 1;
+                const w: number = widget.grid?.w ?? 1;
+                const h: number = widget.grid?.h ?? 1;
+
+                return (
+                    <div
+                        key={widget.instanceId}
+                        className="contents lg:block"
+                        style={{
+                            gridColumn: `${x} / span ${w}`,
+                            gridRow: `${y} / span ${h}`,
+                        }}
+                    >
+                        <WidgetContainer widget={widget} userId={userId} />
+                    </div>
+                );
+            })}
         </div>
     );
 }
