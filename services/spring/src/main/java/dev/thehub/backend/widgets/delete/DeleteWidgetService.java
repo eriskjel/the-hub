@@ -3,6 +3,7 @@ package dev.thehub.backend.widgets.delete;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,7 @@ public class DeleteWidgetService {
     // Prefer configuration, falls back to 3 if not set
     private final int gridCols;
 
-    public DeleteWidgetService(JdbcTemplate jdbc,
-            @org.springframework.beans.factory.annotation.Value("${widgets.grid.cols:3}") int gridCols) {
+    public DeleteWidgetService(JdbcTemplate jdbc, @Value("${widgets.grid.cols:3}") int gridCols) {
         this.jdbc = jdbc;
         this.gridCols = gridCols;
     }
