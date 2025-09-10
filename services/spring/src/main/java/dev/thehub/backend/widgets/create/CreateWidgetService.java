@@ -6,6 +6,7 @@ import dev.thehub.backend.widgets.WidgetKind;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
@@ -30,6 +31,7 @@ public class CreateWidgetService {
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
+    private final int gridCols;
 
     /**
      * Constructs the CreateWidgetService.
@@ -41,9 +43,11 @@ public class CreateWidgetService {
      *            grid. If null is provided, a new default ObjectMapper will be
      *            created.
      */
-    public CreateWidgetService(JdbcTemplate jdbc, ObjectMapper objectMapper) {
+    public CreateWidgetService(JdbcTemplate jdbc, ObjectMapper objectMapper,
+            @Value("${widgets.grid.cols:3}") int gridCols) {
         this.jdbc = jdbc;
         this.json = objectMapper != null ? objectMapper : new ObjectMapper();
+        this.gridCols = gridCols;
     }
 
     public void ensureNoDuplicate(UUID userId, WidgetKind kind, Map<String, Object> settings) {
@@ -300,7 +304,7 @@ public class CreateWidgetService {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
         Map<String, Object> safeSettings = (settings != null) ? settings : Map.of();
-        Map<String, Object> safeGrid = (grid != null) ? grid : Map.of("x", 0, "y", 0, "w", 1, "h", 1);
+        Map<String, Object> safeGrid = (grid != null && !grid.isEmpty()) ? grid : assignNextGrid(userId, gridCols);
 
         final String insertSql = """
                 insert into user_widgets
@@ -553,5 +557,49 @@ public class CreateWidgetService {
 
         if (exists)
             throw new DuplicateException("duplicate_provider");
+    }
+
+    private Map<String, Object> assignNextGrid(UUID userId, int cols) {
+        if (cols <= 0)
+            cols = 1;
+
+        final String sql = "select grid from user_widgets where user_id = ?";
+        List<Map<String, Object>> grids = jdbc.query(sql, (rs, rowNum) -> {
+            try {
+                return json.readValue(rs.getString("grid"), Map.class);
+            } catch (Exception e) {
+                return Map.of();
+            }
+        }, userId);
+
+        Set<String> occupied = new HashSet<>();
+        for (Map<String, Object> g : grids) {
+            int x = ((Number) g.getOrDefault("x", 0)).intValue();
+            int y = ((Number) g.getOrDefault("y", 0)).intValue();
+            int w = Math.max(1, ((Number) g.getOrDefault("w", 1)).intValue());
+            int h = Math.max(1, ((Number) g.getOrDefault("h", 1)).intValue());
+            for (int dx = 0; dx < w; dx++)
+                for (int dy = 0; dy < h; dy++)
+                    occupied.add((x + dx) + "," + (y + dy));
+        }
+
+        // simple BFS scan; guard against pathological cases
+        int y = 0;
+        int safety = Math.max(64, grids.size() + 64); // arbitrary but safe
+        while (safety-- > 0) {
+            for (int x = 0; x < cols; x++) {
+                String key = x + "," + y;
+                if (!occupied.contains(key)) {
+                    Map<String, Object> found = Map.of("x", x, "y", y, "w", 1, "h", 1);
+                    if (log.isInfoEnabled())
+                        log.info("AssignNextGrid userId={} grids={} next=({}, {})", userId, grids.size(), x, y);
+                    return found;
+                }
+            }
+            y++;
+        }
+
+        log.warn("AssignNextGrid safety fallback userId={} cols={} grids={}", userId, cols, grids.size());
+        return Map.of("x", 0, "y", y, "w", 1, "h", 1);
     }
 }

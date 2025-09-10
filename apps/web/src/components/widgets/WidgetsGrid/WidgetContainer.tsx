@@ -75,7 +75,14 @@ export default function WidgetContainer({
     );
 
     return (
-        <GlassCard header={header} actions={actions} stale={stale} variant="solid" tone="light">
+        <GlassCard
+            header={header}
+            actions={actions}
+            stale={stale}
+            variant="solid"
+            tone="light"
+            className="min-h-[180px]"
+        >
             <WidgetCard widget={widget} userId={userId} staleLayout={stale} />
         </GlassCard>
     );

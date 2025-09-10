@@ -80,23 +80,21 @@ export default function CountdownView({
         format.dateTime(nextDate, {
             dateStyle: "full",
             timeStyle: "short",
-            // timeZone: "Europe/Oslo",
+            timeZone: "Europe/Oslo",
         });
 
     return (
-        <div className="flex flex-col items-center gap-2 p-2 text-center">
+        <div className="flex flex-1 flex-col p-2 text-center">
             {nextDate ? (
                 <>
-                    <div className="text-[0.70rem] tracking-wide uppercase opacity-70">
-                        {t("timeRemaining")}
+                    {/* middle content */}
+                    <div className="flex flex-col items-center justify-center gap-2">
+                        <div className="text-3xl font-bold tabular-nums">{durationText}</div>
+                        <div className="text-xs opacity-70">{dateText}</div>
                     </div>
 
-                    <div className="text-3xl font-bold tabular-nums">{durationText}</div>
-
-                    <div className="text-xs opacity-70">{dateText}</div>
-
-                    {/* Simple progress bar (example: relative to 7 days) */}
-                    <div className="mt-2 h-1 w-full rounded-full bg-black/10">
+                    {/* bottom progress bar */}
+                    <div className="mt-auto h-1 w-full rounded-full bg-black/10">
                         <div
                             className="h-1 rounded-full bg-black/30"
                             style={{
@@ -109,7 +107,7 @@ export default function CountdownView({
                     </div>
                 </>
             ) : (
-                <div className="text-xs opacity-70">
+                <div className="flex flex-1 items-center justify-center text-xs opacity-70">
                     {prev
                         ? t("nextNotAnnouncedWithDays", { days: daysSincePrev ?? 0 })
                         : t("nextNotAnnounced")}
