@@ -300,7 +300,7 @@ public class CreateWidgetService {
         final UUID id = UUID.randomUUID();
         final UUID instanceId = UUID.randomUUID();
         Map<String, Object> safeSettings = (settings != null) ? settings : Map.of();
-        Map<String, Object> safeGrid = (grid != null) ? grid : Map.of("x", 0, "y", 0, "w", 1, "h", 1);
+        Map<String, Object> safeGrid = (grid != null && !grid.isEmpty()) ? grid : assignNextGrid(userId, 3);
 
         final String insertSql = """
                 insert into user_widgets
@@ -554,4 +554,43 @@ public class CreateWidgetService {
         if (exists)
             throw new DuplicateException("duplicate_provider");
     }
+
+    private Map<String, Object> assignNextGrid(UUID userId, int cols) {
+        final String sql = "select grid from user_widgets where user_id = ?";
+        List<Map<String, Object>> grids = jdbc.query(sql, (rs, rowNum) -> {
+            try {
+                return json.readValue(rs.getString("grid"), Map.class);
+            } catch (Exception e) {
+                return Map.of();
+            }
+        }, userId);
+
+        // Collect occupied slots
+        Set<String> occupied = new HashSet<>();
+        for (Map<String, Object> g : grids) {
+            int x = ((Number) g.getOrDefault("x", 0)).intValue();
+            int y = ((Number) g.getOrDefault("y", 0)).intValue();
+            int w = ((Number) g.getOrDefault("w", 1)).intValue();
+            int h = ((Number) g.getOrDefault("h", 1)).intValue();
+
+            for (int dx = 0; dx < w; dx++) {
+                for (int dy = 0; dy < h; dy++) {
+                    occupied.add((x + dx) + "," + (y + dy));
+                }
+            }
+        }
+
+        // Scan grid row by row, col by col
+        int y = 0;
+        while (true) {
+            for (int x = 0; x < cols; x++) {
+                String key = x + "," + y;
+                if (!occupied.contains(key)) {
+                    return Map.of("x", x, "y", y, "w", 1, "h", 1);
+                }
+            }
+            y++;
+        }
+    }
+
 }
