@@ -12,15 +12,12 @@ export default function GridList({
     userId: string | null;
 }): ReactElement {
     return (
-        <div
-            className="grid gap-4"
-            style={{
-                gridTemplateColumns: "repeat(3, minmax(0, 1fr))", // 3 columns
-            }}
-        >
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {widgets.map((widget) => (
                 <div
                     key={widget.instanceId}
+                    // On mobile: don't care about DB coords
+                    className="contents lg:block"
                     style={{
                         gridColumn: `${widget.grid.x + 1} / span ${widget.grid.w ?? 1}`,
                         gridRow: `${widget.grid.y + 1} / span ${widget.grid.h ?? 1}`,
