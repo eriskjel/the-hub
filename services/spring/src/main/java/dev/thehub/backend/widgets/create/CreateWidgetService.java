@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.WidgetKind;
 import java.util.*;
-
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +33,6 @@ public class CreateWidgetService {
     private final ObjectMapper json;
     private final int gridCols;
 
-
     /**
      * Constructs the CreateWidgetService.
      *
@@ -46,7 +43,8 @@ public class CreateWidgetService {
      *            grid. If null is provided, a new default ObjectMapper will be
      *            created.
      */
-    public CreateWidgetService(JdbcTemplate jdbc, ObjectMapper objectMapper, @Value("${widgets.grid.cols:3}") int gridCols) {
+    public CreateWidgetService(JdbcTemplate jdbc, ObjectMapper objectMapper,
+            @Value("${widgets.grid.cols:3}") int gridCols) {
         this.jdbc = jdbc;
         this.json = objectMapper != null ? objectMapper : new ObjectMapper();
         this.gridCols = gridCols;
@@ -562,12 +560,16 @@ public class CreateWidgetService {
     }
 
     private Map<String, Object> assignNextGrid(UUID userId, int cols) {
-        if (cols <= 0) cols = 1;
+        if (cols <= 0)
+            cols = 1;
 
         final String sql = "select grid from user_widgets where user_id = ?";
         List<Map<String, Object>> grids = jdbc.query(sql, (rs, rowNum) -> {
-            try { return json.readValue(rs.getString("grid"), Map.class); }
-            catch (Exception e) { return Map.of(); }
+            try {
+                return json.readValue(rs.getString("grid"), Map.class);
+            } catch (Exception e) {
+                return Map.of();
+            }
         }, userId);
 
         Set<String> occupied = new HashSet<>();
@@ -576,7 +578,9 @@ public class CreateWidgetService {
             int y = ((Number) g.getOrDefault("y", 0)).intValue();
             int w = Math.max(1, ((Number) g.getOrDefault("w", 1)).intValue());
             int h = Math.max(1, ((Number) g.getOrDefault("h", 1)).intValue());
-            for (int dx = 0; dx < w; dx++) for (int dy = 0; dy < h; dy++) occupied.add((x + dx) + "," + (y + dy));
+            for (int dx = 0; dx < w; dx++)
+                for (int dy = 0; dy < h; dy++)
+                    occupied.add((x + dx) + "," + (y + dy));
         }
 
         // simple BFS scan; guard against pathological cases
@@ -587,7 +591,8 @@ public class CreateWidgetService {
                 String key = x + "," + y;
                 if (!occupied.contains(key)) {
                     Map<String, Object> found = Map.of("x", x, "y", y, "w", 1, "h", 1);
-                    if (log.isInfoEnabled()) log.info("AssignNextGrid userId={} grids={} next=({}, {})", userId, grids.size(), x, y);
+                    if (log.isInfoEnabled())
+                        log.info("AssignNextGrid userId={} grids={} next=({}, {})", userId, grids.size(), x, y);
                     return found;
                 }
             }
