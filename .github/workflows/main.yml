@@ -2,8 +2,9 @@ name: Apply Supabase migrations
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+    paths:
+      - 'supabase/migrations/**'
 
 jobs:
   migrate-prod:
@@ -13,10 +14,20 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - name: Link PROD and push migrations
+
+      - name: Debug env presence
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF_PROD }}
         run: |
-          supabase link --project-ref $SUPABASE_PROJECT_REF
+          echo "Token present? ${SUPABASE_ACCESS_TOKEN:+yes}"
+          echo "Project ref: ${SUPABASE_PROJECT_REF}"
+
+      - name: Link & push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF_PROD }}
+        run: |
+          supabase login --token "$SUPABASE_ACCESS_TOKEN"
+          supabase --debug link --project-ref "$SUPABASE_PROJECT_REF"
           supabase db push
