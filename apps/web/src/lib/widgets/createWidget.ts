@@ -7,14 +7,22 @@ export async function createWidget(payload: {
     grid?: { x: number; y: number; w: number; h: number };
 }): Promise<{ ok: true } | { ok: false; error: string }> {
     try {
+        const body: Record<string, unknown> = {
+            kind: payload.kind,
+            settings: payload.settings,
+        };
+
+        // Only send grid if explicitly provided
+        if (payload.grid) {
+            body.grid = payload.grid;
+        }
+
         const res = await fetch(API.widgets.create, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-                grid: { x: 0, y: 0, w: 1, h: 1, ...payload.grid },
-                ...payload,
-            }),
+            body: JSON.stringify(body),
         });
+
         if (!res.ok) return { ok: false, error: await parseError(res) };
         return { ok: true };
     } catch (e) {

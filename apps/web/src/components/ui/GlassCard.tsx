@@ -27,7 +27,8 @@ export default function GlassCard({
     const isSolid = variant === "solid";
     const isLight = tone === "light";
 
-    const base = "relative overflow-hidden rounded-2xl border shadow-xl transition-colors";
+    const base =
+        "relative overflow-hidden rounded-2xl border shadow-xl transition-colors flex flex-col";
     const look = isSolid
         ? "bg-white/90 border-neutral-200 shadow-black/10"
         : clsx(
@@ -48,7 +49,8 @@ export default function GlassCard({
                 <div
                     className={clsx(
                         "relative z-[1] flex items-center justify-between gap-2 px-3 pt-3 pb-2",
-                        textTone
+                        textTone,
+                        "flex-none"
                     )}
                 >
                     <div className="min-w-0">{header}</div>
@@ -59,14 +61,17 @@ export default function GlassCard({
                 </div>
             )}
 
-            <div className={clsx("relative z-[1] px-3 pb-3", textTone)}>{children}</div>
+            <div className={clsx("relative z-[1] px-3 pb-3", textTone, "flex flex-1 flex-col")}>
+                {children}
+            </div>
 
             {footer && (
                 <div
                     className={clsx(
                         "relative z-[1] px-3 py-2",
                         isSolid ? "border-t border-neutral-200" : "border-t border-white/15",
-                        textTone
+                        textTone,
+                        "flex-none"
                     )}
                 >
                     {footer}

@@ -1,15 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { ReactElement, useState } from "react";
 import CreateWidgetModal from "@/components/widgets/_internal/CreateWidgetModal";
 import { useTranslations } from "next-intl";
 import { cn } from "@/utils/cn";
 
-type Props = {
-    className?: string;
-};
-
-export default function CreateWidgetButton({ className }: Props) {
+export default function CreateWidgetButton({ className }: { className?: string }): ReactElement {
     const t = useTranslations("widgets.create");
     const [open, setOpen] = useState(false);
 
