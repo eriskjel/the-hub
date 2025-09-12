@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { setRequestLocale } from "next-intl/server";
 import PageWrapper from "@/components/PageWrapper";
 import { requireAdmin } from "@/lib/auth/requireAdmin.server";
+import AdminSidebarClient from "@/components/admin/AdminSidebarClient";
 
 export const dynamic = "force-dynamic";
 
@@ -14,17 +15,19 @@ export default async function AdminLayout({
 }) {
     const { locale } = await params;
     setRequestLocale(locale);
-
     await requireAdmin(locale);
 
     return (
         <PageWrapper
             headerVariant="solid"
-            headerMode="fixed"
+            headerMode="sticky"
             className="bg-gray-50 text-gray-900"
-            contentClassName="mx-auto max-w-6xl p-4"
+            contentClassName="max-w-none p-0"
         >
-            {children}
+            <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
+                <AdminSidebarClient />
+                <main className="min-w-0 flex-1 overflow-auto p-4">{children}</main>
+            </div>
         </PageWrapper>
     );
 }
