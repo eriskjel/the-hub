@@ -23,7 +23,7 @@ export type SidebarProps = {
     onNavigate?: (href: string) => void;
 };
 
-const SIDEBAR_WIDTH = 240; // tweak
+const SIDEBAR_WIDTH = 288;
 
 export default function Sidebar({
     items,
@@ -78,7 +78,7 @@ export default function Sidebar({
                 {[...map.entries()].map(([section, list]) => (
                     <div key={section ?? "_root"} className="mb-2">
                         {section && (
-                            <div className="text-foreground/60 px-2 py-1 text-[10px] font-semibold tracking-wider uppercase">
+                            <div className="text-foreground/60 px-2 pt-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
                                 {section}
                             </div>
                         )}
@@ -92,7 +92,7 @@ export default function Sidebar({
                                         <LinkOrButton
                                             href={it.href}
                                             className={cn(
-                                                "group/nav flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm transition outline-none",
+                                                "group/nav flex w-full items-center gap-4 rounded-md px-3 py-3.5 text-base transition outline-none",
                                                 active
                                                     ? "bg-blue-100 text-blue-900"
                                                     : "hover:bg-gray-100"
