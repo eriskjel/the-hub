@@ -2,7 +2,8 @@
     "header": {
         "home": "Home",
         "login": "Sign in",
-        "logout": "Log out"
+        "logout": "Log out",
+        "admin": "Admin"
     },
     "login": {
         "title": "Please sign in",
@@ -247,6 +248,17 @@
                 "nextNotAnnounced": "Next date not announced.",
                 "nextNotAnnouncedWithDays": "Next date not announced. {days, plural, one {# day} other {# days}} since last."
             }
+        }
+    },
+    "admin": {
+        "sections": {
+            "manage": "Manage",
+            "system": "System"
+        },
+        "items": {
+            "users": "Users",
+            "widgets": "Widgets",
+            "settings": "Settings"
         }
     }
 }
