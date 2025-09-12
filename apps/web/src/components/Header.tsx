@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { logout } from "@/app/auth/actions/auth";
 import { getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
+import { isAdminFromUser } from "@/lib/auth/isAdmin";
 
 type HeaderProps = {
     variant?: "transparent" | "solid";
@@ -24,7 +25,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
         <header className={`${base} ${look}`}>
             <nav className="flex h-full items-center justify-center px-8">
                 <ul className="flex gap-8">
-                    <NavItems isLoggedIn={!!user} t={t} />
+                    <NavItems isLoggedIn={!!user} isAdmin={isAdminFromUser(user)} t={t} />
                 </ul>
             </nav>
         </header>
@@ -33,10 +34,11 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
 
 type NavAuthProps = {
     isLoggedIn: boolean;
+    isAdmin: boolean;
     t: (key: string) => string;
 };
 
-function NavItems({ isLoggedIn, t }: NavAuthProps): ReactElement {
+function NavItems({ isLoggedIn, isAdmin, t }: NavAuthProps): ReactElement {
     const homeHref = isLoggedIn ? "/dashboard" : "/login";
 
     if (isLoggedIn) {
@@ -52,6 +54,14 @@ function NavItems({ isLoggedIn, t }: NavAuthProps): ReactElement {
                         {t("monster.pageTitle")}
                     </Link>
                 </li>
+                {/* Only show if user is admin */}
+                {isAdmin && (
+                    <li>
+                        <Link href="/admin" className="hover:text-gray-300">
+                            {t("header.admin") ?? "Admin"}
+                        </Link>
+                    </li>
+                )}
                 <li>
                     <form action={logout}>
                         <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
