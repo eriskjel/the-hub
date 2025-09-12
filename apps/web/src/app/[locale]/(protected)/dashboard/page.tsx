@@ -46,7 +46,11 @@ async function WidgetsSection({
 
 async function ActionsBar({ widgetsPromise }: { widgetsPromise: Promise<WidgetsResult> }) {
     const result = await widgetsPromise;
-    if (result.widgets.length === 0 && result.offline) return <div className="h-10" />;
+
+    if (result.widgets.length === 0) {
+        return result.offline ? <div className="h-10" /> : null;
+    }
+
     return <CreateWidgetButton />;
 }
 
