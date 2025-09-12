@@ -8,29 +8,29 @@ import { ReactElement, ReactNode } from "react";
 import { Boxes, Settings, UsersRound } from "lucide-react";
 
 export default function AdminSidebarClient(): ReactElement {
-    const t = useTranslations();
+    const t = useTranslations("admin");
     const pathname = usePathname();
     const { locale } = useParams() as { locale: string };
 
     const base = `/${locale}/admin`;
     const items: SidebarItem[] = [
         {
-            label: "Users",
+            label: t("items.users"),
             href: `${base}/users`,
             icon: <UsersRound className="h-5 w-5" aria-hidden />,
-            section: "Manage",
+            section: t("sections.manage"),
         },
         {
-            label: "Widgets",
+            label: t("items.widgets"),
             href: `${base}/widgets`,
             icon: <Boxes className="h-5 w-5" aria-hidden />,
-            section: "Manage",
+            section: t("sections.manage"),
         },
         {
-            label: "Settings",
+            label: t("items.settings"),
             href: `${base}/settings`,
             icon: <Settings className="h-5 w-5" aria-hidden />,
-            section: "System",
+            section: t("sections.system"),
         },
     ];
 

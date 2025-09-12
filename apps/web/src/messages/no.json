@@ -2,7 +2,8 @@
     "header": {
         "home": "Hjem",
         "login": "Logg inn",
-        "logout": "Logg ut"
+        "logout": "Logg ut",
+        "admin": "Admin"
     },
     "login": {
         "title": "Vennligst logg inn",
@@ -247,6 +248,17 @@
                 "nextNotAnnounced": "Neste dato ikke annonsert.",
                 "nextNotAnnouncedWithDays": "Neste dato ikke annonsert. {days, plural, one {# dag} other {# dager}} siden forrige."
             }
+        }
+    },
+    "admin": {
+        "sections": {
+            "manage": "Administrer",
+            "system": "System"
+        },
+        "items": {
+            "users": "Brukere",
+            "widgets": "Widgets",
+            "settings": "Innstillinger"
         }
     }
 }
