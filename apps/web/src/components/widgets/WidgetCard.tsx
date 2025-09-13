@@ -1,11 +1,11 @@
 "use client";
 
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, ReactNode, useEffect, useState } from "react";
 import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { useWidgetData } from "@/hooks/useWidgetData";
 
-function StateText({ children }: { children: React.ReactNode }) {
+function StateText({ children }: { children: ReactNode }) {
     return <div className="p-3 text-sm text-white">{children}</div>;
 }
 
