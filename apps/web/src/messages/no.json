@@ -216,11 +216,17 @@
                 }
             },
             "view": {
+                "status": {
+                    "ongoing": "Pågår",
+                    "endsAt": "Slutter {when}",
+                    "startsAt": "Starter {when}"
+                },
                 "timeRemaining": "Gjenstående tid",
                 "units": {
                     "day": "{count, plural, one {# dag} other {# dager}}",
                     "hour": "{count, plural, one {# time} other {# timer}}",
-                    "minute": "{count, plural, one {# minutt} other {# minutter}}"
+                    "minute": "{count, plural, one {# minutt} other {# minutter}}",
+                    "left": "igjen"
                 },
                 "providerNames": {
                     "trippelTrumf": "Trippel-Trumf",

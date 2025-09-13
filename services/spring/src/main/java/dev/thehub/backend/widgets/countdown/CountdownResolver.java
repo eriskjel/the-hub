@@ -13,11 +13,14 @@ import org.springframework.stereotype.Service;
  * Resolves countdown instants from external providers with a small caching
  * layer.
  * <p>
- * Resolution order:
+ * Applies the following resolution order per provider id:
  * <ol>
- * <li>Use admin manual override if present.</li>
- * <li>Use fresh cache entry if valid.</li>
- * <li>Fetch from the underlying provider, upsert cache, then return.</li>
+ * <li>Admin manual override (if present in cache).</li>
+ * <li>Fresh cache entry (according to
+ * {@link #isFresh(ProviderCacheDao.Row, Instant)}).</li>
+ * <li>Fetch from the concrete
+ * {@link dev.thehub.backend.widgets.countdown.provider.CountdownProvider} and
+ * upsert cache.</li>
  * </ol>
  */
 @Service
@@ -25,9 +28,7 @@ import org.springframework.stereotype.Service;
 public class CountdownResolver {
     private static final Logger log = LoggerFactory.getLogger(CountdownResolver.class);
 
-    /** DAO for reading/upserting provider cache rows. */
     private final ProviderCacheDao cache;
-    /** Registry of available countdown providers. */
     private final ProviderRegistry providers;
 
     /** Default freshness window when provider doesn't supply valid-until. */
@@ -37,10 +38,12 @@ public class CountdownResolver {
      * Resolve next and previous instants for a provider at a given reference time.
      *
      * @param providerId
-     *            stable provider identifier (see ProviderRegistry)
+     *            stable provider identifier (see {@code CountdownProvider#id()})
      * @param now
-     *            reference timestamp used when deciding freshness/fetching
-     * @return a pair (next, previous); either side may be null if unknown
+     *            reference instant used for freshness and provider logic
+     * @return a pair (left=next, right=previous); either side may be null
+     * @throws IllegalArgumentException
+     *             if the provider id is unknown
      */
     public Pair<Instant, Instant> resolveProvider(String providerId, Instant now) {
         var cached = cache.find(providerId).orElse(null);
@@ -73,19 +76,30 @@ public class CountdownResolver {
     }
 
     /**
-     * Determines if a cached entry is considered fresh at a given time. Prefers
-     * provider-supplied {@code validUntil}; otherwise falls back to a fixed
-     * staleness window.
+     * Expose provider-specific maximum plausible window span (in hours). Used by
+     * callers to validate whether a [previous..next] interval should count as
+     * ongoing.
      *
-     * @param c
-     *            cached row
-     * @param now
-     *            reference timestamp
-     * @return true if cache is fresh and may be used
+     * @param providerId
+     *            stable provider identifier
+     * @return maximum plausible window span in hours
+     * @throws IllegalArgumentException
+     *             if the provider id is unknown
      */
+    public long plausibleSpanCapHours(String providerId) {
+        return providers.get(providerId).plausibleWindowMaxHours();
+    }
+
     private boolean isFresh(ProviderCacheDao.Row c, Instant now) {
-        if (c.validUntil() != null)
+        if (c.validUntil() != null) {
+            if (c.nextIso() == null)
+                return false;
             return now.isBefore(c.validUntil());
+        }
+        if (c.nextIso() == null)
+            return false;
+        if (!c.nextIso().isAfter(now))
+            return false;
         return Duration.between(c.fetchedAt(), now).compareTo(STALE_AFTER) < 0;
     }
 }
