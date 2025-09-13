@@ -84,8 +84,17 @@ public class CountdownResolver {
      * @return true if cache is fresh and may be used
      */
     private boolean isFresh(ProviderCacheDao.Row c, Instant now) {
-        if (c.validUntil() != null)
+        if (c.validUntil() != null) {
+            if (c.nextIso() == null)
+                return false;
             return now.isBefore(c.validUntil());
+        }
+        if (c.nextIso() == null)
+            return false;
+
+        if (!c.nextIso().isAfter(now))
+            return false;
+
         return Duration.between(c.fetchedAt(), now).compareTo(STALE_AFTER) < 0;
     }
 }
