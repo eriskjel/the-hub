@@ -170,7 +170,7 @@ public class TrippelTrumfProvider implements CountdownProvider {
                     continue;
 
                 // Some rows have colspan; handle safely
-                String yearTxt = cells.size() > 0 ? cells.get(0).text().trim() : "";
+                String yearTxt = cells.get(0).text().trim();
                 String monthTxt = cells.size() > 1 ? cells.get(1).text().trim() : "";
                 String dateTxt = cells.size() > 2 ? cells.get(2).text().trim() : "";
 
@@ -214,55 +214,5 @@ public class TrippelTrumfProvider implements CountdownProvider {
             log.info("Trippel provider scrape error: {}", e.toString());
             return List.of();
         }
-    }
-
-    private static HttpHeaders headers() {
-        HttpHeaders h = new HttpHeaders();
-        h.setAccept(List.of(MediaType.TEXT_HTML));
-        h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-        return h;
-    }
-
-    private static String toPlainText(String html) {
-        return java.text.Normalizer.normalize(
-                html.replaceAll("(?is)<script[^>]*>.*?</script>", " ").replaceAll("(?is)<style[^>]*>.*?</style>", " ")
-                        .replace("&nbsp;", " ").replace("&#160;", " ").replace("&ndash;", "–").replace("&mdash;", "—")
-                        .replaceAll("(?is)<[^>]+>", " ").replaceAll("\\s+", " ").trim(),
-                java.text.Normalizer.Form.NFKC);
-    }
-
-    private static List<String> splitRows(String text) {
-        // crude but effective: split on patterns that likely separate table lines
-        // Also keep a global fallback: look for sequences starting with "2025".
-        String[] lines = text.split("\\s{2,}|\\n|\\r");
-        List<String> rows = new ArrayList<>();
-        StringBuilder curr = new StringBuilder();
-        for (String tok : lines) {
-            if (tok.trim().equals("2025")) {
-                if (curr.length() > 0)
-                    rows.add(curr.toString().trim());
-                curr.setLength(0);
-            }
-            if (!tok.isBlank()) {
-                if (curr.length() > 0)
-                    curr.append(' ');
-                curr.append(tok.trim());
-            }
-        }
-        if (curr.length() > 0)
-            rows.add(curr.toString().trim());
-        return rows;
-    }
-
-    private static List<String> tokenize(String row) {
-        // simple whitespace tokens
-        return new ArrayList<>(Arrays.asList(row.split("\\s+")));
-    }
-
-    private static String normalizeMonthToken(String raw) {
-        // "Mai", "Mai (Ekstra)" etc. We only need the first word, lowercase.
-        String base = raw.split("\\(")[0].trim().toLowerCase(Locale.ROOT);
-        // some rows might say "August" with stray spaces—already trimmed
-        return base;
     }
 }
