@@ -216,6 +216,11 @@
                 }
             },
             "view": {
+                "status": {
+                    "ongoing": "Pågår",
+                    "endsAt": "Slutter {when}",
+                    "startsAt": "Starter {when}"
+                },
                 "timeRemaining": "Gjenstående tid",
                 "units": {
                     "day": "{count, plural, one {# dag} other {# dager}}",
