@@ -3,21 +3,38 @@ package dev.thehub.backend.widgets.countdown.provider;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
-import java.util.regex.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * CountdownProvider that scrapes Trumf's "Trippel Trumf" page to find the next
- * campaign day and returns it as an Instant at start of day in Europe/Oslo.
+ * CountdownProvider implementation for "Trippel Trumf" campaign days.
+ * <p>
+ * Source: a public 2025 overview table on EuroBonusguiden (see
+ * {@link #sourceUrl()}). For every listed date a time window is created in
+ * Europe/Oslo: [07:00, 22:00). The provider mirrors the semantics used by
+ * DNBSupertilbudProvider:
+ * <ul>
+ * <li>If the reference time falls inside a window, {@link #next(Instant)}
+ * returns the end of the window minus 1 millisecond so the caller can treat the
+ * event as ongoing up to and including that moment.</li>
+ * <li>{@link #previous(Instant)} returns the start of the most recent window
+ * strictly before the reference time.</li>
+ * </ul>
+ * The provider also supplies a {@link #validUntil(Instant)} to help cache
+ * refreshes happen either at the start or the end of the next relevant window.
  */
 public class TrippelTrumfProvider implements CountdownProvider {
+    private static final Logger log = LoggerFactory.getLogger(TrippelTrumfProvider.class);
+
     private final RestTemplate http;
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");
-    private static final String URL = "https://www.trumf.no/trippel-trumf";
+    private static final String URL = "https://eurobonusguiden.no/2025/09/trippel-trumf-torsdag-2025/";
 
-    // Example: "Torsdag 21. august ..."
-    private static final Pattern DATE_PAT = Pattern.compile("(?i)torsdag\\s+(\\d{1,2})\\.\\s*([a-zæøå]+)");
+    // Trippel window times (tweak if you prefer 00:00..24:00)
+    private static final LocalTime START = LocalTime.of(7, 0);
+    private static final LocalTime END = LocalTime.of(22, 0); // exclusive
 
     private static final Map<String, Month> NO_MONTHS = Map.ofEntries(Map.entry("januar", Month.JANUARY),
             Map.entry("februar", Month.FEBRUARY), Map.entry("mars", Month.MARCH), Map.entry("april", Month.APRIL),
@@ -27,10 +44,10 @@ public class TrippelTrumfProvider implements CountdownProvider {
             Map.entry("desember", Month.DECEMBER));
 
     /**
-     * Creates a provider using the given RestTemplate.
+     * Creates a Trippel Trumf provider using the given HTTP client.
      *
      * @param http
-     *            HTTP client used to fetch the page
+     *            RestTemplate used to fetch the source page
      */
     public TrippelTrumfProvider(RestTemplate http) {
         this.http = http;
@@ -45,57 +62,207 @@ public class TrippelTrumfProvider implements CountdownProvider {
     /** {@inheritDoc} */
     @Override
     public Optional<Instant> next(Instant now) {
+        var wins = scrapeWindows(); // each window is a (start,endExclusive) on a single date
+        if (wins.isEmpty())
+            return Optional.empty();
+
+        // If we are inside a window today -> return end (minus 1 ms) so 'ongoing' works
+        for (var w : wins) {
+            if (!now.isBefore(w.start) && now.isBefore(w.endExclusive)) {
+                return Optional.of(w.endExclusive.minusMillis(1));
+            }
+        }
+
+        // Otherwise, return the earliest future start
+        return wins.stream().map(w -> w.start).filter(s -> !s.isBefore(now)).min(Comparator.naturalOrder());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<Instant> previous(Instant now) {
+        var wins = scrapeWindows();
+        if (wins.isEmpty())
+            return Optional.empty();
+        return wins.stream().map(w -> w.start).filter(s -> s.isBefore(now)).max(Comparator.naturalOrder());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<String> sourceUrl() {
+        return Optional.of(URL);
+    }
+
+    /**
+     * {@inheritDoc} Help resolver cache refresh at meaningful boundaries (window
+     * start/end).
+     */
+    @Override
+    public Optional<Instant> validUntil(Instant now) {
+        var wins = scrapeWindows();
+        if (wins.isEmpty())
+            return Optional.empty();
+        // If before first upcoming, refresh at that start
+        for (var w : wins) {
+            if (now.isBefore(w.start))
+                return Optional.of(w.start);
+            if (now.isBefore(w.endExclusive))
+                return Optional.of(w.endExclusive);
+        }
+        return Optional.empty(); // after last known window
+    }
+
+    /**
+     * Internal value object representing a single-day window with an exclusive end.
+     */
+    private record Window(Instant start, Instant endExclusive) {
+    }
+
+    /**
+     * Scrapes the source page for a table with headers År / Måned / Dato and
+     * converts each 2025 row to a [07:00, 22:00) window in Europe/Oslo.
+     *
+     * @return sorted list of windows or an empty list on error
+     */
+    private List<Window> scrapeWindows() {
         try {
+            // Fetch
             HttpHeaders h = new HttpHeaders();
             h.setAccept(List.of(MediaType.TEXT_HTML));
             h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
+            h.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (CountdownBot)");
             var resp = http.exchange(URL, HttpMethod.GET, new HttpEntity<>(h), String.class);
             if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
-                return Optional.empty();
-            Matcher m = DATE_PAT.matcher(resp.getBody());
-            if (!m.find())
-                return Optional.empty();
+                return List.of();
 
-            int day = Integer.parseInt(m.group(1));
-            Month month = NO_MONTHS.get(m.group(2).toLowerCase(Locale.ROOT));
-            if (month == null)
-                return Optional.empty();
+            // Parse HTML with Jsoup
+            org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(resp.getBody());
 
-            int year = ZonedDateTime.now(ZONE).getYear();
-            var zdt = LocalDate.of(year, month, day).atTime(0, 0).atZone(ZONE);
-            var i = zdt.toInstant();
-            return i.isAfter(now) ? Optional.of(i) : Optional.empty();
-        } catch (Exception ignore) {
-            return Optional.empty();
+            // Find the table that has headers År / Måned / Dato
+            org.jsoup.select.Elements tables = doc.select("table");
+            org.jsoup.nodes.Element target = null;
+            for (var t : tables) {
+                var headers = t.select("tr").first();
+                if (headers == null)
+                    continue;
+                var ths = headers.select("th,td").eachText().stream().map(String::trim).toList();
+                // accept both <th> or <td> headers
+                boolean ok = ths.stream().anyMatch(s -> s.equalsIgnoreCase("År"))
+                        && ths.stream().anyMatch(s -> s.toLowerCase(Locale.ROOT).startsWith("måned"))
+                        && ths.stream().anyMatch(s -> s.equalsIgnoreCase("Dato"));
+                if (ok) {
+                    target = t;
+                    break;
+                }
+            }
+            if (target == null) {
+                log.info("Trippel provider: no table with headers År/Måned/Dato found");
+                return List.of();
+            }
+
+            List<Window> out = new ArrayList<>();
+            int yearWanted = 2025;
+
+            // Iterate rows after header
+            var rows = target.select("tr");
+            for (int i = 1; i < rows.size(); i++) {
+                var cells = rows.get(i).select("td");
+                if (cells.isEmpty())
+                    continue;
+
+                // Some rows have colspan; handle safely
+                String yearTxt = cells.size() > 0 ? cells.get(0).text().trim() : "";
+                String monthTxt = cells.size() > 1 ? cells.get(1).text().trim() : "";
+                String dateTxt = cells.size() > 2 ? cells.get(2).text().trim() : "";
+
+                // Skip “Juli 2024 …” or malformed rows
+                if (!yearTxt.matches("\\d{4}"))
+                    continue;
+                int year = Integer.parseInt(yearTxt);
+                if (year != yearWanted)
+                    continue;
+
+                // Skip “Kommer”, empty, or non-numeric dates
+                if (!dateTxt.matches("\\d{1,2}"))
+                    continue;
+                int day = Integer.parseInt(dateTxt);
+
+                // Normalize month: take first word before any parenthesis
+                String monthKey = monthTxt.split("\\(")[0].trim().toLowerCase(Locale.ROOT);
+                Month month = NO_MONTHS.get(monthKey);
+                if (month == null)
+                    continue;
+
+                // Build window [07:00, 22:00)
+                LocalDate date;
+                try {
+                    date = LocalDate.of(year, month, day);
+                } catch (DateTimeException e) {
+                    continue;
+                }
+                Instant start = date.atTime(START).atZone(ZONE).toInstant();
+                Instant endEx = date.atTime(END).atZone(ZONE).toInstant();
+
+                out.add(new Window(start, endEx));
+            }
+
+            out.sort(Comparator.comparing(w -> w.start));
+            log.info("Trippel provider parsed {} windows: {}", out.size(),
+                    out.stream().map(w -> w.start.atZone(ZONE).toLocalDate().toString()).toList());
+
+            return out;
+        } catch (Exception e) {
+            log.info("Trippel provider scrape error: {}", e.toString());
+            return List.of();
         }
     }
 
-    @Override
-    public Optional<Instant> previous(Instant now) {
-        try {
-            HttpHeaders h = new HttpHeaders();
-            h.setAccept(List.of(MediaType.TEXT_HTML));
-            h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-            var resp = http.exchange(URL, HttpMethod.GET, new HttpEntity<>(h), String.class);
-            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
-                return Optional.empty();
+    private static HttpHeaders headers() {
+        HttpHeaders h = new HttpHeaders();
+        h.setAccept(List.of(MediaType.TEXT_HTML));
+        h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
+        return h;
+    }
 
-            Matcher m = DATE_PAT.matcher(resp.getBody());
-            if (!m.find())
-                return Optional.empty();
+    private static String toPlainText(String html) {
+        return java.text.Normalizer.normalize(
+                html.replaceAll("(?is)<script[^>]*>.*?</script>", " ").replaceAll("(?is)<style[^>]*>.*?</style>", " ")
+                        .replace("&nbsp;", " ").replace("&#160;", " ").replace("&ndash;", "–").replace("&mdash;", "—")
+                        .replaceAll("(?is)<[^>]+>", " ").replaceAll("\\s+", " ").trim(),
+                java.text.Normalizer.Form.NFKC);
+    }
 
-            int day = Integer.parseInt(m.group(1));
-            Month month = NO_MONTHS.get(m.group(2).toLowerCase(Locale.ROOT));
-            if (month == null)
-                return Optional.empty();
-
-            int year = ZonedDateTime.now(ZONE).getYear();
-            Instant when = LocalDate.of(year, month, day).atStartOfDay(ZONE).toInstant();
-
-            // For "previous", only return if that date is before now.
-            return when.isBefore(now) ? Optional.of(when) : Optional.empty();
-        } catch (Exception ignore) {
-            return Optional.empty();
+    private static List<String> splitRows(String text) {
+        // crude but effective: split on patterns that likely separate table lines
+        // Also keep a global fallback: look for sequences starting with "2025".
+        String[] lines = text.split("\\s{2,}|\\n|\\r");
+        List<String> rows = new ArrayList<>();
+        StringBuilder curr = new StringBuilder();
+        for (String tok : lines) {
+            if (tok.trim().equals("2025")) {
+                if (curr.length() > 0)
+                    rows.add(curr.toString().trim());
+                curr.setLength(0);
+            }
+            if (!tok.isBlank()) {
+                if (curr.length() > 0)
+                    curr.append(' ');
+                curr.append(tok.trim());
+            }
         }
+        if (curr.length() > 0)
+            rows.add(curr.toString().trim());
+        return rows;
+    }
+
+    private static List<String> tokenize(String row) {
+        // simple whitespace tokens
+        return new ArrayList<>(Arrays.asList(row.split("\\s+")));
+    }
+
+    private static String normalizeMonthToken(String raw) {
+        // "Mai", "Mai (Ekstra)" etc. We only need the first word, lowercase.
+        String base = raw.split("\\(")[0].trim().toLowerCase(Locale.ROOT);
+        // some rows might say "August" with stray spaces—already trimmed
+        return base;
     }
 }
