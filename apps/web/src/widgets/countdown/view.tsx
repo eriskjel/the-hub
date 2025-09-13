@@ -13,11 +13,11 @@ export default function CountdownView({
     widget: CountdownWidget;
     data: CountdownData;
 }): ReactElement {
-    const hasNext = !!data?.nextIso;
-    const hasPrev = !!data?.previousIso;
-
     const t = useTranslations("widgets.countdown.view");
     const format = useFormatter();
+
+    const hasNext = !!data?.nextIso;
+    const hasPrev = !!data?.previousIso;
 
     // server-aligned clock (avoid client skew)
     const serverNow = data?.nowIso ? new Date(data.nowIso) : null;
@@ -37,7 +37,7 @@ export default function CountdownView({
 
     const isOngoing = typeof data?.ongoing === "boolean" ? data.ongoing : computedOngoing;
 
-    // "upcoming" for copy (optional; you can also drive this from backend later)
+    // "upcoming" for copy
     const isUpcoming =
         !!next &&
         next.getTime() > now.getTime() &&
@@ -59,17 +59,14 @@ export default function CountdownView({
         const intervalMs = needsSecondTick ? 1000 : 60_000;
 
         const tick = () => {
-            // keep following server time with the same skew
-            setNow(new Date(Date.now() + skew));
+            setNow(new Date(Date.now() + skew)); // keep following server time with the same skew
         };
 
         tick(); // set immediately
         const id = window.setInterval(tick, intervalMs);
 
         const onVisible = () => {
-            if (document.visibilityState === "visible") {
-                tick();
-            }
+            if (document.visibilityState === "visible") tick();
         };
         document.addEventListener("visibilitychange", onVisible);
 
@@ -96,16 +93,14 @@ export default function CountdownView({
     const parts: string[] = [];
     if (d > 0) parts.push(t("units.day", { count: d }));
     if (h > 0) parts.push(t("units.hour", { count: h }));
-    if (m > 0 || (d === 0 && h === 0 && totalSec > 0)) {
-        parts.push(t("units.minute", { count: m }));
-    }
-    const durationText = format.list(parts, { style: "long", type: "conjunction" });
+    if (m > 0 || (d === 0 && h === 0 && totalSec > 0)) parts.push(t("units.minute", { count: m }));
+    const durationText =
+        format.list(parts, { style: "long", type: "conjunction" }) + " " + t("units.left");
 
     // Nice labels
-    const endsAtText = hasNext
-        ? format.dateTime(next!, { dateStyle: "full", timeStyle: "short", timeZone: "Europe/Oslo" })
-        : null;
-    const startsAtText = endsAtText;
+    const whenText =
+        hasNext &&
+        format.dateTime(next!, { dateStyle: "full", timeStyle: "short", timeZone: "Europe/Oslo" });
 
     // Progress bar: only meaningful when ongoing (prev..next window span)
     let progressPct = 0;
@@ -140,8 +135,8 @@ export default function CountdownView({
                         {/* sublabel under countdown (small gray) */}
                         <div className="text-xs opacity-70">
                             {isOngoing
-                                ? endsAtText && t("status.endsAt", { when: endsAtText })
-                                : startsAtText && t("status.startsAt", { when: startsAtText })}
+                                ? whenText && t("status.endsAt", { when: whenText })
+                                : whenText && t("status.startsAt", { when: whenText })}
                         </div>
                     </div>
 
