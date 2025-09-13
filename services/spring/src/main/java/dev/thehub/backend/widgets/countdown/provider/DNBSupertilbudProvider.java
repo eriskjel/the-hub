@@ -41,23 +41,15 @@ public class DNBSupertilbudProvider implements CountdownProvider {
             Map.entry("oktober", Month.OCTOBER), Map.entry("november", Month.NOVEMBER),
             Map.entry("desember", Month.DECEMBER));
 
-    /**
-     * Creates a DNB Supertilbud provider using the given RestTemplate.
-     *
-     * @param http
-     *            HTTP client used to fetch the overview page
-     */
     public DNBSupertilbudProvider(RestTemplate http) {
         this.http = http;
     }
 
-    /** {@inheritDoc} */
     @Override
     public String id() {
         return "dnb-supertilbud";
     }
 
-    /** {@inheritDoc} */
     @Override
     public Optional<Instant> next(Instant now) {
         var wins = scrapeWindows();
@@ -81,7 +73,6 @@ public class DNBSupertilbudProvider implements CountdownProvider {
                 .min(Comparator.naturalOrder());
     }
 
-    /** {@inheritDoc} */
     @Override
     public Optional<Instant> previous(Instant now) {
         var wins = scrapeWindows();
@@ -148,7 +139,6 @@ public class DNBSupertilbudProvider implements CountdownProvider {
         }
     }
 
-    /** {@inheritDoc} */
     @Override
     public Optional<Instant> validUntil(Instant now) {
         var wins = scrapeWindows();
@@ -160,18 +150,18 @@ public class DNBSupertilbudProvider implements CountdownProvider {
             Instant endExclusive = s.end.plusDays(1).atStartOfDay(ZONE).toInstant();
 
             if (!now.isBefore(startI) && now.isBefore(endExclusive)) {
-                // inside window → valid until end (so we’ll refresh right after it ends)
                 return Optional.of(endExclusive);
             }
             if (now.isBefore(startI)) {
-                // before next window → valid until the start (so we refresh at start to get end
-                // bound)
                 return Optional.of(startI);
             }
         }
-
-        // after the last known window – let the generic freshness rule handle it
         return Optional.empty();
     }
 
+    @Override
+    public long plausibleWindowMaxHours() {
+        // Campaigns can span about a week+; keep generous.
+        return 240;
+    }
 }

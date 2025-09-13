@@ -6,19 +6,16 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Registry that wires and exposes all available {@link CountdownProvider}s.
- * <p>
- * Providers are constructed with shared infrastructure (e.g. RestTemplate) and
- * looked up by their {@link CountdownProvider#id()}.
  */
 @Component
 public class ProviderRegistry {
     private final Map<String, CountdownProvider> providers;
 
     /**
-     * Creates the registry and instantiates known providers.
+     * Construct the registry and wire known providers.
      *
      * @param http
-     *            RestTemplate used by providers when scraping/external calls
+     *            RestTemplate used by providers for HTTP requests
      */
     public ProviderRegistry(RestTemplate http) {
         var trumf = new TrippelTrumfProvider(http);
@@ -27,13 +24,13 @@ public class ProviderRegistry {
     }
 
     /**
-     * Returns a provider by id or throws if unknown.
+     * Retrieve a registered provider by id.
      *
      * @param id
-     *            provider id, see {@link CountdownProvider#id()}
-     * @return the matching provider
+     *            stable provider identifier
+     * @return the provider instance
      * @throws IllegalArgumentException
-     *             if the id is not registered
+     *             if the id is unknown
      */
     public CountdownProvider get(String id) {
         var p = providers.get(id);
