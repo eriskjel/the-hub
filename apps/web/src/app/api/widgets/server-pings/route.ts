@@ -1,51 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import {
+    authHeaders,
+    backendUrl,
+    bearerToken,
+    passthroughText,
+    withTimeout,
+} from "@/server/proxy/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
     const instanceId = req.nextUrl.searchParams.get("instanceId");
     if (!instanceId) {
-        return NextResponse.json({ error: "Missing instanceId" }, { status: 400 });
+        return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-
-    const token = session?.access_token;
-    if (!token) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const backend = process.env.BACKEND_URL;
-    if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
-
-    let res: Response;
-    const ac = new AbortController();
-    const timeout = setTimeout(() => ac.abort(), 2500);
     try {
-        res = await fetch(
-            `${backend}/api/widgets/server-pings?instanceId=${encodeURIComponent(instanceId)}`,
-            {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: "no-store",
-                signal: ac.signal,
-            }
-        );
-    } catch {
-        return NextResponse.json(
-            { status: "degraded", error: "backend_unreachable" },
-            { status: 503 }
-        );
-    } finally {
-        clearTimeout(timeout);
-    }
+        const token = await bearerToken();
+        if (!token) {
+            return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+        }
 
-    const text = await res.text();
-    return new NextResponse(text, {
-        status: res.status,
-        headers: { "content-type": res.headers.get("content-type") ?? "application/json" },
-    });
+        const t = withTimeout(2500);
+        try {
+            const upstream = await fetch(backendUrl("/api/widgets/server-pings", { instanceId }), {
+                headers: authHeaders(token),
+                cache: "no-store",
+                signal: t.signal,
+            });
+            return passthroughText(upstream);
+        } finally {
+            t.clear();
+        }
+    } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes("BACKEND_URL")) {
+            return NextResponse.json({ error: "config_missing" }, { status: 500 });
+        }
+        return NextResponse.json({ error: "backend_unreachable" }, { status: 503 });
+    }
 }

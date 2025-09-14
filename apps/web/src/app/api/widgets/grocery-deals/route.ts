@@ -1,38 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { authHeaders, backendUrl, bearerToken, passthroughJson } from "@/server/proxy/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-    const backend = process.env.BACKEND_URL;
-    if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
-
-    const supabase = await createClient();
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
     const instanceId = req.nextUrl.searchParams.get("instanceId");
-    if (!instanceId) return NextResponse.json({ error: "Missing instanceId" }, { status: 400 });
+    if (!instanceId) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
-    // Let backend resolve instance -> settings; OR pass-through optional overrides (not required)
-    const url = new URL(`${backend}/api/widgets/grocery-deals`);
-    url.searchParams.set("instanceId", instanceId);
+    try {
+        const token = await bearerToken();
+        if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-    const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${token}` },
-        // optional: short cache
-        // next: { revalidate: 60 },
-    });
-
-    const json = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        return NextResponse.json(
-            { error: json.error || "Failed to load deals" },
-            { status: response.status }
+        const upstream = await fetch(
+            backendUrl("/api/widgets/grocery-deals", { instanceId }),
+            { headers: authHeaders(token) } // add next: { revalidate: 60 } optionally
         );
+
+        return passthroughJson(upstream);
+    } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes("BACKEND_URL")) {
+            return NextResponse.json({ error: "config_missing" }, { status: 500 });
+        }
+        return NextResponse.json({ error: "backend_unreachable" }, { status: 503 });
     }
-    return NextResponse.json(json);
 }
