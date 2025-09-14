@@ -9,10 +9,9 @@ export const dynamic = "force-dynamic";
 type BackendCtx = { params: Promise<{ path: string[] }> };
 
 function buildApiUrl(base: string, pathParts: string[], search: string): string {
-    const clean = (pathParts ?? []).join("/").replace(/^\/+/, "");
+    const clean = (pathParts ?? []).join("/");
     const apiPath = clean.startsWith("api/") ? clean : `api/${clean}`;
-    const url = new URL(base.endsWith("/") ? base : base + "/");
-    url.pathname = url.pathname.replace(/\/+$/, "") + "/" + apiPath.replace(/^\/+/, "");
+    const url = new URL(apiPath, base.endsWith("/") ? base : `${base}/`);
     url.search = search;
     return url.toString();
 }

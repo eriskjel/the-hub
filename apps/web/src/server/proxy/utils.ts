@@ -58,13 +58,30 @@ export async function passthroughJson(upstream: Response): Promise<NextResponse>
     // 204/304 MUST NOT include a body
     if (status === 204 || status === 304) {
         const headers = new Headers(upstream.headers);
-        headers.delete("content-type"); // be safe
+        headers.delete("content-type");
         return new NextResponse(null, { status, headers });
     }
 
-    const isJson = upstream.headers.get("content-type")?.includes("application/json");
-    const body: unknown = isJson ? await upstream.json().catch(() => ({})) : {};
-    return NextResponse.json<unknown>(body, { status });
+    const ct = upstream.headers.get("content-type") ?? "";
+
+    // If not JSON, just forward as text with original content-type
+    if (!ct.includes("application/json")) {
+        const text = await upstream.text();
+        return new NextResponse(text, {
+            status,
+            headers: { "content-type": ct || "application/json" },
+        });
+    }
+
+    // JSON: read once as text, then parse
+    const raw = await upstream.text();
+    try {
+        const body = raw ? JSON.parse(raw) : null; // explicit null for empty body
+        return NextResponse.json<unknown>(body, { status });
+    } catch {
+        // Invalid JSON: forward raw payload so callers can see it (keeps pass-through semantics)
+        return new NextResponse(raw, { status, headers: { "content-type": ct } });
+    }
 }
 
 export async function passthroughText(upstream: Response): Promise<NextResponse> {
