@@ -38,7 +38,19 @@
         }
     },
     "dashboard": {
-        "welcome": "Welcome, {name}!"
+        "welcome": "Welcome, {name}!",
+        "states": {
+            "staleBanner": "Showing cached data — live updates unavailable",
+            "offlineTitle": "Widgets temporarily unavailable",
+            "offlineBody": "We can’t reach the service right now. Try again in a bit.",
+            "emptyTitle": "No widgets yet",
+            "emptyBody": "Add your first widget to get started.",
+            "errorTitle": "Unable to Load Dashboard",
+            "errorBody": "An error occurred.",
+            "errorTryRefresh": "Please try refreshing the page.",
+            "loading": "Loading…",
+            "unknownWidget": "Unknown widget: {kind}"
+        }
     },
     "monster": {
         "pageTitle": "Monster",

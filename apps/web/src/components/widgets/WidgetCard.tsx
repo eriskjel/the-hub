@@ -1,15 +1,16 @@
 "use client";
 
-import { ReactElement, useEffect, useState } from "react";
+import { ReactElement, ReactNode, useEffect, useState } from "react";
 import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { useWidgetData } from "@/hooks/useWidgetData";
+import { useTranslations } from "next-intl";
 
-function StateText({ children }: { children: React.ReactNode }) {
+function StateText({ children }: { children: ReactNode }): ReactElement {
     return <div className="p-3 text-sm text-white">{children}</div>;
 }
 
-function ErrorBox({ msg }: { msg: string }) {
+function ErrorBox({ msg }: { msg: string }): ReactElement {
     return (
         <div className="rounded-lg border border-red-400/40 bg-red-400/15 p-3 text-sm text-red-100">
             {msg}
@@ -17,7 +18,7 @@ function ErrorBox({ msg }: { msg: string }) {
     );
 }
 
-function cacheKeyFor(userId: string | null, kind: string, instanceId: string) {
+function cacheKeyFor(userId: string | null, kind: string, instanceId: string): string {
     return `hub:u:${userId ?? "anon"}:widget:${kind}:${instanceId}`;
 }
 
@@ -44,7 +45,7 @@ function WidgetStatic({
     widget: AnyWidget;
     userId: string | null;
     preferCache: boolean;
-}) {
+}): ReactElement {
     const entry = registry[widget.kind]!;
     const Component = entry.Component as (props: {
         data: unknown;
@@ -65,12 +66,19 @@ function WidgetStatic({
     return <Component data={hydrated ? cached : null} widget={widget} />;
 }
 
-function WidgetWithData({ widget, userId }: { widget: AnyWidget; userId: string | null }) {
+function WidgetWithData({
+    widget,
+    userId,
+}: {
+    widget: AnyWidget;
+    userId: string | null;
+}): ReactElement {
+    const t = useTranslations("dashboard.states");
     const entry = registry[widget.kind]!;
     const interval = entry.pollMs ?? 30_000;
     const state = useWidgetData(widget, interval, userId ?? "anon");
 
-    if (state.status === "loading") return <StateText>Loading…</StateText>;
+    if (state.status === "loading") return <StateText>{t("loading")}</StateText>;
     if (state.status === "error") return <ErrorBox msg={state.error} />;
 
     const Component = entry.Component as (props: {
@@ -89,9 +97,10 @@ export default function WidgetCard({
     userId: string | null;
     /** When true, do NOT fetch — render cached/static layout only */
     staleLayout?: boolean;
-}) {
+}): ReactElement {
+    const t = useTranslations("dashboard.states");
     const entry = registry[widget.kind];
-    if (!entry) return <StateText>Unknown widget: {widget.kind}</StateText>;
+    if (!entry) return <StateText>{t("unknownWidget", { kind: widget.kind })}</StateText>;
 
     if (staleLayout) {
         return <WidgetStatic widget={widget} userId={userId} preferCache />;

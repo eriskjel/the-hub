@@ -17,10 +17,21 @@ export function isAbortError(e: unknown): e is DOMException {
 }
 
 export async function parseError(res: Response): Promise<string> {
+    const isCode = (s: unknown) => typeof s === "string" && /^[a-z0-9._-]+$/i.test(s);
+
     try {
         const j = await res.json();
-        return (j?.message as string) || (j?.error as string) || `HTTP ${res.status}`;
+
+        if (isCode(j?.error)) return j.error; // <- the contract you want
+        // If it's not a code (or missing), map by status — never return prose as a code
+        if (res.status === 403) return "forbidden";
+        if (res.status === 409) return "duplicate";
+        if (res.status === 400) return "invalid_request";
+        return "generic";
     } catch {
-        return `HTTP ${res.status}`;
+        if (res.status === 403) return "forbidden";
+        if (res.status === 409) return "duplicate";
+        if (res.status === 400) return "invalid_request";
+        return "generic";
     }
 }

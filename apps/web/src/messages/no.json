@@ -38,7 +38,19 @@
         }
     },
     "dashboard": {
-        "welcome": "Velkommen, {name}!"
+        "welcome": "Velkommen, {name}!",
+        "states": {
+            "staleBanner": "Viser mellomlagrede data — sanntidsoppdateringer er utilgjengelige",
+            "offlineTitle": "Widgets er midlertidig utilgjengelige",
+            "offlineBody": "Vi får ikke kontakt med tjenesten akkurat nå. Prøv igjen om litt.",
+            "emptyTitle": "Ingen widgets enda",
+            "emptyBody": "Legg til din første widget for å komme i gang.",
+            "errorTitle": "Kunne ikke laste dashbord",
+            "errorBody": "Noe gikk galt.",
+            "errorTryRefresh": "Prøv å oppdatere siden.",
+            "loading": "Laster…",
+            "unknownWidget": "Ukjent widget: {kind}"
+        }
     },
     "monster": {
         "pageTitle": "Monster",

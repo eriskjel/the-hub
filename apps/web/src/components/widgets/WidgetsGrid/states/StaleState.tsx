@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import type { AnyWidget } from "@/widgets/schema";
 import WidgetContainer from "../WidgetContainer";
+import { useTranslations } from "next-intl";
 
 export default function StaleState({
     widgets,
@@ -11,10 +12,12 @@ export default function StaleState({
     widgets: AnyWidget[];
     userId: string | null;
 }): ReactElement {
+    const t = useTranslations("dashboard.states");
+
     return (
         <div className="space-y-4 text-white">
             <div className="rounded-lg border border-red-500/30 bg-red-500/50 p-4 text-center">
-                Showing cached data — live updates unavailable
+                {t("staleBanner")}
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {widgets.map(

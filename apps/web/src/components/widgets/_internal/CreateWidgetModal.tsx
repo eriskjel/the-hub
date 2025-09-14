@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
-import { creationRegistry, type CreationKind } from "@/widgets/create/registry";
+import { type CreationKind, creationRegistry } from "@/widgets/create/registry";
 import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
 import { onSubmitCreateWidget } from "@/widgets/create/onSubmitCreateWidget";
 import { KindSelect } from "@/widgets/create/KindSelect";
@@ -52,10 +52,15 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                                 setFieldErr("settings.query", code);
                                 return;
                             }
-                            // fallback
+
+                            // Defensive: only attempt i18n when `code` looks like a key
+                            const keyish = /^[a-z0-9._-]+$/i.test(code) ? code : "generic";
+
                             form.setError("root", {
                                 type: "server",
-                                message: t(`errors.${code}`, { fallback: t("errors.generic") }),
+                                message: t(`errors.${keyish}`, {
+                                    defaultMessage: t("errors.generic"),
+                                }),
                             });
                         },
                     })
