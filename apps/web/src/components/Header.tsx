@@ -4,6 +4,7 @@ import { logout } from "@/app/auth/actions/auth";
 import { getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
 import { isAdminFromUser } from "@/lib/auth/isAdmin";
+import LocaleToggle from "@/components/LocaleToggle";
 
 type HeaderProps = {
     variant?: "transparent" | "solid";
@@ -23,10 +24,15 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
 
     return (
         <header className={`${base} ${look}`}>
-            <nav className="flex h-full items-center justify-center px-8">
+            <nav className="relative flex h-full w-full items-center justify-center px-8">
                 <ul className="flex gap-8">
                     <NavItems isLoggedIn={!!user} isAdmin={isAdminFromUser(user)} t={t} />
                 </ul>
+
+                {/* Right-only: locale flag */}
+                <div className="absolute right-8 flex items-center">
+                    <LocaleToggle />
+                </div>
             </nav>
         </header>
     );
