@@ -56,16 +56,25 @@ public class GroceriesService {
 
     @Value("${etilbudsavis.base-url}")
     private String baseUrl;
+
     @Value("${etilbudsavis.default-city}")
     private String defaultCity;
+
     @Value("${etilbudsavis.default-lat}")
     private double defaultLat;
+
     @Value("${etilbudsavis.default-lon}")
     private double defaultLon;
+
     @Value("${etilbudsavis.country}")
     private String countryCode;
+
     @Value("${etilbudsavis.default-limit}")
     private int defaultLimit;
+
+    @Value("${groceries.min-fetch-for-sort:20}")
+    private int minFetchForSort;
+
     @Value("${app.http.user-agent:TheHub/1.0 (+https://skjellevik.online)}")
     private String userAgent;
 
@@ -146,12 +155,15 @@ public class GroceriesService {
         if (term.isEmpty())
             return List.of();
 
-        final int desired = (top != null && top > 0)
+        final int desiredReturn = (top != null && top > 0)
                 ? top
                 : Optional.ofNullable(s.maxResults()).orElse(getDefaultLimit());
-        final int fetchLimit = Math.min(Math.max(desired, 1), SAFETY_CAP);
-        if (desired > SAFETY_CAP) {
-            log.warn("Groceries desired_limit_exceeds_safety desired={} cap={}", desired, SAFETY_CAP);
+
+        // size to FETCH from upstream (decoupled; over-fetch to allow re-sorting)
+        final int fetchLimit = Math.min(Math.max(Math.max(desiredReturn, minFetchForSort), 1), SAFETY_CAP);
+
+        if (desiredReturn > SAFETY_CAP) {
+            log.warn("Groceries desired_limit_exceeds_safety desired={} cap={}", desiredReturn, SAFETY_CAP);
         }
 
         Function<Object[], String> enc = parts -> {
@@ -254,7 +266,7 @@ public class GroceriesService {
         List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
                 .filter(d -> !excluded.contains(canonicalizeVendor(d.store()))).sorted(cmp).toList();
 
-        List<DealDto> capped = (top != null && top > 0) ? sorted.stream().limit(top).toList() : sorted;
+        List<DealDto> capped = sorted.stream().limit(desiredReturn).toList();
 
         if (log.isDebugEnabled() || sample(0.02)) {
             long ms = (System.nanoTime() - t0) / 1_000_000;
