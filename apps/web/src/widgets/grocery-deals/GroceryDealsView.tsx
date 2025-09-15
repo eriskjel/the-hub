@@ -82,7 +82,9 @@ export default function GroceryDealsView({
         <div>
             <ul
                 id={listId}
-                className={`divide-y divide-neutral-200 ${expanded ? "scroll-gutter-stable max-h-64 overflow-y-auto pr-1 md:pr-2" : ""}`}
+                className={`divide-y divide-neutral-200 [scrollbar-gutter:stable] [scrollbar-width:thin] ${
+                    expanded ? "max-h-64 overflow-y-auto pr-2 md:pr-3" : ""
+                }`}
                 aria-live="polite"
             >
                 {renderRows(rows, t)}
@@ -111,54 +113,54 @@ const formatPrice = (n?: number) =>
 const formatDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("no-NO") : "");
 
 function renderRows(rows: Deal[], t: ReturnType<typeof useTranslations>): ReactElement[] {
-    return rows.map((d, i) => (
-        <li key={i} className="flex items-center gap-3 py-2">
-            {d.storeLogo ? (
-                <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded bg-neutral-100">
+    return rows.map((deal: Deal, i) => (
+        <li key={i} className="flex items-start gap-3 py-2">
+            {deal.storeLogo ? (
+                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-neutral-100">
                     <Image
-                        src={d.storeLogo}
-                        alt={d.store || "store"}
+                        src={deal.storeLogo}
+                        alt={deal.store || "store"}
                         fill
-                        sizes="24px"
+                        sizes="32px"
                         className="object-contain"
                         unoptimized
                     />
                 </div>
             ) : (
-                <div className="h-6 w-6 shrink-0 rounded bg-neutral-100" />
+                <div className="h-8 w-8 shrink-0 rounded-md bg-neutral-100" />
             )}
 
+            {/* LEFT: flexible, can truncate */}
             <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-neutral-900">{d.name}</div>
-                <div className="truncate text-xs text-neutral-700">{d.store}</div>
+                <div className="truncate text-sm font-medium text-neutral-900">{deal.name}</div>
+                <div className="truncate text-xs text-neutral-700">{deal.store}</div>
                 {(() => {
-                    const sub = subtitle(d);
+                    const sub = subtitle(deal);
                     return sub ? (
                         <div className="truncate text-xs text-neutral-600">{sub}</div>
                     ) : null;
                 })()}
-                {d.validUntil ? (
+                {deal.validUntil ? (
                     <div className="mt-0.5 text-[11px] text-neutral-600">
-                        {t("until")} {formatDate(d.validUntil)}
+                        {t("until")} {formatDate(deal.validUntil)}
                     </div>
                 ) : null}
             </div>
 
-            <div className="shrink-0 text-right">
+            {/* RIGHT: fixed width so left side doesn't “move in” */}
+            <div className="shrink-0 grow-0 basis-28 text-right sm:basis-32">
                 <div className="text-sm font-semibold text-neutral-900">
-                    {formatPrice(d.price)} {t("currency")}
+                    {formatPrice(deal.price)} {t("currency")}
                 </div>
-
-                {/* show per-piece for multipacks */}
-                {d.multipack && typeof d.perPiecePrice === "number" ? (
+                {deal.multipack && typeof deal.perPiecePrice === "number" ? (
                     <div className="text-[11px] text-neutral-600">
-                        {formatPrice(d.perPiecePrice)} {t("currency")}/stk
+                        {formatPrice(deal.perPiecePrice)} {t("currency")}/stk
                     </div>
                 ) : null}
-
-                {/* keep legacy unit price line if you want */}
-                {typeof d.unitPrice === "number" && !d.multipack ? (
-                    <div className="text-[11px] text-neutral-600">{formatPerKg(d.unitPrice)}</div>
+                {typeof deal.unitPrice === "number" && !deal.multipack ? (
+                    <div className="text-[11px] text-neutral-600">
+                        {formatPerKg(deal.unitPrice)}
+                    </div>
                 ) : null}
             </div>
         </li>
