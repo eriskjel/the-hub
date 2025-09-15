@@ -81,6 +81,9 @@ public class GroceriesService {
     @Value("${groceries.excluded-vendors:}")
     private String excludedVendorsCsv;
 
+    @Value("${groceries.max-price:500}")
+    private double defaultMaxPrice;
+
     private static final int SAFETY_CAP = 50;
 
     private final ConcurrentMap<String, String> groceriesVendorAliases = new ConcurrentHashMap<>();
