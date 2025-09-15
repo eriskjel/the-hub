@@ -18,7 +18,7 @@ type GroceryDealsSettingsProps = {
 export function GroceryDealsSettings({
     form,
     initialSettings,
-    isEdit,
+    isEdit = false,
 }: GroceryDealsSettingsProps): ReactElement {
     const t = useTranslations("widgets.create.groceryDeals");
     const errs: GroceryErrors = form.formState.errors as GroceryErrors;
