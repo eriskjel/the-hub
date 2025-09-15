@@ -88,7 +88,8 @@ public class GroceriesController {
             @Parameter(description = "Latitude override") @RequestParam(required = false) Double lat,
             @Parameter(description = "Longitude override") @RequestParam(required = false) Double lon,
             @Parameter(description = "City override") @RequestParam(required = false) String city,
-            @Parameter(description = "Cap on the number of items returned") @RequestParam(required = false) Integer top)
+            @Parameter(description = "Cap on the number of items returned") @RequestParam(required = false) Integer top,
+            @Parameter(description = "Discard results with price > maxPrice (kr). Defaults to config groceries.max-price.") @RequestParam(required = false) Double maxPrice)
             throws IOException {
         if (log.isDebugEnabled() || sample(0.02)) { // 2% sampled breadcrumb
             var uid = UUID.fromString(auth.getToken().getClaimAsString("sub"));
@@ -115,7 +116,12 @@ public class GroceriesController {
         Integer effectiveTop = (top != null && top > 0) ? Math.min(fetchLimit, top) : fetchLimit;
 
         var deals = svc.fetchDeals(settings, effectiveTop);
-        return ResponseEntity.ok(deals);
+
+        double priceCap = Optional.ofNullable(maxPrice).orElse(svc.getDefaultMaxPrice());
+
+        List<DealDto> filtered = deals.stream().filter(d -> d.price() <= priceCap).toList();
+
+        return ResponseEntity.ok(filtered);
     }
 
     /**
