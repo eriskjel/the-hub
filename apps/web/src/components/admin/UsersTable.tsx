@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ProfileWithAuth } from "@/types/users";
 import { RoleBadge } from "@/components/admin/RoleBadge";
 import type { RoleKey } from "@/lib/auth/role";
+import { pickDisplayName } from "@/lib/auth/pickDisplayName";
 
 type Row = { id: string; name: string; email: string; roleKey: RoleKey };
 
@@ -36,7 +37,7 @@ export default function UsersTable({
         () =>
             users.map((u) => ({
                 id: u.id,
-                name: u.full_name ?? u.username ?? "—",
+                name: pickDisplayName(u),
                 email: u.auth.email,
                 roleKey: u.auth.effective_role,
             })),
@@ -49,7 +50,7 @@ export default function UsersTable({
         thead: "border-b border-gray-300",
         th: "px-6 py-4 text-left text-sm font-semibold text-gray-700",
         td: "px-6 py-4 text-left text-sm text-gray-900 !bg-transparent",
-        tr: "group odd:bg-white even:bg-gray-50 hover:!bg-slate-100 transition-colors cursor-pointer",
+        tr: "group odd:bg-white even:bg-gray-50 hover:!bg-slate-100 transition-colors",
         pagination: {
             container: "flex items-center justify-between mt-4 gap-3",
             button: "px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-50 border",
@@ -147,10 +148,10 @@ export default function UsersTable({
                         </td>
                         <td className="px-6 py-4 text-left text-sm">
                             <div className="inline-flex gap-2">
-                                <button className="rounded bg-blue-600 px-3 py-1 text-white">
+                                <button className="cursor-pointer rounded bg-blue-600 px-3 py-1 text-white">
                                     {t("actions.edit")}
                                 </button>
-                                <button className="rounded bg-red-600 px-3 py-1 text-white">
+                                <button className="cursor-pointer rounded bg-red-600 px-3 py-1 text-white">
                                     {t("actions.delete")}
                                 </button>
                             </div>
