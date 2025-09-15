@@ -9,5 +9,10 @@ export type AuthUser = {
         provider?: string;
         providers?: string[];
     };
-    raw_user_meta_data?: Record<string, unknown>;
+    raw_user_meta_data: Record<string, unknown>;
+};
+
+export type AdminAuthUser = AuthUser & {
+    roles?: string[];
+    effective_role: string;
 };

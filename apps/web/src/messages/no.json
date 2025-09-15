@@ -266,7 +266,12 @@
                 "edit": "Rediger",
                 "delete": "Slett"
             },
-            "empty": "Ingen brukere funnet."
+            "empty": "Ingen brukere funnet.",
+            "roles": { "admin": "Admin", "user": "Bruker", "unknown": "Ukjent" },
+            "pagination": {
+                "items_per_page": "Resultater per side",
+                "total_users": "Totalt antall brukere"
+            }
         }
     }
 }

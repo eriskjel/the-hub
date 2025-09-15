@@ -266,7 +266,12 @@
                 "edit": "Edit",
                 "delete": "Delete"
             },
-            "empty": "No users found."
+            "empty": "No users found.",
+            "roles": { "admin": "Admin", "user": "User", "unknown": "Unknown" },
+            "pagination": {
+                "items_per_page": "Items per page",
+                "total_users": "Total users"
+            }
         }
     }
 }
