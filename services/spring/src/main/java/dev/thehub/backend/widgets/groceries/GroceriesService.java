@@ -159,9 +159,9 @@ public class GroceriesService {
                 ? top
                 : Optional.ofNullable(s.maxResults()).orElse(getDefaultLimit());
 
-        // size to FETCH from upstream (decoupled; over-fetch to allow re-sorting)
-        final int fetchLimit = Math.min(Math.max(Math.max(desiredReturn, minFetchForSort), 1), SAFETY_CAP);
-
+        final int minRequired = Math.max(desiredReturn, minFetchForSort);
+        final int atLeastOne = Math.max(minRequired, 1);
+        final int fetchLimit = Math.min(atLeastOne, SAFETY_CAP);
         if (desiredReturn > SAFETY_CAP) {
             log.warn("Groceries desired_limit_exceeds_safety desired={} cap={}", desiredReturn, SAFETY_CAP);
         }
