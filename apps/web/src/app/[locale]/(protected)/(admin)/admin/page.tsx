@@ -1,5 +1,6 @@
-import { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-export default function AdminPage(): ReactElement {
-    return <h1>Test</h1>;
+export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = await params;
+    redirect(`/${locale}/admin/users`);
 }
