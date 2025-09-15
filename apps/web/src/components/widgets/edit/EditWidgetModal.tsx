@@ -64,7 +64,7 @@ function EditWidgetModalContent({
     const t = useTranslations("widgets.edit");
     const router = useRouter();
 
-    const { form, active } = useCreateWidgetForm(widget.kind, t);
+    const { form, active } = useCreateWidgetForm(widget.kind, t, "edit");
     const Settings = active.SettingsForm;
 
     useEditWidgetPrefill(form, widget);

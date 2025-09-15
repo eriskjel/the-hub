@@ -1,91 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import {
+    authHeaders,
+    backendUrl,
+    bearerToken,
+    passthroughJson,
+    readJson,
+} from "@/server/proxy/utils";
 
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-    return typeof v === "object" && v !== null;
-}
-
 export async function DELETE(_req: NextRequest, ctx: Ctx) {
     const { id } = await ctx.params;
+    if (!id) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
-    const backend = process.env.BACKEND_URL;
-    if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    try {
+        const token = await bearerToken();
+        if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-    const supabase = await createClient();
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        const upstream = await fetch(backendUrl(`/api/widgets/${encodeURIComponent(id)}`), {
+            method: "DELETE",
+            headers: authHeaders(token),
+            cache: "no-store",
+        });
 
-    const res = await fetch(`${backend}/api/widgets/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.status === 204) return NextResponse.json({ ok: true });
-
-    // Parse JSON only when present and of correct type
-    let body: unknown = null;
-    const ct = res.headers.get("content-type") ?? "";
-    if (ct.includes("application/json")) {
-        body = await res.json().catch(() => null);
+        // Pass status + JSON ({} if empty)
+        return passthroughJson(upstream);
+    } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes("BACKEND_URL")) {
+            return NextResponse.json({ error: "config_missing" }, { status: 500 });
+        }
+        return NextResponse.json({ error: "backend_unreachable" }, { status: 503 });
     }
-
-    if (!res.ok) {
-        let message = "Failed to delete widget";
-        if (isRecord(body) && typeof body.error === "string") message = body.error;
-        if (res.status === 401) message = "You need to sign in to delete a widget.";
-        else if (res.status === 403) message = "You’re not allowed to delete this widget.";
-        else if (res.status === 404) message = "Widget not found.";
-
-        return NextResponse.json({ error: message }, { status: res.status });
-    }
-
-    return NextResponse.json({ ok: true });
 }
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
     const { id } = await ctx.params;
-    const backend = process.env.BACKEND_URL;
-    if (!backend) return NextResponse.json({ error: "BACKEND_URL not set" }, { status: 500 });
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
-    const supabase = await createClient();
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    try {
+        const token = await bearerToken();
+        if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-    const body = await req.json().catch(() => ({}));
+        const body = await readJson(req);
+        const upstream = await fetch(backendUrl(`/api/widgets/${encodeURIComponent(id)}`), {
+            method: "PATCH",
+            headers: authHeaders(token, { "content-type": "application/json" }),
+            body: JSON.stringify(body),
+            cache: "no-store",
+        });
 
-    const response = await fetch(`${backend}/api/widgets/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        headers: {
-            "content-type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-    });
-
-    // Try to parse JSON if present
-    const ct = response.headers.get("content-type") ?? "";
-    const json = ct.includes("application/json") ? await response.json().catch(() => ({})) : {};
-
-    if (!response.ok) {
-        let message =
-            (isRecord(json) && typeof json.error === "string" && json.error) ||
-            "Failed to update widget";
-        if (response.status === 401) message = "You need to sign in to edit widgets.";
-        else if (response.status === 403) message = "You’re not allowed to edit this widget.";
-        return NextResponse.json({ error: message }, { status: response.status });
+        return passthroughJson(upstream);
+    } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes("BACKEND_URL")) {
+            return NextResponse.json({ error: "config_missing" }, { status: 500 });
+        }
+        return NextResponse.json({ error: "backend_unreachable" }, { status: 503 });
     }
-
-    return NextResponse.json(json);
 }

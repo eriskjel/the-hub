@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
-import { creationRegistry, type CreationKind } from "@/widgets/create/registry";
+import { type CreationKind, creationRegistry } from "@/widgets/create/registry";
 import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetForm";
 import { onSubmitCreateWidget } from "@/widgets/create/onSubmitCreateWidget";
 import { KindSelect } from "@/widgets/create/KindSelect";
@@ -20,7 +20,7 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
         Object.keys(creationRegistry)[0] as CreationKind
     );
 
-    const { form, active } = useCreateWidgetForm(kind, t);
+    const { form, active } = useCreateWidgetForm(kind, t, "create");
     const Settings = active.SettingsForm;
 
     const setFieldErr = (name: AllowedErrorPaths, code: string) =>
@@ -52,10 +52,14 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                                 setFieldErr("settings.query", code);
                                 return;
                             }
-                            // fallback
+
+                            // Defensive: only attempt i18n when `code` looks like a key
+                            const keyish = /^[a-z0-9._-]+$/i.test(code) ? code : "generic";
+                            const errorKey = `errors.${keyish}` as const;
+
                             form.setError("root", {
                                 type: "server",
-                                message: t(`errors.${code}`, { fallback: t("errors.generic") }),
+                                message: t.has(errorKey) ? t(errorKey) : t("errors.generic"),
                             });
                         },
                     })

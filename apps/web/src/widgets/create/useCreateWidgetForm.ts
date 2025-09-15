@@ -12,12 +12,18 @@ import {
 
 export type BaseForm = { kind: CreationKind; settings: unknown };
 
-export function useCreateWidgetForm(kind: CreationKind, t: (k: string) => string) {
+export function useCreateWidgetForm(
+    kind: CreationKind,
+    t: (k: string) => string,
+    mode: "create" | "edit"
+) {
     const active = creationRegistry[kind];
 
     const settingsSchema = useMemo(() => {
-        return active.kind === "grocery-deals" ? buildGrocerySettingsSchema(t) : active.schema;
-    }, [active.kind, active.schema, t]);
+        return active.kind === "grocery-deals"
+            ? buildGrocerySettingsSchema(t, mode)
+            : active.schema;
+    }, [active.kind, active.schema, t, mode]);
 
     const schema = useMemo(
         () =>

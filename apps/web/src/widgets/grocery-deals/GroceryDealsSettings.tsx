@@ -12,11 +12,13 @@ import { fmtCoord } from "@/widgets/grocery-deals/format";
 type GroceryDealsSettingsProps = {
     form: GroceryForm;
     initialSettings?: { city?: string; lat?: number; lon?: number };
+    isEdit?: boolean;
 };
 
 export function GroceryDealsSettings({
     form,
     initialSettings,
+    isEdit = false,
 }: GroceryDealsSettingsProps): ReactElement {
     const t = useTranslations("widgets.create.groceryDeals");
     const errs: GroceryErrors = form.formState.errors as GroceryErrors;
@@ -33,14 +35,15 @@ export function GroceryDealsSettings({
                 {...form.register("settings.query")}
             />
 
-            <FieldText
-                label={t("maxResultsLabel")}
-                placeholder="10"
-                type="number"
-                error={errs.settings?.maxResults?.message}
-                {...form.register("settings.maxResults", { valueAsNumber: true })}
-            />
-
+            {isEdit && (
+                <FieldText
+                    label={t("maxResultsLabel")}
+                    placeholder="10"
+                    type="number"
+                    error={errs.settings?.maxResults?.message}
+                    {...form.register("settings.maxResults", { valueAsNumber: true })}
+                />
+            )}
             <LocationSection t={t} {...locationControls} errs={errs} />
         </div>
     );

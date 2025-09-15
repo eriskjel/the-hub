@@ -46,6 +46,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      flag-icons:
+        specifier: ^7.5.0
+        version: 7.5.0
       lucide-react:
         specifier: ^0.542.0
         version: 0.542.0(react@19.1.0)
@@ -55,6 +58,9 @@ importers:
       next-intl:
         specifier: ^4.3.4
         version: 4.3.5(next@15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.9.2)
+      nextjs-reusable-table:
+        specifier: ^4.0.7
+        version: 4.0.7(next@15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.12)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2196,6 +2202,9 @@ packages:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
 
+  flag-icons@7.5.0:
+    resolution: {integrity: sha512-kd+MNXviFIg5hijH766tt+3x76ele1AXlo4zDdCxIvqWZhKt4T83bOtxUOOMlTx/EcFdUMH5yvQgYlFh1EqqFg==}
+
   flat-cache@4.0.1:
     resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
     engines: {node: '>=16'}
@@ -2782,6 +2791,14 @@ packages:
         optional: true
       sass:
         optional: true
+
+  nextjs-reusable-table@4.0.7:
+    resolution: {integrity: sha512-Sg8CCQSgPhzCYUUDj6pTK8JQuuDXHB4lvjg2wRlpRVRYPj3Jf65ynLf2wTfnZtGgHdg1dh5e1k6+Xc0z5EqZhA==}
+    peerDependencies:
+      next: '>=12'
+      react: '>=16'
+      react-dom: '>=16'
+      tailwindcss: '>=2.0.0'
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -5962,6 +5979,8 @@ snapshots:
       locate-path: 6.0.0
       path-exists: 4.0.0
 
+  flag-icons@7.5.0: {}
+
   flat-cache@4.0.1:
     dependencies:
       flatted: 3.3.3
@@ -6534,6 +6553,13 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+
+  nextjs-reusable-table@4.0.7(next@15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.12):
+    dependencies:
+      next: 15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      tailwindcss: 4.1.12
 
   node-domexception@1.0.0: {}
 

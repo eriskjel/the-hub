@@ -1,31 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { backendBase } from "@/server/proxy/utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type BackendCtx = { params: Promise<{ path: string[] }> };
 
+function buildApiUrl(base: string, pathParts: string[], search: string): string {
+    const clean = (pathParts ?? []).join("/");
+    const apiPath = clean.startsWith("api/") ? clean : `api/${clean}`;
+    const url = new URL(apiPath, base.endsWith("/") ? base : `${base}/`);
+    url.search = search;
+    return url.toString();
+}
+
 async function proxy(req: NextRequest, ctx: BackendCtx) {
-    const backend = process.env.BACKEND_URL;
-    if (!backend) {
-        return NextResponse.json(
-            { error: "Server misconfiguration: BACKEND_URL is not set." },
-            { status: 500 }
-        );
+    let base: string;
+    try {
+        base = backendBase();
+    } catch {
+        return NextResponse.json({ error: "config_missing" }, { status: 500 });
     }
 
     const { path } = await ctx.params;
-    const clean = (path ?? []).join("/").replace(/^\/+/, "");
-    const apiPath = clean.startsWith("api/") ? clean : `api/${clean}`;
+    const url = buildApiUrl(base, path ?? [], req.nextUrl.search);
 
-    const base = backend.endsWith("/") ? backend : backend + "/";
-    const url = new URL(base);
-    url.pathname = url.pathname.replace(/\/+$/, "") + "/" + apiPath.replace(/^\/+/, "");
-    url.search = req.nextUrl.search;
-
-    // Cookies is sync in route handlers
+    // Try cookie first (cheap), then Supabase session as fallback
     const jar = await cookies();
     let token = jar.get("sb-access-token")?.value ?? jar.get("access_token")?.value ?? null;
 
@@ -39,11 +41,9 @@ async function proxy(req: NextRequest, ctx: BackendCtx) {
 
     const headers = new Headers();
     if (token) headers.set("authorization", `Bearer ${token}`);
-
     const ct = req.headers.get("content-type");
     if (ct) headers.set("content-type", ct);
     headers.set("accept", req.headers.get("accept") ?? "application/json");
-
     for (const h of ["x-forwarded-for", "x-forwarded-proto", "x-real-ip"]) {
         const v = req.headers.get(h);
         if (v) headers.set(h, v);
@@ -54,7 +54,7 @@ async function proxy(req: NextRequest, ctx: BackendCtx) {
             ? undefined
             : Buffer.from(await req.arrayBuffer());
 
-    const upstream = await fetch(url.toString(), {
+    const upstream = await fetch(url, {
         method: req.method,
         headers,
         body,
@@ -62,13 +62,21 @@ async function proxy(req: NextRequest, ctx: BackendCtx) {
         cache: "no-store",
     });
 
+    const status = upstream.status;
     const respHeaders = new Headers(upstream.headers);
+
+    // 204/304 MUST NOT have a body; drop content-type for safety
+    if (status === 204 || status === 304) {
+        respHeaders.delete("content-type");
+        return new NextResponse(null, { status, headers: respHeaders });
+    }
+
     if (!respHeaders.get("content-type")) {
         respHeaders.set("content-type", "application/json");
     }
 
     return new NextResponse(upstream.body, {
-        status: upstream.status,
+        status,
         headers: respHeaders,
     });
 }
