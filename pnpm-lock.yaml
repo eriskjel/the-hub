@@ -58,6 +58,9 @@ importers:
       next-intl:
         specifier: ^4.3.4
         version: 4.3.5(next@15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.9.2)
+      nextjs-reusable-table:
+        specifier: ^4.0.7
+        version: 4.0.7(next@15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.12)
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -2788,6 +2791,14 @@ packages:
         optional: true
       sass:
         optional: true
+
+  nextjs-reusable-table@4.0.7:
+    resolution: {integrity: sha512-Sg8CCQSgPhzCYUUDj6pTK8JQuuDXHB4lvjg2wRlpRVRYPj3Jf65ynLf2wTfnZtGgHdg1dh5e1k6+Xc0z5EqZhA==}
+    peerDependencies:
+      next: '>=12'
+      react: '>=16'
+      react-dom: '>=16'
+      tailwindcss: '>=2.0.0'
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -6542,6 +6553,13 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+
+  nextjs-reusable-table@4.0.7(next@15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.12):
+    dependencies:
+      next: 15.4.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      tailwindcss: 4.1.12
 
   node-domexception@1.0.0: {}
 
