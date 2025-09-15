@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-    authHeaders,
-    backendUrl,
-    bearerToken,
-    passthroughText,
-    withTimeout,
-} from "@/server/proxy/utils";
+import { authHeaders, backendUrl, bearerToken, passthroughText, withTimeout, } from "@/server/proxy/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
     const instanceId = req.nextUrl.searchParams.get("instanceId");
     if (!instanceId) {
-        return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+        return NextResponse.json({ error: "missing_instance_id" }, { status: 400 });
     }
 
     try {
