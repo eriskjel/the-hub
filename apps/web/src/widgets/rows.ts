@@ -31,7 +31,7 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
         const o = (row.settings ?? {}) as Partial<GroceryDealsSettings>;
         const settings: GroceryDealsSettings = {
             query: typeof o.query === "string" ? o.query : "",
-            maxResults: typeof o.maxResults === "number" ? o.maxResults : 12,
+            maxResults: typeof o.maxResults === "number" ? o.maxResults : undefined,
             city: typeof o.city === "string" ? o.city : undefined,
             lat: typeof o.lat === "number" ? o.lat : undefined,
             lon: typeof o.lon === "number" ? o.lon : undefined,

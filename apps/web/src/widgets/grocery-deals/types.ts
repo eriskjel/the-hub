@@ -1,6 +1,6 @@
 import type { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
-import { grocerySettingsSchema } from "@/widgets/create/registry";
+import { groceryCreateSettingsSchema, groceryEditSettingsSchema } from "@/widgets/create/registry";
 
 export type Deal = {
     name: string;
@@ -24,9 +24,13 @@ export type Deal = {
     multipack?: boolean;
 };
 
+type GrocerySettingsUnion =
+    | z.infer<typeof groceryCreateSettingsSchema>
+    | z.infer<typeof groceryEditSettingsSchema>;
+
 export type GroceryForm = UseFormReturn<{
     kind: "grocery-deals";
-    settings: z.infer<typeof grocerySettingsSchema>;
+    settings: GrocerySettingsUnion;
 }>;
 
 export type GroceryErrors = {

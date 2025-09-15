@@ -20,7 +20,7 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
         Object.keys(creationRegistry)[0] as CreationKind
     );
 
-    const { form, active } = useCreateWidgetForm(kind, t);
+    const { form, active } = useCreateWidgetForm(kind, t, "create");
     const Settings = active.SettingsForm;
 
     const setFieldErr = (name: AllowedErrorPaths, code: string) =>

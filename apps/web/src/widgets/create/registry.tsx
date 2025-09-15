@@ -11,31 +11,42 @@ export const serverPingsSettingsSchema = z.object({
     target: z.string().url("Must be a valid URL"),
 });
 
-export const grocerySettingsSchema = z.object({
+const grocerySettingsBase = z.object({
     query: z.string().trim().min(1, "Please enter a search term").optional(),
-    maxResults: z.coerce.number().int().min(1).max(20).default(10),
     city: z.string().optional(),
     lat: z.number().optional(),
     lon: z.number().optional(),
 });
 
-export const buildGrocerySettingsSchema = (t: (key: string) => string) =>
-    grocerySettingsSchema.superRefine((val, ctx) => {
-        const hasCoords =
-            typeof val.lat === "number" &&
-            Number.isFinite(val.lat) &&
-            typeof val.lon === "number" &&
-            Number.isFinite(val.lon);
-        const hasCity = !!val.city?.trim();
+export const groceryCreateSettingsSchema = grocerySettingsBase;
 
-        if (!hasCoords && !hasCity) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["city"],
-                message: t("groceryDeals.location.required"),
-            });
+export const groceryEditSettingsSchema = grocerySettingsBase.extend({
+    maxResults: z.coerce.number().int().min(1).max(20).default(10),
+});
+
+export const groceryUnionSettingsSchema = z.union([
+    groceryCreateSettingsSchema,
+    groceryEditSettingsSchema,
+]);
+
+export const buildGrocerySettingsSchema = (t: (key: string) => string, mode: "create" | "edit") =>
+    (mode === "edit" ? groceryEditSettingsSchema : groceryCreateSettingsSchema).superRefine(
+        (val, ctx) => {
+            const hasCoords =
+                typeof val.lat === "number" &&
+                Number.isFinite(val.lat) &&
+                typeof val.lon === "number" &&
+                Number.isFinite(val.lon);
+            const hasCity = !!val.city?.trim();
+            if (!hasCoords && !hasCity) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["city"],
+                    message: t("groceryDeals.location.required"),
+                });
+            }
         }
-    });
+    );
 
 const countdownFixed = z.object({
     source: z.literal("fixed-date"),
@@ -106,8 +117,8 @@ function defaultsFromSchema<S extends z.ZodTypeAny>(
 export const creationRegistry = {
     "grocery-deals": createEntry({
         kind: "grocery-deals",
-        schema: grocerySettingsSchema,
-        defaults: defaultsFromSchema(grocerySettingsSchema),
+        schema: groceryUnionSettingsSchema,
+        defaults: groceryCreateSettingsSchema.parse({}),
         SettingsForm: GroceryDealsSettings,
     }),
     "server-pings": createEntry({
