@@ -251,14 +251,22 @@
         }
     },
     "admin": {
-        "sections": {
-            "manage": "Manage",
-            "system": "System"
-        },
-        "items": {
-            "users": "Users",
-            "widgets": "Widgets",
-            "settings": "Settings"
+        "sections": { "manage": "Manage", "system": "System" },
+        "items": { "users": "Users", "widgets": "Widgets", "settings": "Settings" },
+        "users": {
+            "title": "Users",
+            "columns": {
+                "id": "ID",
+                "name": "Name",
+                "email": "Email",
+                "role": "Role",
+                "actions": "Actions"
+            },
+            "actions": {
+                "edit": "Edit",
+                "delete": "Delete"
+            },
+            "empty": "No users found."
         }
     }
 }

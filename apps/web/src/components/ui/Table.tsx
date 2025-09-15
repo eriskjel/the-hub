@@ -1,69 +1,112 @@
-// components/ui/table.tsx
-import * as React from "react";
+"use client";
+
+import { TableComponent as LibTable } from "nextjs-reusable-table";
+import type { ReactNode } from "react";
+import "nextjs-reusable-table/dist/index.css";
 import { cn } from "@/utils/cn";
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-    ({ className, ...props }, ref) => (
-        <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
-    )
-);
-Table.displayName = "Table";
+/** Mirrors the README prop surface and matches the lib's types */
+export type LibTableProps<T> = {
+    columns: string[];
+    data: T[];
+    props: (keyof T)[];
 
-const TableHeader = React.forwardRef<
-    HTMLTableSectionElement,
-    React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
-));
-TableHeader.displayName = "TableHeader";
+    // Core features
+    actions?: boolean;
+    actionTexts?: string[];
+    actionFunctions?: Array<(item: T) => void>;
+    loading?: boolean;
+    searchValue?: string;
 
-const TableBody = React.forwardRef<
-    HTMLTableSectionElement,
-    React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-    <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
-));
-TableBody.displayName = "TableBody";
+    // Row behavior
+    rowOnClick?: (item: T) => void;
 
-const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
-    ({ className, ...props }, ref) => (
-        <tr
-            ref={ref}
-            className={cn(
-                "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
-                className
-            )}
-            {...props}
+    // Pagination
+    enablePagination?: boolean;
+    page?: number;
+    setPage?: (page: number) => void;
+    itemsPerPage?: number;
+    totalPages?: number;
+
+    // Sorting
+    sortableProps?: (keyof T)[];
+    onSort?: (prop: keyof T) => void;
+
+    formatValue?: (value: string, prop: string, item: T) => ReactNode;
+    formatHeader?: (header: string, prop: string, index: number) => ReactNode;
+
+    // Appearance
+    enableDarkMode?: boolean;
+    disableDefaultStyles?: boolean;
+    customClassNames?: {
+        table?: string;
+        thead?: string;
+        tbody?: string;
+        th?: string;
+        tr?: string;
+        td?: string;
+        pagination?: {
+            container?: string;
+            button?: string;
+            buttonDisabled?: string;
+            pageInfo?: string;
+        };
+    };
+
+    // Empty state
+    noContentProps?: {
+        text?: string;
+        icon?: ReactNode | null;
+    };
+
+    // Custom rows
+    renderRow?: (item: T) => ReactNode;
+};
+
+export type DataTableProps<T> = Omit<LibTableProps<T>, "enableDarkMode" | "customClassNames"> & {
+    density?: "compact" | "comfy";
+    className?: string;
+    classes?: NonNullable<LibTableProps<T>["customClassNames"]>;
+};
+
+export function DataTable<T>({
+    density = "comfy",
+    className,
+    classes,
+    ...rest
+}: DataTableProps<T>): ReactNode {
+    const base = "text-sm w-full table-fixed";
+    const densityCls = density === "compact" ? "[&_*]:py-2 [&_*]:px-3" : "[&_*]:py-3 [&_*]:px-4";
+
+    return (
+        <LibTable
+            {...(rest as LibTableProps<T>)}
+            enableDarkMode={false}
+            customClassNames={{
+                table: cn(base, densityCls, className, classes?.table),
+                thead: cn("bg-gray-50 text-gray-600", classes?.thead),
+                tbody: cn("", classes?.tbody),
+                th: cn("font-medium text-left align-middle", classes?.th),
+                tr: cn("", classes?.tr),
+                td: cn("align-middle overflow-hidden text-ellipsis", classes?.td), // 👈 base ellipsis
+                pagination: {
+                    container: cn(
+                        "flex items-center justify-between p-4",
+                        classes?.pagination?.container
+                    ),
+                    button: cn(
+                        "rounded px-3 py-1 bg-gray-200 disabled:opacity-50",
+                        classes?.pagination?.button
+                    ),
+                    buttonDisabled: cn(
+                        "bg-gray-200 opacity-50",
+                        classes?.pagination?.buttonDisabled
+                    ),
+                    pageInfo: cn("text-sm opacity-70", classes?.pagination?.pageInfo),
+                },
+            }}
         />
-    )
-);
-TableRow.displayName = "TableRow";
+    );
+}
 
-const TableHead = React.forwardRef<
-    HTMLTableCellElement,
-    React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-    <th
-        ref={ref}
-        className={cn(
-            "text-muted-foreground h-10 px-2 text-left align-middle font-medium",
-            className
-        )}
-        {...props}
-    />
-));
-TableHead.displayName = "TableHead";
-
-const TableCell = React.forwardRef<
-    HTMLTableCellElement,
-    React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-    <td
-        ref={ref}
-        className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0", className)}
-        {...props}
-    />
-));
-TableCell.displayName = "TableCell";
-
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell };
+export default DataTable;

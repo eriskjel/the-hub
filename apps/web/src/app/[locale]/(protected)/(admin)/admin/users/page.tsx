@@ -1,11 +1,30 @@
-// app/[locale]/admin/users/page.tsx
-import UsersTable from "@/components/users/UsersTable";
+import UsersTable from "@/components/admin/UsersTable";
+import type { ProfileWithAuth } from "@/types/users";
 
-const users = [
-    { id: 1, name: "Ola Nordmann", email: "ola@norge.no" },
-    { id: 2, name: "Kari Nordmann", email: "kari@norge.no" },
-    { id: 3, name: "Per Hansen", email: "per@norge.no" },
-    { id: 4, name: "Lise Johansen", email: "lise@norge.no" },
+const users: ProfileWithAuth[] = [
+    {
+        id: "f5a135e8-c32f-4f0d-ae25-eb6cbaf0f455",
+        username: "eriskjel",
+        full_name: "Erik Skjellevik",
+        avatar_url: "https://avatars.githubusercontent.com/u/98759397?v=4",
+        age: null,
+        gender: null,
+        created_at: "2025-08-20T09:48:56.910Z",
+        updated_at: "2025-09-15T10:31:57.460Z",
+        auth: {
+            id: "f5a135e8-c32f-4f0d-ae25-eb6cbaf0f455",
+            email: "erik.skjellevik@lyse.net",
+            role: "authenticated",
+            last_sign_in_at: "2025-09-15T10:31:57.457Z",
+            raw_app_meta_data: {
+                role: "user",
+                roles: ["admin"],
+                provider: "github",
+                providers: ["github"],
+            },
+            raw_user_meta_data: { preferred_username: "eriskjel" },
+        },
+    },
 ];
 
 export default function UsersPage() {
