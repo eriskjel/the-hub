@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
     Table,
     TableHeader,
@@ -8,24 +8,18 @@ import {
     TableRow,
     TableHead,
     TableCell,
-} from "@/components/ui/Table"
-import { IconButton } from "@/components/ui/IconButton"
-import { Edit, Trash2 } from "lucide-react"
+} from "@/components/ui/Table";
+import { IconButton } from "@/components/ui/IconButton";
+import { Edit, Trash2 } from "lucide-react";
 
-type User = { id: number; name: string; email: string }
+type User = { id: number; name: string; email: string };
 
-export default function UsersTable({
-                                       users,
-                                       pageSize = 5,
-                                   }: {
-    users: User[]
-    pageSize?: number
-}) {
-    const [page, setPage] = useState(1)
+export default function UsersTable({ users, pageSize = 5 }: { users: User[]; pageSize?: number }) {
+    const [page, setPage] = useState(1);
 
-    const totalPages = Math.ceil(users.length / pageSize)
-    const startIndex = (page - 1) * pageSize
-    const currentUsers = users.slice(startIndex, startIndex + pageSize)
+    const totalPages = Math.ceil(users.length / pageSize);
+    const startIndex = (page - 1) * pageSize;
+    const currentUsers = users.slice(startIndex, startIndex + pageSize);
 
     return (
         <div className="space-y-4">
@@ -46,7 +40,7 @@ export default function UsersTable({
                             <TableCell>{user.id}</TableCell>
                             <TableCell>{user.name}</TableCell>
                             <TableCell>{user.email}</TableCell>
-                            <TableCell className="text-right space-x-2">
+                            <TableCell className="space-x-2 text-right">
                                 <IconButton>
                                     <Edit className="h-4 w-4" />
                                 </IconButton>
@@ -61,9 +55,9 @@ export default function UsersTable({
 
             {/* Pagination */}
             <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
-          Side {page} av {totalPages}
-        </span>
+                <span className="text-muted-foreground text-sm">
+                    Side {page} av {totalPages}
+                </span>
                 <div className="space-x-2">
                     <IconButton
                         onClick={() => setPage((p) => Math.max(p - 1, 1))}
@@ -82,5 +76,5 @@ export default function UsersTable({
                 </div>
             </div>
         </div>
-    )
+    );
 }
