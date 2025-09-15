@@ -64,7 +64,7 @@ function NavItems({ isLoggedIn, isAdmin, t }: NavAuthProps): ReactElement {
                 {isAdmin && (
                     <li>
                         <Link href="/admin" className="hover:text-gray-300">
-                            {t("header.admin") ?? "Admin"}
+                            {t("header.admin")}
                         </Link>
                     </li>
                 )}
