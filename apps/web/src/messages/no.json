@@ -251,8 +251,15 @@
         }
     },
     "admin": {
-        "sections": { "manage": "Administrer", "system": "System" },
-        "items": { "users": "Brukere", "widgets": "Widgeter", "settings": "Innstillinger" },
+        "sections": {
+            "manage": "Administrer",
+            "system": "System"
+        },
+        "items": {
+            "users": "Brukere",
+            "widgets": "Widgeter",
+            "settings": "Innstillinger"
+        },
         "users": {
             "title": "Brukere",
             "columns": {
@@ -267,10 +274,19 @@
                 "delete": "Slett"
             },
             "empty": "Ingen brukere funnet.",
-            "roles": { "admin": "Admin", "user": "Bruker", "unknown": "Ukjent" },
+            "roles": {
+                "admin": "Admin",
+                "user": "Bruker",
+                "unknown": "Ukjent"
+            },
             "pagination": {
-                "items_per_page": "Resultater per side",
-                "total_users": "Totalt antall brukere"
+                "items_per_page": "Antall per side",
+                "total_users_count": "{count, plural, one {# bruker} other {# brukere}}",
+                "page_of": "Side {page} av {total}",
+                "prev": "Forrige",
+                "next": "Neste",
+                "first": "Første",
+                "last": "Siste"
             }
         }
     }

@@ -251,8 +251,15 @@
         }
     },
     "admin": {
-        "sections": { "manage": "Manage", "system": "System" },
-        "items": { "users": "Users", "widgets": "Widgets", "settings": "Settings" },
+        "sections": {
+            "manage": "Manage",
+            "system": "System"
+        },
+        "items": {
+            "users": "Users",
+            "widgets": "Widgets",
+            "settings": "Settings"
+        },
         "users": {
             "title": "Users",
             "columns": {
@@ -267,10 +274,19 @@
                 "delete": "Delete"
             },
             "empty": "No users found.",
-            "roles": { "admin": "Admin", "user": "User", "unknown": "Unknown" },
+            "roles": {
+                "admin": "Admin",
+                "user": "User",
+                "unknown": "Unknown"
+            },
             "pagination": {
                 "items_per_page": "Items per page",
-                "total_users": "Total users"
+                "total_users_count": "{count, plural, one {# user} other {# users}}",
+                "page_of": "Page {page} of {total}",
+                "prev": "Previous",
+                "next": "Next",
+                "first": "First",
+                "last": "Last"
             }
         }
     }

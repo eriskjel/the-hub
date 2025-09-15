@@ -8,12 +8,7 @@ import type { ProfileWithAuth } from "@/types/users";
 import { RoleBadge } from "@/components/admin/RoleBadge";
 import type { RoleKey } from "@/lib/auth/role";
 
-type Row = {
-    id: string;
-    name: string;
-    email: string;
-    roleKey: RoleKey;
-};
+type Row = { id: string; name: string; email: string; roleKey: RoleKey };
 
 export default function UsersTable({
     users,
@@ -23,9 +18,8 @@ export default function UsersTable({
     pageSize?: number;
 }): ReactElement {
     const t = useTranslations("admin.users");
-
     const [page, setPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(pageSize);
+    const [itemsPerPage, setItemsPerPage] = useState(pageSize ?? 10);
 
     const columns = useMemo(
         () => [
@@ -52,37 +46,76 @@ export default function UsersTable({
     const customClassNames = {
         table: "w-full bg-white text-gray-900",
         tbody: "divide-y divide-gray-200",
-
         thead: "border-b border-gray-300",
         th: "px-6 py-4 text-left text-sm font-semibold text-gray-700",
-
-        // keep cells transparent so row bg shows through
         td: "px-6 py-4 text-left text-sm text-gray-900 !bg-transparent",
+        tr: "group odd:bg-white even:bg-gray-50 hover:!bg-slate-100 transition-colors cursor-pointer",
+        pagination: {
+            container: "flex items-center justify-between mt-4 gap-3",
+            button: "px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-50 border",
+            buttonDisabled: "opacity-50 cursor-not-allowed",
+            pageInfo: "text-sm text-gray-700",
+        },
+    };
 
-        // zebra striping + hover override
-        tr: "group odd:!bg-white even:!bg-gray-50 hover:!bg-slate-100 transition-colors cursor-pointer",
+    // Footer: page info (left) + prev/next (right)
+    const renderPagination = (p: {
+        page: number;
+        setPage: (page: number) => void;
+        totalPages?: number;
+        calculatedTotalPages: number;
+        itemsPerPage: number;
+    }) => {
+        const total = p.totalPages ?? p.calculatedTotalPages;
+        return (
+            <div className="flex w-full items-center justify-between">
+                <div className="text-sm text-gray-700">
+                    {t("pagination.page_of", { page: p.page, total })}
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => p.setPage(p.page - 1)}
+                        disabled={p.page === 1}
+                        className="rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        {t("pagination.prev")}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => p.setPage(p.page + 1)}
+                        disabled={p.page >= total}
+                        className="rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        {t("pagination.next")}
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     return (
         <div className="space-y-4 [&_thead_tr]:!bg-gray-200">
+            {/* Top bar: Total users (left) | Items per page (right) */}
             <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                    {t("pagination.total_users", { default: "Total:" })} {users.length}
+                    {t("pagination.total_users_count", { count: users.length })}
                 </div>
+
                 <div className="flex items-center gap-2">
                     <label htmlFor="per-page" className="text-sm text-gray-600">
-                        {t("pagination.items_per_page", { default: "Items per page:" })}
+                        {t("pagination.items_per_page")}
                     </label>
                     <select
                         id="per-page"
                         value={itemsPerPage}
                         onChange={(e) => {
                             setItemsPerPage(Number(e.target.value));
-                            setPage(1); // reset when page size changes
+                            setPage(1);
                         }}
-                        className="rounded border border-gray-300 p-1"
+                        className="rounded border border-gray-300 px-2 py-1 text-sm"
                     >
-                        {[5, 10, 20, 25, 50].map((n) => (
+                        {[1, 10, 20, 25, 50].map((n) => (
                             <option key={n} value={n}>
                                 {n}
                             </option>
@@ -103,6 +136,7 @@ export default function UsersTable({
                 page={page}
                 setPage={setPage}
                 itemsPerPage={itemsPerPage}
+                renderPagination={renderPagination}
                 renderRow={(row: Row) => (
                     <>
                         <td className="px-6 py-4 text-left text-sm">{row.id}</td>
