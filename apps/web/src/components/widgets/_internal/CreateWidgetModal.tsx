@@ -55,12 +55,11 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
 
                             // Defensive: only attempt i18n when `code` looks like a key
                             const keyish = /^[a-z0-9._-]+$/i.test(code) ? code : "generic";
+                            const errorKey = `errors.${keyish}` as const;
 
                             form.setError("root", {
                                 type: "server",
-                                message: t(`errors.${keyish}`, {
-                                    defaultMessage: t("errors.generic"),
-                                }),
+                                message: t.has(errorKey) ? t(errorKey) : t("errors.generic"),
                             });
                         },
                     })
