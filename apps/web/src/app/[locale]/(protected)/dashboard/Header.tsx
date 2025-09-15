@@ -1,6 +1,7 @@
 import { getCurrentUserAndProfile } from "@/lib/auth/getProfile.server";
 import { getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
+import { pickDisplayName } from "@/lib/auth/pickDisplayName";
 
 export async function Header({
     userPromise,
@@ -13,7 +14,7 @@ export async function Header({
         userPromise,
         getTranslations({ locale, namespace: "dashboard" }),
     ]);
-    const name = profile?.full_name ?? user?.email?.split("@")[0] ?? "User";
+    const name = pickDisplayName(profile, user);
 
     return (
         <div className="mx-auto max-w-6xl p-4">

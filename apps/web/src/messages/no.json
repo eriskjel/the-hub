@@ -2,7 +2,8 @@
     "header": {
         "home": "Hjem",
         "login": "Logg inn",
-        "logout": "Logg ut"
+        "logout": "Logg ut",
+        "admin": "Admin"
     },
     "login": {
         "title": "Vennligst logg inn",
@@ -246,6 +247,46 @@
                 },
                 "nextNotAnnounced": "Neste dato ikke annonsert.",
                 "nextNotAnnouncedWithDays": "Neste dato ikke annonsert. {days, plural, one {# dag} other {# dager}} siden forrige."
+            }
+        }
+    },
+    "admin": {
+        "sections": {
+            "manage": "Administrer",
+            "system": "System"
+        },
+        "items": {
+            "users": "Brukere",
+            "widgets": "Widgeter",
+            "settings": "Innstillinger"
+        },
+        "users": {
+            "title": "Brukere",
+            "columns": {
+                "id": "ID",
+                "name": "Navn",
+                "email": "E-post",
+                "role": "Rolle",
+                "actions": "Handlinger"
+            },
+            "actions": {
+                "edit": "Rediger",
+                "delete": "Slett"
+            },
+            "empty": "Ingen brukere funnet.",
+            "roles": {
+                "admin": "Admin",
+                "user": "Bruker",
+                "unknown": "Ukjent"
+            },
+            "pagination": {
+                "items_per_page": "Antall per side",
+                "total_users_count": "{count, plural, one {# bruker} other {# brukere}}",
+                "page_of": "Side {page} av {total}",
+                "prev": "Forrige",
+                "next": "Neste",
+                "first": "Første",
+                "last": "Siste"
             }
         }
     }
