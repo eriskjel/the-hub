@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authHeaders, backendUrl, bearerToken, passthroughText, withTimeout, } from "@/server/proxy/utils";
+import {
+    authHeaders,
+    backendUrl,
+    bearerToken,
+    passthroughText,
+    withTimeout,
+} from "@/server/proxy/utils";
 
 export const dynamic = "force-dynamic";
 
