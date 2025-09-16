@@ -287,6 +287,22 @@
                 "next": "Neste",
                 "first": "Første",
                 "last": "Siste"
+            },
+            "detail": {
+                "back": "Tilbake",
+                "edit": "Rediger bruker",
+                "cards": {
+                    "account": {
+                        "title": "Kontoinformasjon",
+                        "id": "Bruker-ID",
+                        "role": "Rolle",
+                        "created": "Opprettet",
+                        "last_login": "Siste innlogging"
+                    },
+                    "meta": {
+                        "title": "Metadata"
+                    }
+                }
             }
         }
     }

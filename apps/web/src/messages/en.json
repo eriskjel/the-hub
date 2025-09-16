@@ -287,6 +287,22 @@
                 "next": "Next",
                 "first": "First",
                 "last": "Last"
+            },
+            "detail": {
+                "back": "Back",
+                "edit": "Edit user",
+                "cards": {
+                    "account": {
+                        "title": "Account Information",
+                        "id": "User ID",
+                        "role": "Role",
+                        "created": "Created",
+                        "last_login": "Last login"
+                    },
+                    "meta": {
+                        "title": "Metadata"
+                    }
+                }
             }
         }
     }
