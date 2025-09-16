@@ -1,7 +1,7 @@
 {
   "name": "the-hub",
   "private": true,
-  "packageManager": "pnpm@10.14.0",
+  "packageManager": "pnpm@10.16.1+sha256.b77e92ba0d59a6372b6c5041bbb3f866fb85e927df333827f0c7f577c5e1a713",
   "scripts": {
     "dev": "pnpm -F web dev",
     "build": "pnpm -F web build",
