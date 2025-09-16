@@ -30,7 +30,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
                 </ul>
 
                 {/* Right-only: locale flag */}
-                <div className="absolute right-8 flex items-center">
+                <div className="absolute right-8 hidden items-center sm:flex">
                     <LocaleToggle />
                 </div>
             </nav>
@@ -45,52 +45,37 @@ type NavAuthProps = {
 };
 
 function NavItems({ isLoggedIn, isAdmin, t }: NavAuthProps): ReactElement {
-    const homeHref = isLoggedIn ? "/dashboard" : "/login";
+    type NavItem = { href: string; label: string } | { form: typeof logout; label: string };
+
+    const items: NavItem[] = [
+        { href: isLoggedIn ? "/dashboard" : "/login", label: t("header.home") },
+    ];
 
     if (isLoggedIn) {
-        return (
-            <>
-                <li>
-                    <Link href={homeHref} className="hover:text-gray-300">
-                        {t("header.home")}
-                    </Link>
-                </li>
-                <li>
-                    <Link href="/monster" className="hover:text-gray-300">
-                        {t("monster.pageTitle")}
-                    </Link>
-                </li>
-                {/* Only show if user is admin */}
-                {isAdmin && (
-                    <li>
-                        <Link href="/admin" className="hover:text-gray-300">
-                            {t("header.admin")}
-                        </Link>
-                    </li>
-                )}
-                <li>
-                    <form action={logout}>
-                        <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
-                            {t("header.logout")}
-                        </button>
-                    </form>
-                </li>
-            </>
-        );
+        items.push({ href: "/monster", label: t("monster.pageTitle") });
+        if (isAdmin) items.push({ href: "/admin", label: t("header.admin") });
+        items.push({ form: logout, label: t("header.logout") });
+    } else {
+        items.push({ href: "/login", label: t("header.login") });
     }
 
     return (
         <>
-            <li>
-                <Link href={homeHref} className="hover:text-gray-300">
-                    {t("header.home")}
-                </Link>
-            </li>
-            <li>
-                <Link href="/login" className="hover:text-gray-300">
-                    {t("header.login")}
-                </Link>
-            </li>
+            {items.map((item, i) =>
+                "form" in item ? (
+                    <li key={i}>
+                        <form action={item.form}>
+                            <button className="hover:text-gray-300">{item.label}</button>
+                        </form>
+                    </li>
+                ) : (
+                    <li key={i}>
+                        <Link href={item.href} className="hover:text-gray-300">
+                            {item.label}
+                        </Link>
+                    </li>
+                )
+            )}
         </>
     );
 }
