@@ -27,8 +27,7 @@ export async function getUserAdmin(userId: string): Promise<ProfileWithAuth | nu
     const effectiveRole: RoleKey = deriveEffectiveRole(rolesArr, appMeta.role ?? null);
 
     const createdAt = p?.created_at ?? u.created_at ?? new Date(0).toISOString();
-    const updatedAt =
-        p?.updated_at ?? u.last_sign_in_at ?? u.updated_at ?? createdAt;
+    const updatedAt = p?.updated_at ?? u.last_sign_in_at ?? u.updated_at ?? createdAt;
 
     const profile: Profile = {
         id: u.id,
