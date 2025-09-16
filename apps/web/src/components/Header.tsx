@@ -70,7 +70,7 @@ function AuthLinks({ isAdmin, t }: { isAdmin: boolean; t: (k: string) => string 
             )}
             <li>
                 <form action={logout}>
-                    <button className="hover:text-gray-300" aria-label="Log out">
+                    <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
                         {t("header.logout")}
                     </button>
                 </form>
@@ -83,7 +83,7 @@ function GuestLinks({ t }: { t: (k: string) => string }): ReactElement {
     return (
         <>
             <li>
-                <Link href="/dashboard" className="hover:text-gray-300">
+                <Link href="/login" className="hover:text-gray-300">
                     {t("header.home")}
                 </Link>
             </li>
