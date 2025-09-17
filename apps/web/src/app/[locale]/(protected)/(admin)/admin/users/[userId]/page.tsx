@@ -31,12 +31,14 @@ export default async function AdminUserDetailPage({
                 <div className="flex gap-2">
                     <Link
                         href="/admin/users"
+                        locale={locale}
                         className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
                     >
                         {t("back")}
                     </Link>
                     <Link
                         href={`/admin/users/${user.id}/edit`}
+                        locale={locale}
                         className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
                     >
                         {t("edit")}
