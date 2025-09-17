@@ -2,7 +2,7 @@
 
 import { TableComponent } from "nextjs-reusable-table";
 import "nextjs-reusable-table/dist/index.css";
-import React, { ReactElement, useMemo } from "react";
+import React, { ReactElement, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ProfileWithAuth } from "@/types/users";
 
@@ -27,7 +27,7 @@ export default function UsersTable({
     const t = useTranslations("admin.users");
     const router = useRouter();
     const { setParams } = useQueryNav();
-
+    const [isNavigating, setIsNavigating] = useState(false);
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     const columns = useMemo(
@@ -52,6 +52,10 @@ export default function UsersTable({
         [users]
     );
 
+    useEffect(() => {
+        setIsNavigating(false);
+    }, [users]);
+
     const classes = {
         table: "w-full bg-white text-gray-900",
         tbody: "divide-y divide-gray-200",
@@ -75,13 +79,16 @@ export default function UsersTable({
                 columns={columns}
                 data={data}
                 props={["id", "name", "email", "roleKey"] as const}
-                loading={false}
+                loading={isNavigating}
                 disableDefaultStyles={false}
                 enableDarkMode={false}
                 customClassNames={classes}
                 enablePagination
                 page={page}
-                setPage={(p) => setParams({ page: String(p) })}
+                setPage={(p) => {
+                    setIsNavigating(true);
+                    setParams({ page: String(p) });
+                }}
                 itemsPerPage={pageSize}
                 totalPages={totalPages}
                 renderPagination={(p) => (
