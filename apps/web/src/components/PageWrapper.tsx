@@ -21,13 +21,11 @@ export default function PageWrapper({
             ? "min-h-dvh" // full viewport; header overlays
             : "min-h-[calc(100dvh-4rem)]"; // subtract sticky header height (h-16)
 
-    const base = headerMode === "fixed" ? "mt-10" : "";
-
     return (
         <section className={`flex w-full flex-col ${minH} ${className}`}>
             <Header variant={headerVariant} mode={headerMode} />
             <div
-                className={`${base} ${
+                className={`${
                     headerMode === "fixed" ? "flex-1 pt-16" : "flex-1"
                 } ${contentClassName}`}
             >
