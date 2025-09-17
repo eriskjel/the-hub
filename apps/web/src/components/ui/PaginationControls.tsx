@@ -29,15 +29,16 @@ export function PaginationControls({
                     type="button"
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1}
-                    className="cursor-pointer rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 enabled:cursor-pointer disabled:cursor-default disabled:opacity-50"
                 >
                     {prevLabel}
                 </button>
+
                 <button
                     type="button"
                     onClick={() => setPage(page + 1)}
                     disabled={page >= totalPages}
-                    className="cursor-pointer rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 enabled:cursor-pointer disabled:cursor-default disabled:opacity-50"
                 >
                     {nextLabel}
                 </button>
