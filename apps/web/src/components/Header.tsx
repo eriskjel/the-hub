@@ -30,7 +30,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
                 </ul>
 
                 {/* Right-only: locale flag */}
-                <div className="absolute right-8 hidden items-center sm:flex">
+                <div className="absolute right-8 flex items-center">
                     <LocaleToggle />
                 </div>
             </nav>

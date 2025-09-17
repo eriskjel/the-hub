@@ -14,7 +14,7 @@ export default async function AdminUserDetailPage({
     const { locale, userId } = await params;
     await requireAdmin(locale);
 
-    const t = await getTranslations("admin.users.detail");
+    const t = await getTranslations({ locale, namespace: "admin.users.detail" });
 
     const user = await getUserAdmin(userId);
     if (!user) return notFound();

@@ -72,9 +72,9 @@ export default function Sidebar({
             role="navigation"
             aria-label="Sidebar"
             style={{ width: SIDEBAR_WIDTH }}
-            className="not-prose border-border/60 relative z-20 flex h-full flex-col overflow-hidden border-r bg-[var(--sidebar-bg,theme(colors.gray.50))] text-[var(--sidebar-fg,theme(colors.gray.900))]"
+            className="not-prose border-border/60 relative z-20 flex h-full flex-col border-r bg-[var(--sidebar-bg,theme(colors.gray.50))] text-[var(--sidebar-fg,theme(colors.gray.900))]"
         >
-            <div className="px-2 pt-10 pb-2">
+            <div className="flex-1 overflow-y-auto px-2 pt-10 pb-2">
                 {[...map.entries()].map(([section, list]) => (
                     <div key={section ?? "_root"} className="mb-2">
                         {section && (

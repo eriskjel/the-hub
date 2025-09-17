@@ -67,7 +67,7 @@ export default function UsersTable({
                 data={data}
                 props={["id", "name", "email", "roleKey"] as const}
                 loading={isNavigating}
-                disableDefaultStyles={true}
+                disableDefaultStyles={false}
                 enableDarkMode={false}
                 customClassNames={classes}
                 enablePagination
