@@ -31,9 +31,8 @@ export default function LocaleToggle() {
 
         checkScreenSize();
         window.addEventListener("resize", checkScreenSize);
-
         return () => window.removeEventListener("resize", checkScreenSize);
-    }, [debouncedCheck]);
+    }, [debouncedCheck]); // safe dependency now
 
     if (!isMounted || !showOnDesktop) return null;
 
