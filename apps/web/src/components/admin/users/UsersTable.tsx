@@ -54,7 +54,7 @@ export default function UsersTable({
 
     useEffect(() => {
         setIsNavigating(false);
-    }, [users, page, total]);
+    }, [users]);
 
     const classes = {
         table: "w-full bg-white text-gray-900",
