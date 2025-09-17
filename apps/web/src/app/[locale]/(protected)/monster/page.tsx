@@ -56,7 +56,7 @@ export default function MonsterPage() {
     };
 
     return (
-        <div className="flex h-full flex-col items-center justify-center gap-6 text-center">
+        <div className="mt-8 flex h-full flex-col items-center justify-center gap-6 text-center">
             <h1 className="text-5xl font-bold">{t("title")}</h1>
 
             <div className="flex gap-4">

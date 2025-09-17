@@ -15,7 +15,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
     if (user) redirect(`/${locale}/dashboard`);
 
     return (
-        <div className="w-full max-w-md">
+        <div className="mt-12 w-full max-w-md">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
                 <AuthForm />
             </div>

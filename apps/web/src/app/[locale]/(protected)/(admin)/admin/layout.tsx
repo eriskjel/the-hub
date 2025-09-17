@@ -20,11 +20,11 @@ export default async function AdminLayout({
     return (
         <PageWrapper
             headerVariant="solid"
-            headerMode="sticky"
+            headerMode="fixed"
             className="bg-gray-50 text-gray-900"
-            contentClassName="max-w-none p-0"
+            contentClassName="max-w-none p-0 flex flex-1"
         >
-            <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
                 <AdminSidebarClient />
                 <main className="min-w-0 flex-1 overflow-auto p-4">{children}</main>
             </div>

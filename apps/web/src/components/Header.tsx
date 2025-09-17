@@ -45,44 +45,45 @@ type NavAuthProps = {
 };
 
 function NavItems({ isLoggedIn, isAdmin, t }: NavAuthProps): ReactElement {
-    const homeHref = isLoggedIn ? "/dashboard" : "/login";
+    return isLoggedIn ? <AuthLinks isAdmin={isAdmin} t={t} /> : <GuestLinks t={t} />;
+}
 
-    if (isLoggedIn) {
-        return (
-            <>
-                <li>
-                    <Link href={homeHref} className="hover:text-gray-300">
-                        {t("header.home")}
-                    </Link>
-                </li>
-                <li>
-                    <Link href="/monster" className="hover:text-gray-300">
-                        {t("monster.pageTitle")}
-                    </Link>
-                </li>
-                {/* Only show if user is admin */}
-                {isAdmin && (
-                    <li>
-                        <Link href="/admin" className="hover:text-gray-300">
-                            {t("header.admin")}
-                        </Link>
-                    </li>
-                )}
-                <li>
-                    <form action={logout}>
-                        <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
-                            {t("header.logout")}
-                        </button>
-                    </form>
-                </li>
-            </>
-        );
-    }
-
+function AuthLinks({ isAdmin, t }: { isAdmin: boolean; t: (k: string) => string }): ReactElement {
     return (
         <>
             <li>
-                <Link href={homeHref} className="hover:text-gray-300">
+                <Link href="/dashboard" className="hover:text-gray-300">
+                    {t("header.home")}
+                </Link>
+            </li>
+            <li>
+                <Link href="/monster" className="hover:text-gray-300">
+                    {t("monster.pageTitle")}
+                </Link>
+            </li>
+            {isAdmin && (
+                <li>
+                    <Link href="/admin" className="hover:text-gray-300">
+                        {t("header.admin")}
+                    </Link>
+                </li>
+            )}
+            <li>
+                <form action={logout}>
+                    <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
+                        {t("header.logout")}
+                    </button>
+                </form>
+            </li>
+        </>
+    );
+}
+
+function GuestLinks({ t }: { t: (k: string) => string }): ReactElement {
+    return (
+        <>
+            <li>
+                <Link href="/login" className="hover:text-gray-300">
                     {t("header.home")}
                 </Link>
             </li>
