@@ -5,6 +5,9 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTypedLocale } from "@/i18n/useTypedLocale";
 import { type Locale, NEXT_LOCALE } from "@/i18n/routing";
+import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+
+const SM_BREAKPOINT = 640;
 
 export default function LocaleToggle() {
     const [isMounted, setIsMounted] = useState(false);
@@ -12,30 +15,31 @@ export default function LocaleToggle() {
 
     const locale = useTypedLocale();
     const next: Locale = NEXT_LOCALE[locale];
-
     const pathname = usePathname();
     const qs = useSearchParams().toString();
-    const href = `${pathname || "/"}${qs ? `?${qs}` : ""}`;
 
-    const label = next === "en" ? "Switch to English" : "Bytt til norsk";
-    const flagClass = next === "en" ? "fi fi-gb" : "fi fi-no";
+    const debouncedCheck = useDebouncedCallback(50);
 
     useEffect(() => {
         setIsMounted(true);
 
         const checkScreenSize = () => {
-            setShowOnDesktop(window.innerWidth >= 640);
+            debouncedCheck(() => {
+                setShowOnDesktop(window.innerWidth >= SM_BREAKPOINT);
+            });
         };
 
         checkScreenSize();
         window.addEventListener("resize", checkScreenSize);
 
         return () => window.removeEventListener("resize", checkScreenSize);
-    }, []);
+    }, [debouncedCheck]);
 
-    if (!isMounted || !showOnDesktop) {
-        return null;
-    }
+    if (!isMounted || !showOnDesktop) return null;
+
+    const href = `${pathname || "/"}${qs ? `?${qs}` : ""}`;
+    const label = next === "en" ? "Switch to English" : "Bytt til norsk";
+    const flagClass = next === "en" ? "fi fi-gb" : "fi fi-no";
 
     return (
         <Link
