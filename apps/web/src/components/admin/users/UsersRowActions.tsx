@@ -1,12 +1,10 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 export default function UsersRowActions({ id }: { id: string }) {
     const t = useTranslations("admin.users.actions");
-    const router = useRouter();
     const [open, setOpen] = React.useState(false);
     const btnRef = React.useRef<HTMLButtonElement | null>(null);
 
@@ -50,25 +48,14 @@ export default function UsersRowActions({ id }: { id: string }) {
                     <button
                         role="menuitem"
                         className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                        onClick={() => router.push(`/admin/users/${id}`)}
-                    >
-                        {t("view")}
-                    </button>
-                    <button
-                        role="menuitem"
-                        className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                        onClick={() => router.push(`/admin/users/${id}/edit`)}
                     >
                         {t("edit")}
                     </button>
                     <button
                         role="menuitem"
                         className="block w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                        onClick={() => {
-                            /* open confirm modal / call action */
-                        }}
                     >
-                        {t("disable")}
+                        {t("delete")}
                     </button>
                 </div>
             )}
