@@ -1,37 +1,45 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { ReactElement } from "react";
 
 type Props = {
     page: number;
     setPage: (page: number) => void;
     totalPages: number;
+    label?: (page: number, totalPages: number) => string;
+    prevLabel: string;
+    nextLabel: string;
 };
 
-export function UsersPagination({ page, setPage, totalPages }: Props) {
-    const t = useTranslations("admin.users");
-
+export function PaginationControls({
+    page,
+    setPage,
+    totalPages,
+    label,
+    prevLabel,
+    nextLabel,
+}: Props): ReactElement {
     return (
         <div className="flex w-full items-center justify-between">
             <div className="text-sm text-gray-700">
-                {t("pagination.page_of", { page, total: totalPages })}
+                {label ? label(page, totalPages) : `Page ${page} of ${totalPages}`}
             </div>
             <div className="flex items-center gap-2">
                 <button
                     type="button"
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1}
-                    className="rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="cursor-pointer rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
-                    {t("pagination.prev")}
+                    {prevLabel}
                 </button>
                 <button
                     type="button"
                     onClick={() => setPage(page + 1)}
                     disabled={page >= totalPages}
-                    className="rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="cursor-pointer rounded-md border bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
-                    {t("pagination.next")}
+                    {nextLabel}
                 </button>
             </div>
         </div>

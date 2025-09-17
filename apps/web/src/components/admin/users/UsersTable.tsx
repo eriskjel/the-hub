@@ -7,11 +7,11 @@ import { useTranslations } from "next-intl";
 import type { ProfileWithAuth } from "@/types/users";
 
 import { pickDisplayName } from "@/lib/auth/pickDisplayName";
-import { UsersPagination } from "@/components/admin/users/Pagination";
+import { PaginationControls } from "@/components/ui/PaginationControls";
 import { useRouter } from "@/i18n/navigation";
 import { useQueryNav } from "@/hooks/useQueryNav";
 import UsersRowCells, { UsersRow } from "@/components/admin/users/UsersRowCells";
-import UsersTopBar from "@/components/admin/users/UsersTopBar";
+import TableTopBar from "@/components/ui/TableTopBar";
 
 export default function UsersTable({
     users,
@@ -28,29 +28,11 @@ export default function UsersTable({
     const router = useRouter();
     const { setParams } = useQueryNav();
     const [isNavigating, setIsNavigating] = useState(false);
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const totalPages: number = Math.max(1, Math.ceil(total / pageSize));
 
-    const columns = useMemo(
-        () => [
-            t("columns.id"),
-            t("columns.name"),
-            t("columns.email"),
-            t("columns.role"),
-            t("columns.actions"),
-        ],
-        [t]
-    );
+    const columns: string[] = useMemo(() => getUserTableColumns(t), [t]);
 
-    const data: UsersRow[] = useMemo(
-        () =>
-            users.map((u) => ({
-                id: u.id,
-                name: pickDisplayName(u),
-                email: u.auth.email,
-                roleKey: u.auth.effective_role,
-            })),
-        [users]
-    );
+    const data: UsersRow[] = useMemo(() => mapUsersToRows(users), [users]);
 
     useEffect(() => {
         setIsNavigating(false);
@@ -73,14 +55,19 @@ export default function UsersTable({
 
     return (
         <div className="space-y-4 [&_thead_tr]:!bg-gray-200">
-            <UsersTopBar total={total} pageSize={pageSize} />
-
+            <TableTopBar
+                total={total}
+                pageSize={pageSize}
+                totalLabel={(n) => t("pagination.total_users_count", { count: n })}
+                perPageLabel={t("pagination.items_per_page")}
+                onChangePerPage={(n) => setParams({ per: String(n), page: "1" })}
+            />
             <TableComponent<UsersRow>
                 columns={columns}
                 data={data}
                 props={["id", "name", "email", "roleKey"] as const}
                 loading={isNavigating}
-                disableDefaultStyles={false}
+                disableDefaultStyles={true}
                 enableDarkMode={false}
                 customClassNames={classes}
                 enablePagination
@@ -92,11 +79,37 @@ export default function UsersTable({
                 itemsPerPage={pageSize}
                 totalPages={totalPages}
                 renderPagination={(p) => (
-                    <UsersPagination page={p.page} setPage={p.setPage} totalPages={totalPages} />
+                    <PaginationControls
+                        page={p.page}
+                        setPage={p.setPage}
+                        totalPages={totalPages}
+                        label={(page, total) => t("pagination.page_of", { page, total })}
+                        prevLabel={t("pagination.prev")}
+                        nextLabel={t("pagination.next")}
+                    />
                 )}
                 rowOnClick={(row) => router.push(`/admin/users/${row.id}`)}
                 renderRow={(row) => <UsersRowCells {...row} />}
             />
         </div>
     );
+}
+
+function getUserTableColumns(t: ReturnType<typeof useTranslations>): string[] {
+    return [
+        t("columns.id"),
+        t("columns.name"),
+        t("columns.email"),
+        t("columns.role"),
+        t("columns.actions"),
+    ];
+}
+
+function mapUsersToRows(users: ProfileWithAuth[]): UsersRow[] {
+    return users.map((user: ProfileWithAuth) => ({
+        id: user.id,
+        name: pickDisplayName(user),
+        email: user.auth.email,
+        roleKey: user.auth.effective_role,
+    }));
 }
