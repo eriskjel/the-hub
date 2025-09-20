@@ -146,7 +146,8 @@ function maskLegendaryMonsters(monsters: Monster[]): Monster[] {
 function createWeightedStrip(monsters: Monster[], includeLegendary = true): Monster[] {
     const byRarity = monsters.reduce(
         (acc, monster) => {
-            (acc[monster.rarity] ||= []).push(monster);
+            acc[monster.rarity] = acc[monster.rarity] || [];
+            acc[monster.rarity].push(monster);
             return acc;
         },
         {} as Record<Monster["rarity"], Monster[]>
