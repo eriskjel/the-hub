@@ -31,7 +31,7 @@ const monsters: Monster[] = [
     { name: "Peachy Keen", image: "/monsters/peachy_keen.png", rarity: "pink" },
     { name: "Valentino Rossi", image: "/monsters/vr46.png", rarity: "pink" },
     { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "pink" },
-    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
+    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "pink" },
 
     // Red rarity (0.64%)
     {
