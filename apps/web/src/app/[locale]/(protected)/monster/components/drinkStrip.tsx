@@ -1,14 +1,14 @@
-import { MonsterCard } from "./monsterCard";
-import { Monster } from "../types";
+import { DrinkCard } from "./drinkCard";
+import { DrinkVariant } from "../types";
 import { SPIN_TIMING_FUNCTION } from "@/app/[locale]/(protected)/monster/constants";
 
-export type MonsterStripProps = {
-    monsters: Monster[];
+export type DrinkStripProps = {
+    drinks: DrinkVariant[];
     offset: number;
     duration: number;
 };
 
-export function MonsterStrip({ monsters, offset, duration }: MonsterStripProps) {
+export function DrinkStrip({ drinks, offset, duration }: DrinkStripProps) {
     return (
         <div
             className="flex transition-transform"
@@ -18,8 +18,8 @@ export function MonsterStrip({ monsters, offset, duration }: MonsterStripProps) 
                 transitionTimingFunction: SPIN_TIMING_FUNCTION,
             }}
         >
-            {monsters.map((monster, idx) => (
-                <MonsterCard key={`${monster.name}-${idx}`} monster={monster} />
+            {drinks.map((drink: DrinkVariant, idx) => (
+                <DrinkCard key={`${drink.name}-${drink.image}-${idx}`} drink={drink} />
             ))}
         </div>
     );

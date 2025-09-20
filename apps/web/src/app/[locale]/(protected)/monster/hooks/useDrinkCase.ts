@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Monster } from "../types";
+import { DrinkVariant } from "../types";
 import {
     ANIMATION_DURATION,
     CONTAINER_WIDTH,
@@ -15,7 +15,7 @@ const RARITY_PROBABILITIES = Object.freeze({
     yellow: 0.26,
 });
 
-const LEGENDARY_PLACEHOLDER_IMAGE = "/monsters/gold.png";
+const LEGENDARY_PLACEHOLDER_IMAGE = "/drinks/gold.png";
 const SPINNER_STRIP_BASE_SIZE = 200;
 
 export function validateRarityWeightsDev() {
@@ -26,48 +26,40 @@ export function validateRarityWeightsDev() {
     }
 }
 
-export function useMonsterCase(monsters: Monster[]) {
+export function useDrinkCase(drinks: DrinkVariant[]) {
     if (process.env.NODE_ENV === "development") validateRarityWeightsDev();
-    const [selected, setSelected] = useState<Monster | null>(null);
+    const [selected, setSelected] = useState<DrinkVariant | null>(null);
     const [rolling, setRolling] = useState(false);
     const [offset, setOffset] = useState(0);
     const [animate, setAnimate] = useState(true);
-    const [stripMonsters, setStripMonsters] = useState<Monster[]>(() =>
-        maskLegendaryMonsters(monsters.filter((monster) => monster.rarity !== "yellow"))
+    const [stripDrinks, setStripDrinks] = useState<DrinkVariant[]>(() =>
+        maskLegendary(drinks.filter((d) => d.rarity !== "yellow"))
     );
 
     useEffect(() => {
-        setStripMonsters(maskLegendaryMonsters(createWeightedStrip(monsters, false)));
-    }, [monsters]);
+        setStripDrinks(maskLegendary(createWeightedStrip(drinks, false)));
+    }, [drinks]);
 
     const handleOpen = () => {
         if (rolling) return;
 
-        const weightedChoice = getWeightedRandomMonster(monsters);
-        const includeLegendary = weightedChoice.rarity === "yellow";
+        const weightedChoice = getWeightedRandom(drinks);
+        const spinStrip = createVisualStrip(drinks, weightedChoice, 40); // ~40 items
 
-        let spinStrip = createWeightedStrip(monsters, includeLegendary);
-        let matchingIndexes = findMatchingIndexes(spinStrip, weightedChoice);
-
-        if (!matchingIndexes.length) {
-            spinStrip = [...spinStrip, weightedChoice];
-            matchingIndexes = [spinStrip.length - 1];
-        }
-
-        setStripMonsters(maskLegendaryMonsters(spinStrip));
+        setStripDrinks(maskLegendary(spinStrip));
 
         setAnimate(true);
         setRolling(true);
         setOffset(0);
 
-        const chosenIndex = matchingIndexes[Math.floor(Math.random() * matchingIndexes.length)];
         setSelected(weightedChoice);
+
+        const chosenIndex = spinStrip.findIndex((d) => d.name === weightedChoice.name);
 
         const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
         const finalOffset =
             (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
 
-        // Double rAF ensures the transform resets before animating to the final offset
         requestAnimationFrame(() => {
             requestAnimationFrame(() => setOffset(finalOffset));
         });
@@ -76,7 +68,6 @@ export function useMonsterCase(monsters: Monster[]) {
     };
 
     const reset = () => {
-        // Disable animation to snap back to 0 cleanly before the next spin
         setAnimate(false);
         setOffset(0);
         setSelected(null);
@@ -95,7 +86,7 @@ export function useMonsterCase(monsters: Monster[]) {
         reset,
         duration: ANIMATION_DURATION,
         animate,
-        stripMonsters,
+        stripMonsters: stripDrinks,
     };
 }
 
@@ -108,7 +99,7 @@ function shuffle<T>(arr: T[]): T[] {
     return a;
 }
 
-function getWeightedRandomMonster(monsters: Monster[]): Monster {
+function getWeightedRandom(drinks: DrinkVariant[]): DrinkVariant {
     const r = Math.random() * 100;
     let acc = 0;
     let picked: keyof typeof RARITY_PROBABILITIES = "blue";
@@ -121,40 +112,31 @@ function getWeightedRandomMonster(monsters: Monster[]): Monster {
         }
     }
 
-    const pool = monsters.filter((m) => m.rarity === picked);
+    const pool = drinks.filter((d) => d.rarity === picked);
     if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
 
-    const commons = monsters.filter((m) => m.rarity === "blue");
+    const commons = drinks.filter((d) => d.rarity === "blue");
     if (commons.length) return commons[Math.floor(Math.random() * commons.length)];
-    return monsters[Math.floor(Math.random() * monsters.length)];
+    return drinks[Math.floor(Math.random() * drinks.length)];
 }
 
-function findMatchingIndexes(strip: Monster[], target: Monster): number[] {
-    const indexes: number[] = [];
-    for (let i = 0; i < strip.length; i++) {
-        if (strip[i].name === target.name) indexes.push(i);
-    }
-    return indexes;
-}
-
-function maskLegendaryMonsters(monsters: Monster[]): Monster[] {
-    return monsters.map((monster) =>
-        monster.rarity === "yellow" ? { ...monster, image: LEGENDARY_PLACEHOLDER_IMAGE } : monster
+function maskLegendary(drinks: DrinkVariant[]): DrinkVariant[] {
+    return drinks.map((d) =>
+        d.rarity === "yellow" ? { ...d, image: LEGENDARY_PLACEHOLDER_IMAGE } : d
     );
 }
 
-function createWeightedStrip(monsters: Monster[], includeLegendary = true): Monster[] {
-    const byRarity = monsters.reduce(
-        (acc, monster) => {
-            acc[monster.rarity] = acc[monster.rarity] || [];
-            acc[monster.rarity].push(monster);
+function createWeightedStrip(drinks: DrinkVariant[], includeLegendary = true): DrinkVariant[] {
+    const byRarity = drinks.reduce(
+        (acc, d) => {
+            (acc[d.rarity] ||= []).push(d);
             return acc;
         },
-        {} as Record<Monster["rarity"], Monster[]>
+        {} as Record<DrinkVariant["rarity"], DrinkVariant[]>
     );
 
-    const weighted: Monster[] = [];
-    (Object.keys(RARITY_PROBABILITIES) as Array<Monster["rarity"]>).forEach((rarity) => {
+    const weighted: DrinkVariant[] = [];
+    (Object.keys(RARITY_PROBABILITIES) as Array<DrinkVariant["rarity"]>).forEach((rarity) => {
         if (!includeLegendary && rarity === "yellow") return;
 
         const pool = byRarity[rarity];
@@ -178,6 +160,54 @@ function createWeightedStrip(monsters: Monster[], includeLegendary = true): Mons
         }
     });
 
-    if (weighted.length === 0) return shuffle(monsters);
+    if (weighted.length === 0) return shuffle(drinks);
     return shuffle(weighted);
+}
+
+function createVisualStrip(
+    drinks: DrinkVariant[],
+    chosen: DrinkVariant,
+    rounds: number = 30
+): DrinkVariant[] {
+    const commons = drinks.filter((d) => d.rarity === "blue");
+    const mids = drinks.filter((d) => ["purple", "pink"].includes(d.rarity));
+    const rares = drinks.filter((d) => d.rarity === "red");
+    const legendaries = drinks.filter((d) => d.rarity === "yellow");
+
+    const strip: DrinkVariant[] = [];
+
+    for (let i = 0; i < rounds; i++) {
+        let pool: DrinkVariant[] = commons;
+
+        const roll = Math.random() * 100;
+        if (roll < 70 && commons.length) pool = commons;
+        else if (roll < 90 && mids.length) pool = mids;
+        else if (roll < 98 && rares.length) pool = rares;
+        else if (legendaries.length && chosen.rarity === "yellow") pool = legendaries;
+
+        let candidate: DrinkVariant | null = null;
+        let attempts = 0;
+
+        // retry until we don't get the same as the last one (max 5 tries)
+        do {
+            candidate = randomPick(pool);
+            attempts++;
+        } while (
+            strip.length > 0 &&
+            candidate.name === strip[strip.length - 1].name &&
+            attempts < 5
+        );
+
+        strip.push(candidate!);
+    }
+
+    // inject chosen near the end
+    const insertPos = Math.floor(strip.length * 0.8);
+    strip[insertPos] = chosen;
+
+    return strip;
+}
+
+function randomPick<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
 }
