@@ -33,52 +33,54 @@ export function useMonsterCase(monsters: Monster[]) {
     const [offset, setOffset] = useState(0);
     const [animate, setAnimate] = useState(true);
     const [stripMonsters, setStripMonsters] = useState<Monster[]>(() =>
-        maskLegendaryMonsters(monsters)
+        maskLegendaryMonsters(monsters.filter((monster) => monster.rarity !== "yellow"))
     );
 
     useEffect(() => {
-        setStripMonsters(maskLegendaryMonsters(createWeightedStrip(monsters)));
+        setStripMonsters(maskLegendaryMonsters(createWeightedStrip(monsters, false)));
     }, [monsters]);
 
     const handleOpen = () => {
         if (rolling) return;
 
-        const spinStrip = createWeightedStrip(monsters);
+        const weightedChoice = getWeightedRandomMonster(monsters);
+        const includeLegendary = weightedChoice.rarity === "yellow";
+
+        let spinStrip = createWeightedStrip(monsters, includeLegendary);
+        let matchingIndexes = findMatchingIndexes(spinStrip, weightedChoice);
+
+        if (!matchingIndexes.length) {
+            spinStrip = [...spinStrip, weightedChoice];
+            matchingIndexes = [spinStrip.length - 1];
+        }
+
         setStripMonsters(maskLegendaryMonsters(spinStrip));
 
         setAnimate(true);
         setRolling(true);
         setOffset(0);
 
-        const weightedChoice = getWeightedRandomMonster(monsters);
-        const matchingIndexes = findMatchingIndexes(spinStrip, weightedChoice);
-        const chosenIndex = matchingIndexes.length
-            ? matchingIndexes[Math.floor(Math.random() * matchingIndexes.length)]
-            : Math.floor(Math.random() * spinStrip.length);
-
-        setSelected(spinStrip[chosenIndex]);
+        const chosenIndex = matchingIndexes[Math.floor(Math.random() * matchingIndexes.length)];
+        setSelected(weightedChoice);
 
         const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
-        const finalOffset =
-            (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
+        const finalOffset = (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
 
-        // Double rAF ensures the browser applies the initial transform(0) before animating to final
+        // Double rAF ensures the transform resets before animating to the final offset
         requestAnimationFrame(() => {
             requestAnimationFrame(() => setOffset(finalOffset));
         });
 
-        // When animation is done, release the UI
         setTimeout(() => setRolling(false), ANIMATION_DURATION);
     };
 
     const reset = () => {
-        // Disable animation to snap back to 0 cleanly
+        // Disable animation to snap back to 0 cleanly before the next spin
         setAnimate(false);
         setOffset(0);
         setSelected(null);
         setRolling(false);
 
-        // Re-enable animation for the next spin
         requestAnimationFrame(() => {
             requestAnimationFrame(() => setAnimate(true));
         });
@@ -106,7 +108,6 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function getWeightedRandomMonster(monsters: Monster[]): Monster {
-    // Pick a rarity by cumulative probability on [0,100)
     const r = Math.random() * 100;
     let acc = 0;
     let picked: keyof typeof RARITY_PROBABILITIES = "blue";
@@ -122,7 +123,6 @@ function getWeightedRandomMonster(monsters: Monster[]): Monster {
     const pool = monsters.filter((m) => m.rarity === picked);
     if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
 
-    // Fallbacks if the strip somehow lacks that rarity
     const commons = monsters.filter((m) => m.rarity === "blue");
     if (commons.length) return commons[Math.floor(Math.random() * commons.length)];
     return monsters[Math.floor(Math.random() * monsters.length)];
@@ -138,21 +138,22 @@ function findMatchingIndexes(strip: Monster[], target: Monster): number[] {
 
 function maskLegendaryMonsters(monsters: Monster[]): Monster[] {
     return monsters.map((monster) =>
-        monster.rarity === "yellow" ? { ...monster, image: LEGENDARY_PLACEHOLDER_IMAGE } : monster
+        monster.rarity === "yellow"
+            ? { ...monster, image: LEGENDARY_PLACEHOLDER_IMAGE }
+            : monster
     );
 }
 
-function createWeightedStrip(monsters: Monster[]): Monster[] {
-    const byRarity = monsters.reduce(
-        (acc, monster) => {
-            (acc[monster.rarity] ||= []).push(monster);
-            return acc;
-        },
-        {} as Record<Monster["rarity"], Monster[]>
-    );
+function createWeightedStrip(monsters: Monster[], includeLegendary = true): Monster[] {
+    const byRarity = monsters.reduce((acc, monster) => {
+        (acc[monster.rarity] ||= []).push(monster);
+        return acc;
+    }, {} as Record<Monster["rarity"], Monster[]>);
 
     const weighted: Monster[] = [];
     (Object.keys(RARITY_PROBABILITIES) as Array<Monster["rarity"]>).forEach((rarity) => {
+        if (!includeLegendary && rarity === "yellow") return;
+
         const pool = byRarity[rarity];
         if (!pool || pool.length === 0) return;
 
