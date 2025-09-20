@@ -64,7 +64,8 @@ export function useMonsterCase(monsters: Monster[]) {
         setSelected(weightedChoice);
 
         const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
-        const finalOffset = (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
+        const finalOffset =
+            (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
 
         // Double rAF ensures the transform resets before animating to the final offset
         requestAnimationFrame(() => {
@@ -138,17 +139,18 @@ function findMatchingIndexes(strip: Monster[], target: Monster): number[] {
 
 function maskLegendaryMonsters(monsters: Monster[]): Monster[] {
     return monsters.map((monster) =>
-        monster.rarity === "yellow"
-            ? { ...monster, image: LEGENDARY_PLACEHOLDER_IMAGE }
-            : monster
+        monster.rarity === "yellow" ? { ...monster, image: LEGENDARY_PLACEHOLDER_IMAGE } : monster
     );
 }
 
 function createWeightedStrip(monsters: Monster[], includeLegendary = true): Monster[] {
-    const byRarity = monsters.reduce((acc, monster) => {
-        (acc[monster.rarity] ||= []).push(monster);
-        return acc;
-    }, {} as Record<Monster["rarity"], Monster[]>);
+    const byRarity = monsters.reduce(
+        (acc, monster) => {
+            (acc[monster.rarity] ||= []).push(monster);
+            return acc;
+        },
+        {} as Record<Monster["rarity"], Monster[]>
+    );
 
     const weighted: Monster[] = [];
     (Object.keys(RARITY_PROBABILITIES) as Array<Monster["rarity"]>).forEach((rarity) => {
