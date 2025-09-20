@@ -1,88 +1,79 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Monster } from "./types";
-import { useMonsterCase } from "./hooks/useMonsterCase";
 import { Roller } from "./components/roller";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { SPIN_ROUNDS } from "@/app/[locale]/(protected)/monster/constants";
 import clsx from "clsx";
 import { RARITY_BORDERS } from "@/app/[locale]/(protected)/monster/rarityStyles";
+import { CaseKey, CASES } from "@/app/[locale]/(protected)/monster/cases";
+import { useDrinkCase } from "@/app/[locale]/(protected)/monster/hooks/useDrinkCase";
 
-const monsters: Monster[] = [
-    // Blue rarity (79.92% - most common)
-    { name: "Original", image: "/monsters/original.png", rarity: "blue" },
-    { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "blue" },
-    { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png", rarity: "blue" },
-    { name: "Original Zero", image: "/monsters/original_zero.png", rarity: "blue" },
-    { name: "Rio Punch", image: "/monsters/rio_punch.png", rarity: "blue" },
-    { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png", rarity: "blue" },
-    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png", rarity: "blue" },
-
-    // Purple rarity (15.98%)
-    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
-
-    // Pink rarity (3.2%)
-    { name: "Peachy Keen", image: "/monsters/peachy_keen.png", rarity: "pink" },
-
-    // Red rarity (0.64%)
-    {
-        name: "Ultra Strawberry Dreams",
-        image: "/monsters/ultra_strawberry_dreams.png",
-        rarity: "red",
-    },
-
-    // Yellow rarity (0.26% - legendary)
-    { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
-];
-
-export default function MonsterPage() {
-    const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
-        useMonsterCase(monsters);
-
+export default function DrinkCasePage() {
     const t = useTranslations("monster");
 
-    const repeatedMonsters = useMemo(
+    // for now, pick with state — later from route or dropdown
+    const [selectedCaseKey, setSelectedCaseKey] = useState<CaseKey>("monster");
+    const currentCase = CASES[selectedCaseKey];
+
+    const { selected, rolling, offset, handleOpen, reset, duration, animate, stripMonsters } =
+        useDrinkCase(currentCase.variants);
+
+    const repeated = useMemo(
         () => Array.from({ length: SPIN_ROUNDS + 2 }, () => stripMonsters).flat(),
         [stripMonsters]
     );
 
     const handleOpenAnother = () => {
         reset();
-        setTimeout(() => {
-            handleOpen();
-        }, 120);
+        setTimeout(handleOpen, 120);
     };
 
     return (
         <div className="mt-8 flex h-full flex-col items-center justify-center gap-6 text-center">
-            <h1 className="text-5xl font-bold">{t("title")}</h1>
+            <h1 className="text-5xl font-bold">{currentCase.label}</h1>
 
+            {/* selector for cases */}
             <div className="flex gap-4">
-                <div className="flex gap-4 text-white">
-                    {!selected || rolling ? (
-                        <button
-                            className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
-                            onClick={handleOpen}
-                            disabled={rolling}
-                        >
-                            {rolling ? t("rolling") : t("button_text")}
-                        </button>
-                    ) : (
-                        <button
-                            className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700"
-                            onClick={handleOpenAnother}
-                        >
-                            {t("button_text")}
-                        </button>
-                    )}
-                </div>
+                {Object.values(CASES).map((c) => (
+                    <button
+                        key={c.id}
+                        className={`rounded px-4 py-2 ${
+                            selectedCaseKey === c.id
+                                ? "bg-green-600 text-white"
+                                : "bg-gray-700 text-gray-200"
+                        }`}
+                        onClick={() => setSelectedCaseKey(c.id as CaseKey)}
+                    >
+                        {c.label}
+                    </button>
+                ))}
             </div>
 
-            <Roller monsters={repeatedMonsters} offset={offset} duration={animate ? duration : 0} />
+            {/* spin button */}
+            <div className="flex gap-4 text-white">
+                {!selected || rolling ? (
+                    <button
+                        className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700 disabled:opacity-50"
+                        onClick={handleOpen}
+                        disabled={rolling}
+                    >
+                        {rolling ? t("rolling") : t("button_text")}
+                    </button>
+                ) : (
+                    <button
+                        className="rounded bg-green-600 px-6 py-3 text-xl font-semibold transition hover:bg-green-700"
+                        onClick={handleOpenAnother}
+                    >
+                        {t("button_text")}
+                    </button>
+                )}
+            </div>
 
-            {/* Preload the selected image during the spin to avoid pop-in */}
+            <Roller drinks={repeated} offset={offset} duration={animate ? duration : 0} />
+
+            {/* preload + result */}
             {selected && rolling && (
                 <Image
                     src={selected.image}
@@ -91,11 +82,9 @@ export default function MonsterPage() {
                     height={128}
                     priority
                     className="hidden"
-                    aria-hidden={true}
                 />
             )}
 
-            {/* Reserve space responsively so it fits on all devices */}
             <div className="mt-4 min-h-[clamp(160px,28vh,260px)]">
                 {!rolling && selected && (
                     <div
@@ -111,7 +100,6 @@ export default function MonsterPage() {
                             width={128}
                             height={128}
                             loading="eager"
-                            sizes="(max-width: 640px) 24vw, 128px"
                         />
                         <div className="mb-2 text-2xl font-bold sm:text-3xl">{selected.name}</div>
                     </div>
