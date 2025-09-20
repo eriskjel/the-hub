@@ -188,17 +188,20 @@ function createVisualStrip(
         let candidate: DrinkVariant | null = null;
         let attempts = 0;
 
-        // retry until we don't get the same as the last one (max 5 tries)
-        do {
-            candidate = randomPick(pool);
-            attempts++;
-        } while (
-            strip.length > 0 &&
-            candidate.name === strip[strip.length - 1].name &&
-            attempts < 5
-        );
+        if (pool.length > 0) {
+            do {
+                candidate = randomPick(pool);
+                attempts++;
+            } while (
+                strip.length > 0 &&
+                candidate.name === strip[strip.length - 1].name &&
+                attempts < 5
+            );
+        }
 
-        strip.push(candidate!);
+        if (candidate) {
+            strip.push(candidate);
+        }
     }
 
     // inject chosen near the end
