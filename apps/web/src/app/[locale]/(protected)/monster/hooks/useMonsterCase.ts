@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Monster } from "../types";
 import {
     ANIMATION_DURATION,
@@ -15,6 +15,9 @@ const RARITY_PROBABILITIES = Object.freeze({
     yellow: 0.26,
 });
 
+const LEGENDARY_PLACEHOLDER_IMAGE = "/monsters/gold.png";
+const SPINNER_STRIP_BASE_SIZE = 200;
+
 export function validateRarityWeightsDev() {
     if (process.env.NODE_ENV !== "development") return;
     const total = Object.values(RARITY_PROBABILITIES).reduce((a, b) => a + b, 0);
@@ -29,27 +32,35 @@ export function useMonsterCase(monsters: Monster[]) {
     const [rolling, setRolling] = useState(false);
     const [offset, setOffset] = useState(0);
     const [animate, setAnimate] = useState(true);
-    const [stripMonsters, setStripMonsters] = useState<Monster[]>(monsters);
+    const [stripMonsters, setStripMonsters] = useState<Monster[]>(() =>
+        maskLegendaryMonsters(monsters)
+    );
+
+    useEffect(() => {
+        setStripMonsters(maskLegendaryMonsters(createWeightedStrip(monsters)));
+    }, [monsters]);
 
     const handleOpen = () => {
         if (rolling) return;
 
-        const shuffled = shuffle(monsters);
-        setStripMonsters(shuffled);
+        const spinStrip = createWeightedStrip(monsters);
+        setStripMonsters(maskLegendaryMonsters(spinStrip));
 
         setAnimate(true);
         setRolling(true);
         setOffset(0);
 
-        const weightedChoice = getWeightedRandomMonster(shuffled);
-        const tempChosenIndex = shuffled.findIndex((m) => m.name === weightedChoice.name);
-        const chosenIndex = validateChosenIndex(tempChosenIndex, shuffled);
+        const weightedChoice = getWeightedRandomMonster(monsters);
+        const matchingIndexes = findMatchingIndexes(spinStrip, weightedChoice);
+        const chosenIndex = matchingIndexes.length
+            ? matchingIndexes[Math.floor(Math.random() * matchingIndexes.length)]
+            : Math.floor(Math.random() * spinStrip.length);
 
-        setSelected(shuffled[chosenIndex]);
+        setSelected(spinStrip[chosenIndex]);
 
         const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
         const finalOffset =
-            (shuffled.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
+            (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
 
         // Double rAF ensures the browser applies the initial transform(0) before animating to final
         requestAnimationFrame(() => {
@@ -117,6 +128,52 @@ function getWeightedRandomMonster(monsters: Monster[]): Monster {
     return monsters[Math.floor(Math.random() * monsters.length)];
 }
 
-function validateChosenIndex(chosenIndex: number, monsters: Monster[]): number {
-    return chosenIndex >= 0 ? chosenIndex : Math.floor(Math.random() * monsters.length);
+function findMatchingIndexes(strip: Monster[], target: Monster): number[] {
+    const indexes: number[] = [];
+    for (let i = 0; i < strip.length; i++) {
+        if (strip[i].name === target.name) indexes.push(i);
+    }
+    return indexes;
+}
+
+function maskLegendaryMonsters(monsters: Monster[]): Monster[] {
+    return monsters.map((monster) =>
+        monster.rarity === "yellow" ? { ...monster, image: LEGENDARY_PLACEHOLDER_IMAGE } : monster
+    );
+}
+
+function createWeightedStrip(monsters: Monster[]): Monster[] {
+    const byRarity = monsters.reduce(
+        (acc, monster) => {
+            (acc[monster.rarity] ||= []).push(monster);
+            return acc;
+        },
+        {} as Record<Monster["rarity"], Monster[]>
+    );
+
+    const weighted: Monster[] = [];
+    (Object.keys(RARITY_PROBABILITIES) as Array<Monster["rarity"]>).forEach((rarity) => {
+        const pool = byRarity[rarity];
+        if (!pool || pool.length === 0) return;
+
+        const allocation = Math.max(
+            pool.length,
+            Math.round((RARITY_PROBABILITIES[rarity] / 100) * SPINNER_STRIP_BASE_SIZE)
+        );
+
+        let rotation = shuffle(pool);
+        let rotationIndex = 0;
+
+        for (let i = 0; i < allocation; i++) {
+            if (rotationIndex >= rotation.length) {
+                rotation = shuffle(pool);
+                rotationIndex = 0;
+            }
+            weighted.push(rotation[rotationIndex]);
+            rotationIndex++;
+        }
+    });
+
+    if (weighted.length === 0) return shuffle(monsters);
+    return shuffle(weighted);
 }

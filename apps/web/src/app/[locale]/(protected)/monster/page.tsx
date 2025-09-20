@@ -13,18 +13,25 @@ import { RARITY_BORDERS } from "@/app/[locale]/(protected)/monster/rarityStyles"
 const monsters: Monster[] = [
     // Blue rarity (79.92% - most common)
     { name: "Original", image: "/monsters/original.png", rarity: "blue" },
-    { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "blue" },
+
     { name: "Aussie Lemonade", image: "/monsters/aussie_lemonade.png", rarity: "blue" },
     { name: "Original Zero", image: "/monsters/original_zero.png", rarity: "blue" },
     { name: "Rio Punch", image: "/monsters/rio_punch.png", rarity: "blue" },
     { name: "Ultra Paradise", image: "/monsters/ultra_paradise.png", rarity: "blue" },
-    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png", rarity: "blue" },
+    { name: "Bad Apple", image: "/monsters/bad_apple.png", rarity: "blue" },
+    { name: "Ultra Black", image: "/monsters/ultra_black.png", rarity: "blue" },
 
     // Purple rarity (15.98%)
-    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
+    { name: "Ultra Gold", image: "/monsters/ultra_gold.png", rarity: "purple" },
+    { name: "Full Throttle", image: "/monsters/full_throttle.png", rarity: "purple" },
+    { name: "Ultra Watermelon", image: "/monsters/ultra_watermelon.png", rarity: "purple" },
+    { name: "Ultra Rosa", image: "/monsters/ultra_rosa.png", rarity: "purple" },
 
     // Pink rarity (3.2%)
     { name: "Peachy Keen", image: "/monsters/peachy_keen.png", rarity: "pink" },
+    { name: "Valentino Rossi", image: "/monsters/vr46.png", rarity: "pink" },
+    { name: "Ultra White", image: "/monsters/ultra_white.png", rarity: "pink" },
+    { name: "Ultra Fiesta Mango", image: "/monsters/ultra_fiesta_mango.png", rarity: "purple" },
 
     // Red rarity (0.64%)
     {
@@ -32,9 +39,11 @@ const monsters: Monster[] = [
         image: "/monsters/ultra_strawberry_dreams.png",
         rarity: "red",
     },
+    { name: "Lando Norris", image: "/monsters/lando_norris.png", rarity: "red" },
 
     // Yellow rarity (0.26% - legendary)
     { name: "Mango Loco", image: "/monsters/mango_loco.png", rarity: "yellow" },
+    { name: "Burn", image: "/monsters/burn.png", rarity: "yellow" },
 ];
 
 export default function MonsterPage() {
