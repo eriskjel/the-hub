@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Roller } from "./components/roller";
+import { Roller } from "./components/Roller";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { SPIN_ROUNDS } from "@/app/[locale]/(protected)/monster/constants";
@@ -9,6 +9,7 @@ import clsx from "clsx";
 import { RARITY_BORDERS } from "@/app/[locale]/(protected)/monster/rarityStyles";
 import { CaseKey, CASES } from "@/app/[locale]/(protected)/monster/cases";
 import { useDrinkCase } from "@/app/[locale]/(protected)/monster/hooks/useDrinkCase";
+import { DrinkImagePreloader } from "@/app/[locale]/(protected)/monster/components/DrinkImagePreloader";
 
 export default function DrinkCasePage() {
     const t = useTranslations("monster");
@@ -30,8 +31,15 @@ export default function DrinkCasePage() {
         setTimeout(handleOpen, 120);
     };
 
+    const handleCaseSwitch = (key: CaseKey) => {
+        if (rolling) return;
+        setSelectedCaseKey(key);
+        reset();
+    };
+
     return (
         <div className="mt-8 flex h-full flex-col items-center justify-center gap-6 text-center">
+            <DrinkImagePreloader />
             <h1 className="text-5xl font-bold">{currentCase.label}</h1>
 
             {/* selector for cases */}
@@ -44,7 +52,7 @@ export default function DrinkCasePage() {
                                 ? "bg-green-600 text-white"
                                 : "bg-gray-700 text-gray-200"
                         }`}
-                        onClick={() => setSelectedCaseKey(c.id as CaseKey)}
+                        onClick={() => handleCaseSwitch(c.id as CaseKey)}
                     >
                         {c.label}
                     </button>

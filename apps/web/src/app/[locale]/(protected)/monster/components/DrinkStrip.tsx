@@ -1,4 +1,4 @@
-import { DrinkCard } from "./drinkCard";
+import { DrinkCard } from "./DrinkCard";
 import { DrinkVariant } from "../types";
 import { SPIN_TIMING_FUNCTION } from "@/app/[locale]/(protected)/monster/constants";
 
