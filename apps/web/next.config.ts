@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
     async headers() {
         return [
             {
-                source: "/drinks/:path*", // applies to your /public/drinks/* images
+                source: "/drinks/:path*", // matches /drinks/* (served from /public/drinks/*)
                 headers: [
                     {
                         key: "Cache-Control",

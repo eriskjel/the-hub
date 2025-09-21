@@ -38,8 +38,12 @@ export function useDrinkCase(drinks: DrinkVariant[]) {
     const [spinSound, setSpinSound] = useState<HTMLAudioElement | null>(null);
 
     useEffect(() => {
-        // only runs on client
-        setSpinSound(new Audio("/sounds/cs.m4a"));
+        const audio = new Audio("/sounds/cs.m4a");
+        audio.addEventListener("error", () => {
+            console.warn("Failed to load audio file: /sounds/cs.m4a");
+            setSpinSound(null);
+        });
+        setSpinSound(audio);
     }, []);
 
     useEffect(() => {

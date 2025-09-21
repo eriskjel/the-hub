@@ -7,7 +7,7 @@ export function DrinkImagePreloader() {
     useEffect(() => {
         Object.values(CASES).forEach((c) => {
             c.variants.forEach((v) => {
-                const img = new window.Image();
+                const img = new Image();
                 img.src = v.image;
             });
         });
