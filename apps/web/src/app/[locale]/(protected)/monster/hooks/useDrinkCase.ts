@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DrinkVariant } from "../types";
 import {
     ANIMATION_DURATION,
@@ -35,6 +35,12 @@ export function useDrinkCase(drinks: DrinkVariant[]) {
     const [stripDrinks, setStripDrinks] = useState<DrinkVariant[]>(() =>
         maskLegendary(drinks.filter((d) => d.rarity !== "yellow"))
     );
+    const [spinSound, setSpinSound] = useState<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        // only runs on client
+        setSpinSound(new Audio("/sounds/cs.m4a"));
+    }, []);
 
     useEffect(() => {
         setStripDrinks(maskLegendary(createWeightedStrip(drinks, false)));
@@ -42,6 +48,13 @@ export function useDrinkCase(drinks: DrinkVariant[]) {
 
     const handleOpen = () => {
         if (rolling) return;
+
+        if (spinSound) {
+            spinSound.currentTime = 0;
+            spinSound.play().catch(() => {
+                // autoplay restrictions may require user gesture
+            });
+        }
 
         const weightedChoice = getWeightedRandom(drinks);
         const spinStrip = createVisualStrip(drinks, weightedChoice, 40); // ~40 items
