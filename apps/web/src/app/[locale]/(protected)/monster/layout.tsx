@@ -2,8 +2,6 @@ import { ReactNode } from "react";
 import PageWrapper from "@/components/PageWrapper";
 import { setRequestLocale } from "next-intl/server";
 
-export const dynamic = "force-dynamic";
-
 export default async function MonsterLayout({
     children,
     params,
