@@ -13,13 +13,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
-         */
-        "/((?!_next|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$|api|auth/callback|auth/confirm|auth/actions).*)",
+        // Run middleware on everything EXCEPT:
+        // - _next/*
+        // - /drinks/*  <-- explicitly skip your static drinks folder
+        // - image/static assets (png, jpg, webp, etc.)
+        // - api/*
+        // - auth endpoints
+        "/((?!_next|drinks|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$|api|auth/callback|auth/confirm|auth/actions).*)",
     ],
 };

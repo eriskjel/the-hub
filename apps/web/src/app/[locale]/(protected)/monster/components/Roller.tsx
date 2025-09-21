@@ -1,4 +1,4 @@
-import { DrinkStrip, DrinkStripProps } from "./drinkStrip";
+import { DrinkStrip, DrinkStripProps } from "./DrinkStrip";
 import { ReactElement } from "react";
 
 export function Roller(props: DrinkStripProps): ReactElement {

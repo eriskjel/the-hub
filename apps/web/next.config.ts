@@ -15,6 +15,19 @@ const nextConfig: NextConfig = {
             },
         ],
     },
+    async headers() {
+        return [
+            {
+                source: "/drinks/:path*", // matches /drinks/* (served from /public/drinks/*)
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "public, max-age=31536000, immutable", // cache for 1 year
+                    },
+                ],
+            },
+        ];
+    },
 };
 
 export default withSentryConfig(withNextIntl(nextConfig), {
