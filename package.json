@@ -11,6 +11,10 @@
     "test:ui": "pnpm -F web test:ui"
   },
   "pnpm": {
+    "supportedArchitectures": {
+      "os": ["current", "linux"],
+      "cpu": ["x64", "arm64"]
+    },
     "overrides": {
       "vitest": "2.1.9",
       "vite": "5.4.11",
