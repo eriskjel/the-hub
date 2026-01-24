@@ -60,8 +60,9 @@ public class CreateWidgetService {
             case COUNTDOWN -> ensureNoDuplicateCountdown(userId, kind, settings);
             case CINEMATEKET -> {
                 // Cinemateket widget has no settings, allow only one instance per user
-                // Use a dummy UUID for exclude since we're checking for any existing instance
-                ensureNoDuplicateCinemateket(userId, kind, UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                // Pass a throwaway random UUID for exclude since we're checking for any
+                // existing instance
+                ensureNoDuplicateCinemateket(userId, kind, UUID.randomUUID());
             }
             default -> throw new IllegalArgumentException("unsupported_kind");
         }

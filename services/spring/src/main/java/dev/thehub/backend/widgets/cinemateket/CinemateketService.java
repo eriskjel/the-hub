@@ -4,6 +4,7 @@ import dev.thehub.backend.widgets.cinemateket.dto.FilmShowingDto;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
@@ -40,6 +41,24 @@ public class CinemateketService {
     private static final Pattern DIRECTOR_YEAR_PATTERN = Pattern.compile("^(.+?)\\s+(\\d{4})$");
 
     private final RestTemplate http;
+
+    // Simple in-memory cache with TTL (30 minutes)
+    private static final long CACHE_TTL_MS = 30 * 60 * 1000;
+    private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
+
+    private static class CacheEntry {
+        final List<FilmShowingDto> data;
+        final long timestamp;
+
+        CacheEntry(List<FilmShowingDto> data) {
+            this.data = data;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CACHE_TTL_MS;
+        }
+    }
 
     public CinemateketService(RestTemplate http) {
         this.http = http;
@@ -79,13 +98,26 @@ public class CinemateketService {
     }
 
     /**
-     * Scrapes the program page and returns upcoming film showings.
+     * Scrapes the program page and returns upcoming film showings. Results are
+     * cached for 30 minutes to reduce load on the external website.
      *
      * @param limit
      *            maximum number of showings to return (null = no limit)
      * @return list of film showings, sorted by show time
      */
     public List<FilmShowingDto> fetchShowings(Integer limit) {
+        // Check cache first
+        String cacheKey = "default";
+        CacheEntry cached = cache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
+            log.debug("Cinemateket using cached data (age={}ms)", System.currentTimeMillis() - cached.timestamp);
+            List<FilmShowingDto> result = new ArrayList<>(cached.data);
+            if (limit != null && limit > 0) {
+                result = result.stream().limit(limit).collect(java.util.stream.Collectors.toList());
+            }
+            return result;
+        }
+
         try {
             // First, visit the homepage to establish a session and get cookies
             // This helps bypass Cloudflare's initial challenge
@@ -189,6 +221,9 @@ public class CinemateketService {
 
             showings = filtered;
 
+            // Cache the result
+            cache.put(cacheKey, new CacheEntry(showings));
+
             log.info("Cinemateket parsed {} showings", showings.size());
             return showings;
         } catch (Exception e) {
@@ -276,17 +311,31 @@ public class CinemateketService {
         if (!dayMatcher.find())
             return;
 
-        int day = Integer.parseInt(dayMatcher.group(1));
-        int monthNum = Integer.parseInt(dayMatcher.group(2));
+        int day;
+        int monthNum;
+        try {
+            day = Integer.parseInt(dayMatcher.group(1));
+            monthNum = Integer.parseInt(dayMatcher.group(2));
+        } catch (NumberFormatException e) {
+            return;
+        }
 
         // Validate month matches
         if (monthNum != month.getValue()) {
             return;
         }
 
+        // Handle year boundary: if current month is December and parsed month is
+        // January, increment year
+        int adjustedYear = year;
+        Month currentMonth = LocalDate.now(ZONE).getMonth();
+        if (currentMonth == Month.DECEMBER && month == Month.JANUARY) {
+            adjustedYear = year + 1;
+        }
+
         LocalDate date;
         try {
-            date = LocalDate.of(year, month, day);
+            date = LocalDate.of(adjustedYear, month, day);
         } catch (DateTimeException e) {
             return;
         }
@@ -307,8 +356,15 @@ public class CinemateketService {
             if (!timeMatcher.find())
                 continue;
 
-            int hour = Integer.parseInt(timeMatcher.group(1));
-            int minute = Integer.parseInt(timeMatcher.group(2));
+            int hour;
+            int minute;
+            try {
+                hour = Integer.parseInt(timeMatcher.group(1));
+                minute = Integer.parseInt(timeMatcher.group(2));
+            } catch (NumberFormatException e) {
+                // Skip this line if the time components are not valid integers
+                continue;
+            }
 
             // Validate hour is in valid range (0-23)
             // Also check it's not a date pattern (e.g., "24.01" should not match as time
