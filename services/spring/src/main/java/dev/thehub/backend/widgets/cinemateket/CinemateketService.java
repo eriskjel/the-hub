@@ -18,9 +18,8 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Service that scrapes Cinemateket Trondheim's program page to extract upcoming
- * film showings.
- * This service performs the actual web scraping. Caching is handled by
- * {@link CinemateketCacheService}.
+ * film showings. This service performs the actual web scraping. Caching is
+ * handled by {@link CinemateketCacheService}.
  */
 @Service
 public class CinemateketService {
