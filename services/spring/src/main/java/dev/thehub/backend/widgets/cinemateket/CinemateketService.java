@@ -4,7 +4,6 @@ import dev.thehub.backend.widgets.cinemateket.dto.FilmShowingDto;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
@@ -20,6 +19,8 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Service that scrapes Cinemateket Trondheim's program page to extract upcoming
  * film showings.
+ * This service performs the actual web scraping. Caching is handled by
+ * {@link CinemateketCacheService}.
  */
 @Service
 public class CinemateketService {
@@ -41,24 +42,6 @@ public class CinemateketService {
     private static final Pattern DIRECTOR_YEAR_PATTERN = Pattern.compile("^(.+?)\\s+(\\d{4})$");
 
     private final RestTemplate http;
-
-    // Simple in-memory cache with TTL (30 minutes)
-    private static final long CACHE_TTL_MS = 30 * 60 * 1000;
-    private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
-
-    private static class CacheEntry {
-        final List<FilmShowingDto> data;
-        final long timestamp;
-
-        CacheEntry(List<FilmShowingDto> data) {
-            this.data = data;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        boolean isExpired() {
-            return System.currentTimeMillis() - timestamp > CACHE_TTL_MS;
-        }
-    }
 
     public CinemateketService(RestTemplate http) {
         this.http = http;
@@ -98,26 +81,17 @@ public class CinemateketService {
     }
 
     /**
-     * Scrapes the program page and returns upcoming film showings. Results are
-     * cached for 30 minutes to reduce load on the external website.
+     * Scrapes the program page and returns upcoming film showings.
+     * <p>
+     * This method performs the actual web scraping. Caching is handled by
+     * {@link CinemateketCacheService}.
      *
      * @param limit
-     *            maximum number of showings to return (null = no limit)
+     *            maximum number of showings to return (null = no limit). Note:
+     *            limit is typically applied by the cache service, not here.
      * @return list of film showings, sorted by show time
      */
     public List<FilmShowingDto> fetchShowings(Integer limit) {
-        // Check cache first
-        String cacheKey = "default";
-        CacheEntry cached = cache.get(cacheKey);
-        if (cached != null && !cached.isExpired()) {
-            log.debug("Cinemateket using cached data (age={}ms)", System.currentTimeMillis() - cached.timestamp);
-            List<FilmShowingDto> result = new ArrayList<>(cached.data);
-            if (limit != null && limit > 0) {
-                result = result.stream().limit(limit).collect(java.util.stream.Collectors.toList());
-            }
-            return result;
-        }
-
         try {
             // First, visit the homepage to establish a session and get cookies
             // This helps bypass Cloudflare's initial challenge
@@ -221,9 +195,6 @@ public class CinemateketService {
 
             showings = filtered;
 
-            // Cache the result
-            cache.put(cacheKey, new CacheEntry(showings));
-
             log.info("Cinemateket parsed {} showings", showings.size());
             return showings;
         } catch (Exception e) {
@@ -243,7 +214,7 @@ public class CinemateketService {
         monthHeaders = monthHeaders.stream().filter(h2 -> {
             String text = h2.text().trim().toLowerCase(Locale.ROOT);
             return NO_MONTHS.containsKey(text);
-        }).collect(java.util.stream.Collectors.toCollection(() -> new org.jsoup.select.Elements()));
+        }).collect(java.util.stream.Collectors.toCollection(Elements::new));
 
         for (Element monthHeader : monthHeaders) {
             String monthText = monthHeader.text().trim().toLowerCase(Locale.ROOT);

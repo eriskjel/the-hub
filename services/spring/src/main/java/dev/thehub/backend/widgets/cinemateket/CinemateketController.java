@@ -30,11 +30,12 @@ public class CinemateketController {
 
     private static final Logger log = LoggerFactory.getLogger(CinemateketController.class);
 
-    private final CinemateketService svc;
+    private final CinemateketCacheService cacheService;
     private final dev.thehub.backend.widgets.WidgetSettingsService settings;
 
-    public CinemateketController(CinemateketService svc, dev.thehub.backend.widgets.WidgetSettingsService settings) {
-        this.svc = svc;
+    public CinemateketController(CinemateketCacheService cacheService,
+            dev.thehub.backend.widgets.WidgetSettingsService settings) {
+        this.cacheService = cacheService;
         this.settings = settings;
     }
 
@@ -67,7 +68,7 @@ public class CinemateketController {
             // Validate widget ownership
             settings.requireWidget(userId, instanceId);
 
-            List<FilmShowingDto> showings = svc.fetchShowings(limit);
+            List<FilmShowingDto> showings = cacheService.getShowings(limit);
             return ResponseEntity.ok(showings);
         } catch (dev.thehub.backend.widgets.WidgetSettingsService.NotFoundOrNotOwned e) {
             log.warn("Cinemateket widget not found or not owned userId={} instanceId={}", userId, instanceId);
