@@ -53,10 +53,12 @@ public class CreateWidgetController {
      * Creates a new widget for the current user.
      *
      * <p>
-     * Supported kinds are currently {@link WidgetKind#SERVER_PINGS} and
-     * {@link WidgetKind#GROCERY_DEALS}. Non-admin users may only create
-     * grocery-deals widgets and are limited to at most 5 such widgets. Duplicate
-     * widgets are rejected based on business rules.
+     * Supported kinds are currently {@link WidgetKind#SERVER_PINGS},
+     * {@link WidgetKind#GROCERY_DEALS}, {@link WidgetKind#COUNTDOWN}, and
+     * {@link WidgetKind#CINEMATEKET}. Non-admin users may only create
+     * grocery-deals, countdown, and cinemateket widgets. Grocery-deals widgets
+     * are limited to at most 5 per user. Duplicate widgets are rejected based on
+     * business rules.
      *
      * @param auth
      *            current JWT authentication (used to derive user id)
@@ -66,7 +68,7 @@ public class CreateWidgetController {
      *         invalid input; 403 when forbidden by role; 409 when duplicates/limits
      *         are violated
      */
-    @Operation(summary = "Create a widget instance", description = "Creates a widget for the current user. Non-admins can only create grocery-deals and countdown; grocery-deals limited to 5 per user.")
+    @Operation(summary = "Create a widget instance", description = "Creates a widget for the current user. Non-admins can only create grocery-deals, countdown, and cinemateket; grocery-deals limited to 5 per user.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = CreateWidgetResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -85,7 +87,7 @@ public class CreateWidgetController {
         }
 
         EnumSet<WidgetKind> supported = EnumSet.of(WidgetKind.SERVER_PINGS, WidgetKind.GROCERY_DEALS,
-                WidgetKind.COUNTDOWN);
+                WidgetKind.COUNTDOWN, WidgetKind.CINEMATEKET);
 
         if (!supported.contains(body.kind())) {
             log.warn("CreateWidget unsupported_kind userId={} kind={}", userId, body.kind());
@@ -96,7 +98,8 @@ public class CreateWidgetController {
         boolean isAdmin = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                 .anyMatch("ROLE_ADMIN"::equals);
 
-        if (!isAdmin && body.kind() != WidgetKind.GROCERY_DEALS && body.kind() != WidgetKind.COUNTDOWN) {
+        if (!isAdmin && body.kind() != WidgetKind.GROCERY_DEALS && body.kind() != WidgetKind.COUNTDOWN
+                && body.kind() != WidgetKind.CINEMATEKET) {
             log.warn("CreateWidget forbidden_non_admin userId={} kind={}", userId, body.kind());
             return ResponseEntity.status(403)
                     .body(Map.of("error", "forbidden", "message", "Only admins can create this widget type."));

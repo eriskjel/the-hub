@@ -2,9 +2,16 @@ import type { ReactElement } from "react";
 import type { PingsData } from "@/widgets/server-pings/types";
 import { Deal } from "@/widgets/grocery-deals/types";
 import { CountdownData } from "@/widgets/countdown/types";
+import { FilmShowing } from "@/widgets/cinemateket/types";
 
 /* 1) Allowed kinds (extend over time) */
-export const WIDGET_KINDS = ["server-pings", "pi-health", "grocery-deals", "countdown"] as const;
+export const WIDGET_KINDS = [
+    "server-pings",
+    "pi-health",
+    "grocery-deals",
+    "countdown",
+    "cinemateket",
+] as const;
 export type WidgetKind = (typeof WIDGET_KINDS)[number];
 
 /* 2) Grid (camelCase on the client) */
@@ -46,6 +53,8 @@ export type CountdownSettings = {
     showHours?: boolean;
 } & CountdownSource;
 
+export type CinemateketSettings = Record<string, never>;
+
 /* 4) Discriminated widget type (from API /widgets/list) */
 export type BaseWidget<K extends WidgetKind, S> = {
     id: string;
@@ -59,8 +68,14 @@ export type ServerPingsWidget = BaseWidget<"server-pings", ServerPingsSettings>;
 export type PiHealthWidget = BaseWidget<"pi-health", PiHealthSettings>;
 export type GroceryDealsWidget = BaseWidget<"grocery-deals", GroceryDealsSettings>;
 export type CountdownWidget = BaseWidget<"countdown", CountdownSettings>;
+export type CinemateketWidget = BaseWidget<"cinemateket", CinemateketSettings>;
 
-export type AnyWidget = ServerPingsWidget | PiHealthWidget | GroceryDealsWidget | CountdownWidget;
+export type AnyWidget =
+    | ServerPingsWidget
+    | PiHealthWidget
+    | GroceryDealsWidget
+    | CountdownWidget
+    | CinemateketWidget;
 
 /* 5) Data returned by each widget's fetch */
 export type DataByKind = {
@@ -68,6 +83,7 @@ export type DataByKind = {
     "pi-health": unknown;
     "grocery-deals": Deal[];
     countdown: CountdownData;
+    cinemateket: FilmShowing[];
 };
 
 /* 6) Registry contracts */

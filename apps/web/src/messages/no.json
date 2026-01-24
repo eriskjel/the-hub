@@ -93,7 +93,8 @@
             "kinds": {
                 "server-pings": "Server-pings",
                 "grocery-deals": "Dagligvarekupp",
-                "countdown": "Nedtelling"
+                "countdown": "Nedtelling",
+                "cinemateket": "Cinemateket"
             },
             "cancel": "Avbryt",
             "submit": "Opprett widget",
@@ -247,6 +248,14 @@
                 },
                 "nextNotAnnounced": "Neste dato ikke annonsert.",
                 "nextNotAnnouncedWithDays": "Neste dato ikke annonsert. {days, plural, one {# dag} other {# dager}} siden forrige."
+            }
+        },
+        "cinemateket": {
+            "view": {
+                "noShowings": "Ingen forestående visninger.",
+                "buyTickets": "Kjøp billetter",
+                "showMore": "Vis {count} flere",
+                "showLess": "Vis færre"
             }
         }
     },

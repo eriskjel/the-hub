@@ -1,5 +1,6 @@
 import {
     AnyWidget,
+    CinemateketSettings,
     CountdownSettings,
     Grid,
     GroceryDealsSettings,
@@ -68,6 +69,10 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
         }
 
         return { ...row, kind: "countdown", settings } as AnyWidget;
+    }
+    if (row.kind === "cinemateket") {
+        const settings: CinemateketSettings = {};
+        return { ...row, kind: "cinemateket", settings } as AnyWidget;
     }
     return row as unknown as AnyWidget;
 }
