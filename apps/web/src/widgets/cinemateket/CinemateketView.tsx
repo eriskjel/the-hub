@@ -37,8 +37,8 @@ export default function CinemateketView({
                 }`}
                 aria-live="polite"
             >
-                {rows.map((showing, i) => (
-                    <li key={i} className="py-2">
+                {rows.map((showing) => (
+                    <li key={`${showing.title}-${showing.showTime}`} className="py-2">
                         <div className="flex flex-col gap-1">
                             {/* Title and time */}
                             <div className="flex items-center justify-between gap-2">
