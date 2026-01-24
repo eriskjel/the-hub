@@ -18,7 +18,9 @@
     "overrides": {
       "vitest": "2.1.9",
       "vite": "5.4.11",
-      "zod": "^3.25.7"
+      "zod": "^3.25.7",
+      "import-in-the-middle": "^2.0.5",
+      "require-in-the-middle": "^8.0.1"
     },
     "onlyBuiltDependencies": [
       "supabase"
