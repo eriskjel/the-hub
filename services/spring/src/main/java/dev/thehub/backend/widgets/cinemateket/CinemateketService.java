@@ -3,8 +3,6 @@ package dev.thehub.backend.widgets.cinemateket;
 import dev.thehub.backend.widgets.cinemateket.dto.FilmShowingDto;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,13 +72,10 @@ public class CinemateketService {
             return "";
         }
         // Extract cookie name=value pairs (before the first semicolon)
-        return cookieHeaders.stream()
-                .map(cookie -> {
-                    int semicolonIdx = cookie.indexOf(';');
-                    return semicolonIdx > 0 ? cookie.substring(0, semicolonIdx) : cookie;
-                })
-                .filter(c -> !c.isEmpty())
-                .collect(java.util.stream.Collectors.joining("; "));
+        return cookieHeaders.stream().map(cookie -> {
+            int semicolonIdx = cookie.indexOf(';');
+            return semicolonIdx > 0 ? cookie.substring(0, semicolonIdx) : cookie;
+        }).filter(c -> !c.isEmpty()).collect(java.util.stream.Collectors.joining("; "));
     }
 
     /**
@@ -97,7 +92,7 @@ public class CinemateketService {
             String homeUrl = "https://cinemateket-trondheim.no/";
             HttpHeaders homeHeaders = createBrowserHeaders();
             var homeResp = http.exchange(homeUrl, HttpMethod.GET, new HttpEntity<>(homeHeaders), String.class);
-            
+
             // Check if homepage was blocked
             if (homeResp.getBody() != null) {
                 String homeBody = homeResp.getBody().toLowerCase(Locale.ROOT);
@@ -106,56 +101,62 @@ public class CinemateketService {
                     return List.of();
                 }
             }
-            
+
             // Extract cookies from the response
             String cookies = extractCookies(homeResp);
-            
+
             // Small delay to appear more human-like
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            
+
             // Now request the program page with cookies
             HttpHeaders headers = createBrowserHeaders();
             if (!cookies.isEmpty()) {
                 headers.set(HttpHeaders.COOKIE, cookies);
             }
             headers.set(HttpHeaders.REFERER, homeUrl);
-            
+
             var resp = http.exchange(URL, HttpMethod.GET, new HttpEntity<>(headers), String.class);
             if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
                 log.warn("Cinemateket scrape failed: status={}", resp.getStatusCode());
                 return List.of();
             }
-            
+
             // Check if we got a Cloudflare challenge page
             String body = resp.getBody();
             String bodyLower = body.toLowerCase(Locale.ROOT);
-            
+
             // More specific Cloudflare detection - check for multiple indicators
-            boolean isCloudflare = (bodyLower.contains("just a moment") && bodyLower.contains("cf-browser-verification"))
+            boolean isCloudflare = (bodyLower.contains("just a moment")
+                    && bodyLower.contains("cf-browser-verification"))
                     || (bodyLower.contains("checking your browser") && bodyLower.contains("ddos protection"))
                     || (bodyLower.contains("challenge-platform") && bodyLower.contains("cf-"))
                     || (bodyLower.contains("ray id") && bodyLower.contains("cf-"));
-            
+
             if (isCloudflare) {
                 log.warn("Cinemateket scrape blocked by Cloudflare challenge page");
                 log.debug("Response preview: {}", body.length() > 500 ? body.substring(0, 500) : body);
                 return List.of();
             }
-            
-            // Check if response is not HTML (but allow for compressed responses that weren't decompressed)
-            if (!bodyLower.contains("<html") && !bodyLower.contains("<!doctype") && !bodyLower.contains("<!doctype html")) {
+
+            // Check if response is not HTML (but allow for compressed responses that
+            // weren't decompressed)
+            if (!bodyLower.contains("<html") && !bodyLower.contains("<!doctype")
+                    && !bodyLower.contains("<!doctype html")) {
                 // Check if it might be compressed
                 String contentEncoding = resp.getHeaders().getFirst(HttpHeaders.CONTENT_ENCODING);
-                if (contentEncoding != null && (contentEncoding.contains("gzip") || contentEncoding.contains("br") || contentEncoding.contains("deflate"))) {
-                    log.error("Cinemateket response is compressed but not decompressed! Content-Encoding: {}. " +
-                            "RestTemplate needs to be configured for automatic decompression.", contentEncoding);
+                if (contentEncoding != null && (contentEncoding.contains("gzip") || contentEncoding.contains("br")
+                        || contentEncoding.contains("deflate"))) {
+                    log.error(
+                            "Cinemateket response is compressed but not decompressed! Content-Encoding: {}. "
+                                    + "RestTemplate needs to be configured for automatic decompression.",
+                            contentEncoding);
                 } else {
-                    log.warn("Cinemateket response doesn't appear to be HTML. Content-Type: {}", 
-                        resp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
+                    log.warn("Cinemateket response doesn't appear to be HTML. Content-Type: {}",
+                            resp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
                 }
             }
 
@@ -185,7 +186,7 @@ public class CinemateketService {
             if (limit != null && limit > 0) {
                 filtered = filtered.stream().limit(limit).collect(java.util.stream.Collectors.toList());
             }
-            
+
             showings = filtered;
 
             log.info("Cinemateket parsed {} showings", showings.size());
@@ -202,15 +203,13 @@ public class CinemateketService {
 
         // Find all h2 elements (months) - they're in accordion items
         Elements monthHeaders = doc.select("h2");
-        
+
         // Filter to only h2s that contain month names
-        monthHeaders = monthHeaders.stream()
-            .filter(h2 -> {
-                String text = h2.text().trim().toLowerCase(Locale.ROOT);
-                return NO_MONTHS.containsKey(text);
-            })
-            .collect(java.util.stream.Collectors.toCollection(() -> new org.jsoup.select.Elements()));
-        
+        monthHeaders = monthHeaders.stream().filter(h2 -> {
+            String text = h2.text().trim().toLowerCase(Locale.ROOT);
+            return NO_MONTHS.containsKey(text);
+        }).collect(java.util.stream.Collectors.toCollection(() -> new org.jsoup.select.Elements()));
+
         for (Element monthHeader : monthHeaders) {
             String monthText = monthHeader.text().trim().toLowerCase(Locale.ROOT);
             Month month = NO_MONTHS.get(monthText);
@@ -218,26 +217,28 @@ public class CinemateketService {
                 continue;
             }
 
-            // The structure is: accordion item > h2 (month) > accordion content > wp-block-group > paragraphs
+            // The structure is: accordion item > h2 (month) > accordion content >
+            // wp-block-group > paragraphs
             // Find the parent accordion item
             Element accordionItem = monthHeader.parent();
             while (accordionItem != null && !accordionItem.hasClass("wp-block-pb-accordion-item")) {
                 accordionItem = accordionItem.parent();
             }
-            
+
             if (accordionItem == null) {
                 continue;
             }
-            
-            // Find the accordion content div (sibling of the h2, or child of accordion item)
+
+            // Find the accordion content div (sibling of the h2, or child of accordion
+            // item)
             Element contentDiv = accordionItem.selectFirst(".c-accordion__content");
             if (contentDiv == null) {
                 continue;
             }
-            
+
             // Find all paragraphs in the content div
             Elements paragraphs = contentDiv.select("p");
-            
+
             for (Element p : paragraphs) {
                 parseParagraph(p, month, currentYear, showings);
             }
@@ -278,10 +279,10 @@ public class CinemateketService {
         int day = Integer.parseInt(dayMatcher.group(1));
         int monthNum = Integer.parseInt(dayMatcher.group(2));
 
-            // Validate month matches
-            if (monthNum != month.getValue()) {
-                return;
-            }
+        // Validate month matches
+        if (monthNum != month.getValue()) {
+            return;
+        }
 
         LocalDate date;
         try {
@@ -308,19 +309,21 @@ public class CinemateketService {
 
             int hour = Integer.parseInt(timeMatcher.group(1));
             int minute = Integer.parseInt(timeMatcher.group(2));
-            
+
             // Validate hour is in valid range (0-23)
-            // Also check it's not a date pattern (e.g., "24.01" should not match as time "24.00")
+            // Also check it's not a date pattern (e.g., "24.01" should not match as time
+            // "24.00")
             if (hour < 0 || hour > 23) {
                 continue;
             }
-            
+
             // Validate minute is in valid range (0-59)
             if (minute < 0 || minute > 59) {
                 continue;
             }
-            
-            // Additional check: if the line only contains a date pattern and no actual time content,
+
+            // Additional check: if the line only contains a date pattern and no actual time
+            // content,
             // it's likely just a date header, not a showing with a time
             // Times should be followed by title/director info, not just be standalone dates
             String afterTimePattern = line.substring(timeMatcher.end()).trim();
@@ -333,7 +336,8 @@ public class CinemateketService {
             try {
                 dateTime = date.atTime(hour, minute);
             } catch (DateTimeException e) {
-                log.debug("Failed to create LocalDateTime from hour={} minute={} date={}: {}", hour, minute, date, e.getMessage());
+                log.debug("Failed to create LocalDateTime from hour={} minute={} date={}: {}", hour, minute, date,
+                        e.getMessage());
                 continue;
             }
             Instant showTime = dateTime.atZone(ZONE).toInstant();
@@ -343,18 +347,17 @@ public class CinemateketService {
             String title = null;
             String filmUrl = null;
             String ticketUrl = null;
-            
+
             // First, try to find title in links (most reliable) and capture its URL
             Elements links = lineDoc.select("a");
             for (Element link : links) {
                 String linkText = link.text().trim();
                 String linkTextLower = linkText.toLowerCase(Locale.ROOT);
                 String href = link.attr("href");
-                
+
                 // Skip ticket links and other non-title links
-                if (linkText.isEmpty() || linkTextLower.contains("billetter") 
-                        || linkTextLower.equals("minimalen kortfilmfestival")
-                        || linkTextLower.contains("ticketco")) {
+                if (linkText.isEmpty() || linkTextLower.contains("billetter")
+                        || linkTextLower.equals("minimalen kortfilmfestival") || linkTextLower.contains("ticketco")) {
                     // This is a ticket link
                     if (linkTextLower.contains("billetter") || href.contains("ticketco")) {
                         if (ticketUrl == null) {
@@ -363,7 +366,7 @@ public class CinemateketService {
                     }
                     continue;
                 }
-                
+
                 // This looks like a film title link
                 if (title == null) {
                     title = linkText;
@@ -373,13 +376,13 @@ public class CinemateketService {
                     }
                 }
             }
-            
+
             // If no title from links, try strong tags
             if (title == null) {
                 Elements strong = lineDoc.select("strong");
                 for (Element s : strong) {
                     String strongText = s.text().trim();
-                    if (!strongText.isEmpty() && !DATE_PATTERN.matcher(strongText).find() 
+                    if (!strongText.isEmpty() && !DATE_PATTERN.matcher(strongText).find()
                             && !strongText.toLowerCase(Locale.ROOT).contains("uke")
                             && !strongText.toLowerCase(Locale.ROOT).contains("billetter")) {
                         // Check if it's not a day name
@@ -390,7 +393,7 @@ public class CinemateketService {
                     }
                 }
             }
-            
+
             // Fallback: extract from line text after time
             if (title == null) {
                 String afterTime = line.substring(timeMatcher.end()).trim();
@@ -408,7 +411,7 @@ public class CinemateketService {
                     }
                 }
             }
-            
+
             if (title == null || title.isBlank())
                 continue;
 
@@ -417,7 +420,7 @@ public class CinemateketService {
             Integer filmYear = null;
             int timeEnd = timeMatcher.end();
             String afterTime = line.substring(timeEnd).trim();
-            
+
             // Find title in the text and get what comes after it
             int titleIdx = afterTime.toLowerCase(Locale.ROOT).indexOf(title.toLowerCase(Locale.ROOT));
             if (titleIdx >= 0) {
@@ -434,7 +437,7 @@ public class CinemateketService {
                     director = afterTitle;
                 }
             }
-            
+
             // If we still don't have ticketUrl, look for it in the line
             if (ticketUrl == null) {
                 for (Element link : links) {
@@ -456,8 +459,8 @@ public class CinemateketService {
                 }
             }
 
-            showings.add(new FilmShowingDto(title, director, filmYear, showTime.toString(), ticketUrl, filmUrl,
-                    organizer));
+            showings.add(
+                    new FilmShowingDto(title, director, filmYear, showTime.toString(), ticketUrl, filmUrl, organizer));
         }
     }
 

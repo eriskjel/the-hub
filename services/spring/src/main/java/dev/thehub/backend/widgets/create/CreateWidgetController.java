@@ -56,8 +56,8 @@ public class CreateWidgetController {
      * Supported kinds are currently {@link WidgetKind#SERVER_PINGS},
      * {@link WidgetKind#GROCERY_DEALS}, {@link WidgetKind#COUNTDOWN}, and
      * {@link WidgetKind#CINEMATEKET}. Non-admin users may only create
-     * grocery-deals, countdown, and cinemateket widgets. Grocery-deals widgets
-     * are limited to at most 5 per user. Duplicate widgets are rejected based on
+     * grocery-deals, countdown, and cinemateket widgets. Grocery-deals widgets are
+     * limited to at most 5 per user. Duplicate widgets are rejected based on
      * business rules.
      *
      * @param auth

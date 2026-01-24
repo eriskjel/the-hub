@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -49,8 +48,7 @@ public class CinemateketController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = FilmShowingDto.class))))})
     @GetMapping
-    public ResponseEntity<List<FilmShowingDto>> showings(
-            @Parameter(hidden = true) JwtAuthenticationToken auth,
+    public ResponseEntity<List<FilmShowingDto>> showings(@Parameter(hidden = true) JwtAuthenticationToken auth,
             @Parameter(description = "Maximum number of showings to return") @RequestParam(required = false) Integer limit) {
         if (log.isDebugEnabled()) {
             var uid = java.util.UUID.fromString(auth.getToken().getClaimAsString("sub"));
