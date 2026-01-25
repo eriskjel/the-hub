@@ -68,6 +68,22 @@ public class CinemateketController {
             // Validate widget ownership
             settings.requireWidget(userId, instanceId);
 
+            // Validate limit parameter
+            if (limit != null) {
+                if (limit < 0) {
+                    log.warn("Cinemateket request with negative limit userId={} instanceId={} limit={}", userId,
+                            instanceId, limit);
+                    return ResponseEntity.badRequest().body(List.of());
+                }
+                // Cap limit to prevent excessive load
+                if (limit > 100) {
+                    log.warn(
+                            "Cinemateket request with excessive limit userId={} instanceId={} limit={}, capping to 100",
+                            userId, instanceId, limit);
+                    limit = 100;
+                }
+            }
+
             List<FilmShowingDto> showings = cacheService.getShowings(limit);
             return ResponseEntity.ok(showings);
         } catch (dev.thehub.backend.widgets.WidgetSettingsService.NotFoundOrNotOwned e) {

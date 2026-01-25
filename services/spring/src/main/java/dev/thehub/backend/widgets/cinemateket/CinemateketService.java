@@ -53,7 +53,7 @@ public class CinemateketService {
         headers.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
         headers.set(HttpHeaders.ACCEPT_LANGUAGE, "no-NO,no;q=0.9,nb;q=0.8,en-US;q=0.7,en;q=0.6");
         headers.set(HttpHeaders.USER_AGENT,
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
         // Don't request compression - RestTemplate doesn't auto-decompress
         // headers.set("Accept-Encoding", "gzip, deflate, br");
         headers.set("DNT", "1");
@@ -86,8 +86,10 @@ public class CinemateketService {
      * {@link CinemateketCacheService}.
      *
      * @param limit
-     *            maximum number of showings to return (null = no limit). Note:
-     *            limit is typically applied by the cache service, not here.
+     *            maximum number of showings to return (null = no limit). The limit
+     *            is applied in this method to the scraped results, even though
+     *            callers will typically obtain or reuse the limit value via the
+     *            cache service.
      * @return list of film showings, sorted by show time
      */
     public List<FilmShowingDto> fetchShowings(Integer limit) {
@@ -159,9 +161,11 @@ public class CinemateketService {
                             "Cinemateket response is compressed but not decompressed! Content-Encoding: {}. "
                                     + "RestTemplate needs to be configured for automatic decompression.",
                             contentEncoding);
+                    return List.of();
                 } else {
-                    log.warn("Cinemateket response doesn't appear to be HTML. Content-Type: {}",
+                    log.warn("Cinemateket response doesn't appear to be HTML. Content-Type: {}. Skipping parse.",
                             resp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
+                    return List.of();
                 }
             }
 
@@ -175,6 +179,7 @@ public class CinemateketService {
                     Instant showTime = Instant.parse(s.showTime());
                     return !showTime.isBefore(now);
                 } catch (Exception e) {
+                    log.warn("Failed to parse showTime for showing: {}", s.title());
                     return true; // Keep if parsing fails
                 }
             }).collect(java.util.stream.Collectors.toCollection(ArrayList::new));
@@ -184,6 +189,7 @@ public class CinemateketService {
                 try {
                     return Instant.parse(s.showTime());
                 } catch (Exception e) {
+                    log.warn("Failed to parse showTime for sorting showing: {}", s.title());
                     return Instant.MAX;
                 }
             }));
@@ -295,12 +301,17 @@ public class CinemateketService {
             return;
         }
 
-        // Handle year boundary: if current month is December and parsed month is
-        // January, increment year
+        // Handle year boundary relative to the current calendar year:
+        // - If current month is December and parsed month is January, increment year.
+        // - If current month is January and parsed month is December, decrement year.
+        // Assumes that the 'year' argument represents the current year at the call
+        // site.
         int adjustedYear = year;
         Month currentMonth = LocalDate.now(ZONE).getMonth();
         if (currentMonth == Month.DECEMBER && month == Month.JANUARY) {
             adjustedYear = year + 1;
+        } else if (currentMonth == Month.JANUARY && month == Month.DECEMBER) {
+            adjustedYear = year - 1;
         }
 
         LocalDate date;

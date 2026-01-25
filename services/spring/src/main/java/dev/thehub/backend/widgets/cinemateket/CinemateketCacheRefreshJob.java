@@ -20,12 +20,12 @@ public class CinemateketCacheRefreshJob {
     private final CinemateketCacheService cacheService;
 
     /**
-     * Refreshes the Cinemateket cache daily at 2 AM (server time).
+     * Refreshes the Cinemateket cache daily at 2 AM (Europe/Oslo time).
      * <p>
      * Cron expression: "0 0 2 * * ?" means: - 0 seconds - 0 minutes - 2 hours (2
      * AM) - Every day of month - Every month - Any day of week
      */
-    @Scheduled(cron = "0 0 2 * * ?")
+    @Scheduled(cron = "0 0 2 * * ?", zone = "Europe/Oslo")
     public void refreshCache() {
         log.info("CinemateketCacheRefreshJob: Starting scheduled cache refresh");
         try {

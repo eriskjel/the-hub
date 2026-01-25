@@ -34,12 +34,15 @@ public class CinemateketCacheService {
     /**
      * Gets film showings, using cache if fresh, otherwise fetching from the
      * scraper.
+     * <p>
+     * This method is synchronized to prevent multiple concurrent threads from
+     * triggering simultaneous scrapes when the cache is stale.
      *
      * @param limit
      *            maximum number of showings to return (null = no limit)
      * @return list of film showings, sorted by show time
      */
-    public List<FilmShowingDto> getShowings(Integer limit) {
+    public synchronized List<FilmShowingDto> getShowings(Integer limit) {
         Instant now = Instant.now();
         var cached = cache.find().orElse(null);
 
