@@ -14,6 +14,7 @@ const KIND_KEYS: Record<WidgetKind, string> = {
     "pi-health": "pi-health",
     "grocery-deals": "grocery-deals",
     countdown: "countdown",
+    cinemateket: "cinemateket",
 };
 
 function toPascalCase(s: string): string {

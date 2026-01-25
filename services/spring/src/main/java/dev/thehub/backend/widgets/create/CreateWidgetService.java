@@ -58,6 +58,12 @@ public class CreateWidgetService {
             case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings);
             case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings);
             case COUNTDOWN -> ensureNoDuplicateCountdown(userId, kind, settings);
+            case CINEMATEKET -> {
+                // Cinemateket widget has no settings, allow only one instance per user
+                // Pass a throwaway random UUID for exclude since we're checking for any
+                // existing instance
+                ensureNoDuplicateCinemateket(userId, kind, UUID.randomUUID());
+            }
             default -> throw new IllegalArgumentException("unsupported_kind");
         }
     }
@@ -479,7 +485,11 @@ public class CreateWidgetService {
         switch (kind) {
             case SERVER_PINGS -> ensureNoDuplicateTargets(userId, kind, settings, excludeInstanceId);
             case GROCERY_DEALS -> ensureNoDuplicateGroceries(userId, kind, settings, excludeInstanceId);
-            case COUNTDOWN -> ensureNoDuplicateCountdown(userId, kind, settings, excludeInstanceId); // 👈 new
+            case COUNTDOWN -> ensureNoDuplicateCountdown(userId, kind, settings, excludeInstanceId);
+            case CINEMATEKET -> {
+                // Cinemateket widget has no settings, allow only one instance per user
+                ensureNoDuplicateCinemateket(userId, kind, excludeInstanceId);
+            }
             default -> throw new IllegalArgumentException("unsupported_kind");
         }
     }
@@ -557,6 +567,31 @@ public class CreateWidgetService {
 
         if (exists)
             throw new DuplicateException("duplicate_provider");
+    }
+
+    private void ensureNoDuplicateCinemateket(UUID userId, WidgetKind kind, UUID exclude) {
+        final String sql = """
+                    select exists (
+                      select 1
+                      from user_widgets uw
+                      where uw.user_id = ?
+                        and uw.kind = ?
+                        and uw.instance_id <> ?
+                    )
+                """;
+
+        boolean exists = Boolean.TRUE.equals(jdbc.query(con -> {
+            var ps = con.prepareStatement(sql);
+            ps.setObject(1, userId);
+            ps.setString(2, kind.getValue());
+            ps.setObject(3, exclude);
+            return ps;
+        }, rs -> rs.next() && rs.getBoolean(1)));
+
+        if (exists) {
+            log.warn("Duplicate cinemateket widget userId={}", userId);
+            throw new DuplicateException("duplicate");
+        }
     }
 
     private Map<String, Object> assignNextGrid(UUID userId, int cols) {

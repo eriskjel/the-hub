@@ -93,7 +93,8 @@
             "kinds": {
                 "server-pings": "Server pings",
                 "grocery-deals": "Grocery deals",
-                "countdown": "Countdown"
+                "countdown": "Countdown",
+                "cinemateket": "Cinemateket"
             },
             "cancel": "Cancel",
             "submit": "Create widget",
@@ -247,6 +248,17 @@
                 },
                 "nextNotAnnounced": "Next date not announced.",
                 "nextNotAnnouncedWithDays": "Next date not announced. {days, plural, one {# day} other {# days}} since last."
+            }
+        },
+        "cinemateket": {
+            "view": {
+                "noShowings": "No upcoming showings.",
+                "buyTickets": "Buy tickets",
+                "showMore": "Show {count} more",
+                "showLess": "Show fewer"
+            },
+            "settings": {
+                "description": "This widget displays upcoming film showings from Cinemateket Trondheim. No configuration needed."
             }
         }
     },
