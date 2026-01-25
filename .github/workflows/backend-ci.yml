@@ -2,8 +2,8 @@ name: backend-ci
 
 on:
   workflow_dispatch:            # manual run (build only)
-  pull_request:                 # build on PRs to dev or main
-    branches: [ dev, main ]
+  pull_request:                 # build on PRs to main
+    branches: [ main ]
   push:                         # build & push only on main
     branches: [ main ]
     # (optional) uncomment to only run the workflow on main when backend files changed

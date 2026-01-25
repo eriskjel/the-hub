@@ -17,7 +17,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                 <Header userPromise={userPromise} locale={locale} />
             </Suspense>
 
-            <main className="mx-auto max-w-6xl p-4">
+            <main className="mx-auto max-w-6xl px-4 pb-4">
                 <div className="mb-4 flex items-center justify-center">
                     <Suspense fallback={<CreateWidgetButton className="invisible" />}>
                         <ActionsBar widgetsPromise={widgetsPromise} />

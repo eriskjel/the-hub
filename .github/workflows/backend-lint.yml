@@ -2,9 +2,9 @@ name: backend-lint
 
 on:
   pull_request:
-    branches: [ main, dev ]   # ← no paths filter
+    branches: [ main ]   # ← no paths filter
   push:
-    branches: [ main, dev ]
+    branches: [ main ]
     # paths filter is fine here if you want
 
 jobs:
