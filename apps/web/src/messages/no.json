@@ -256,6 +256,9 @@
                 "buyTickets": "Kjøp billetter",
                 "showMore": "Vis {count} flere",
                 "showLess": "Vis færre"
+            },
+            "settings": {
+                "description": "Denne widgeten viser forestående filmvisninger fra Cinemateket Trondheim. Ingen konfigurasjon nødvendig."
             }
         }
     },

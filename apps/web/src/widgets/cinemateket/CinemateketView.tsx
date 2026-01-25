@@ -9,7 +9,7 @@ const INITIAL_COUNT = 2;
 
 export default function CinemateketView({
     data,
-    widget,
+    widget: _widget,
 }: {
     data: FilmShowing[];
     widget: CinemateketWidget;
