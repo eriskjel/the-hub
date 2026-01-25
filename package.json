@@ -1,7 +1,7 @@
 {
   "name": "the-hub",
   "private": true,
-  "packageManager": "pnpm@10.16.1+sha256.b77e92ba0d59a6372b6c5041bbb3f866fb85e927df333827f0c7f577c5e1a713",
+  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
   "scripts": {
     "dev": "pnpm -F web dev",
     "build": "pnpm -F web build",
@@ -18,7 +18,9 @@
     "overrides": {
       "vitest": "2.1.9",
       "vite": "5.4.11",
-      "zod": "^3.25.7"
+      "zod": "^3.25.7",
+      "import-in-the-middle": "^2.0.5",
+      "require-in-the-middle": "^8.0.1"
     },
     "onlyBuiltDependencies": [
       "supabase"

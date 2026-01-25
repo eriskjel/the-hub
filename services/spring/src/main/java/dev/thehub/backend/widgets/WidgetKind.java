@@ -15,7 +15,9 @@ public enum WidgetKind {
     /** Grocery deals widget kind (value "grocery-deals"). */
     GROCERY_DEALS("grocery-deals"),
     /** Countdown widget kind (value "countdown"). */
-    COUNTDOWN("countdown");
+    COUNTDOWN("countdown"),
+    /** Cinemateket widget kind (value "cinemateket"). */
+    CINEMATEKET("cinemateket");
 
     private final String value;
 

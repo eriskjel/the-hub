@@ -5,6 +5,7 @@ import type { WidgetKind } from "@/widgets/schema";
 import { ServerPingsSettings } from "@/widgets/server-pings/ServerPingSettings";
 import { GroceryDealsSettings } from "@/widgets/grocery-deals/GroceryDealsSettings";
 import { CountdownSettingsForm } from "@/widgets/countdown/settings";
+import CinemateketSettings from "@/widgets/cinemateket/CinemateketSettings";
 
 // Per-kind settings schemas
 export const serverPingsSettingsSchema = z.object({
@@ -93,6 +94,8 @@ export const countdownSettingsSchema = countdownSettingsSchemaBase
         }
     });
 
+export const cinemateketSettingsSchema = z.object({});
+
 // Generic entry type
 export type CreateEntry<K extends WidgetKind, S extends z.ZodTypeAny> = {
     kind: K;
@@ -136,6 +139,12 @@ export const creationRegistry = {
             provider: "trippel-trumf",
         }),
         SettingsForm: CountdownSettingsForm,
+    }),
+    cinemateket: createEntry({
+        kind: "cinemateket",
+        schema: cinemateketSettingsSchema,
+        defaults: {},
+        SettingsForm: CinemateketSettings,
     }),
 } as const;
 

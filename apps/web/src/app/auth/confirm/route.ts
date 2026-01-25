@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
 import { safeNextPath } from "@/utils/auth/safeNextPath";
 import { buildAuthErrorUrl, mapVerifyError } from "@/utils/auth/authReasons";
+import { getSafeOrigin } from "@/utils/auth/getSafeOrigin";
 
 const ALLOWED_TYPES: EmailOtpType[] = [
     "signup",
@@ -24,22 +25,34 @@ export async function GET(req: NextRequest) {
     let next = url.searchParams.get("next") || `/${locale}/dashboard`;
     next = safeNextPath(next);
 
+    // Get the correct origin (fixes Docker 0.0.0.0 issue)
+    let origin: string;
+    try {
+        const hostHeader = req.headers.get("host");
+        origin = getSafeOrigin(url, hostHeader);
+    } catch (e) {
+        console.error("[auth/confirm] origin resolution failed:", e);
+        // Fallback to url.origin if getSafeOrigin fails
+        origin = url.origin.replace("0.0.0.0", "localhost");
+        return NextResponse.redirect(buildAuthErrorUrl(url, "confirm_failed", locale, origin));
+    }
+
     if (!token_hash) {
-        return NextResponse.redirect(buildAuthErrorUrl(url, "no_token", locale));
+        return NextResponse.redirect(buildAuthErrorUrl(url, "no_token", locale, origin));
     }
     if (!type || !ALLOWED_TYPES.includes(type)) {
-        return NextResponse.redirect(buildAuthErrorUrl(url, "invalid_type", locale));
+        return NextResponse.redirect(buildAuthErrorUrl(url, "invalid_type", locale, origin));
     }
 
     try {
         const supabase = await createClient();
         const { error } = await supabase.auth.verifyOtp({ type, token_hash });
         if (!error) {
-            return NextResponse.redirect(new URL(next, url));
+            return NextResponse.redirect(new URL(next, origin));
         }
-        return NextResponse.redirect(buildAuthErrorUrl(url, mapVerifyError(error), locale));
+        return NextResponse.redirect(buildAuthErrorUrl(url, mapVerifyError(error), locale, origin));
     } catch (err: unknown) {
         console.error("Auth callback failed:", err);
-        return NextResponse.redirect(buildAuthErrorUrl(url, "confirm_failed", locale));
+        return NextResponse.redirect(buildAuthErrorUrl(url, "confirm_failed", locale, origin));
     }
 }

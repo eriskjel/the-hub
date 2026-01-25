@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
 
     let origin: string;
     try {
-        origin = getSafeOrigin(url);
+        const hostHeader = req.headers.get("host");
+        origin = getSafeOrigin(url, hostHeader);
     } catch (e) {
         // fail fast if misconfigured
         return new NextResponse(String(e instanceof Error ? e.message : e), { status: 500 });
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     if (error || !data?.url) {
         console.error("[auth/github] oauth init error:", error);
-        return NextResponse.redirect(buildAuthErrorUrl(url, mapOauthInitError(), locale));
+        return NextResponse.redirect(buildAuthErrorUrl(url, mapOauthInitError(), locale, origin));
     }
     return NextResponse.redirect(data.url);
 }
