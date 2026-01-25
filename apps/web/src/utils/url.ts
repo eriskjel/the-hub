@@ -9,5 +9,5 @@ export async function resolveOrigin(): Promise<string> {
     if (!host) throw new Error("Cannot resolve request host");
 
     // Build a URL to satisfy getSafeOrigin’s signature
-    return getSafeOrigin(new URL(`${proto}://${host}`));
+    return getSafeOrigin(new URL(`${proto}://${host}`), host);
 }

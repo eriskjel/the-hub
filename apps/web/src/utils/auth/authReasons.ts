@@ -33,8 +33,15 @@ export function mapOauthInitError(_err?: unknown): AuthReasonToken {
 }
 
 // Build a /auth/auth-code-error URL with token + optional locale
-export function buildAuthErrorUrl(base: URL, token: AuthReasonToken, locale?: string): URL {
-    const u = new URL("/auth/auth-code-error", base);
+export function buildAuthErrorUrl(
+    base: URL,
+    token: AuthReasonToken,
+    locale?: string,
+    origin?: string
+): URL {
+    // Use provided origin if available (fixes Docker 0.0.0.0 issue), otherwise use base
+    const baseOrigin = origin || base.origin;
+    const u = new URL("/auth/auth-code-error", baseOrigin);
     u.searchParams.set("reason", token);
     if (locale) u.searchParams.set("locale", locale);
     return u;

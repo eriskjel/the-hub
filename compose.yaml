@@ -3,15 +3,18 @@ name: the-hub
 services:
   api:
     build:
-      context: ./services/backend
+      context: ./services/spring
       target: dev
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: dev,docker
       SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
     volumes:
-      - ./services/backend:/app
+      - ./services/spring:/app
       - m2:/root/.m2
 
   web:
@@ -37,8 +40,8 @@ services:
         pnpm --filter ./apps/web install --frozen-lockfile &&
         pnpm --filter ./apps/web dev -p 3000 --hostname 0.0.0.0
       "
-    depends_on:
-      - api
+    # depends_on:
+    #   - api  # Commented out - you can run backend in IntelliJ instead
 
 volumes:
   m2:
