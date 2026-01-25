@@ -2,7 +2,7 @@ name: backend-ci
 
 on:
   workflow_dispatch:            # manual run (build only)
-  pull_request:                 # build on PRs to dev or main
+  pull_request:                 # build on PRs to main
     branches: [ main ]
   push:                         # build & push only on main
     branches: [ main ]

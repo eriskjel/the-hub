@@ -60,7 +60,6 @@ jobs:
           node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - run: corepack prepare pnpm@10.14.0 --activate
       - run: pnpm install --frozen-lockfile
       - name: Run unit tests
         working-directory: apps/web
@@ -85,7 +84,6 @@ jobs:
           node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - run: corepack prepare pnpm@10.14.0 --activate
       - run: pnpm -C apps/web install --frozen-lockfile
       - name: Build
         working-directory: apps/web
