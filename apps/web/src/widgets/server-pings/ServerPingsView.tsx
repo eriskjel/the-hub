@@ -81,12 +81,18 @@ function toParts(url: string): { host: string; path: string } {
 function statusClasses(code: number) {
     if (code >= 200 && code < 300)
         return {
-            dot: "bg-emerald-500",
-            badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
+            dot: "bg-success",
+            badge: "border-success-subtle bg-success-subtle text-success",
         };
     if (code >= 300 && code < 400)
-        return { dot: "bg-sky-500", badge: "border-sky-200 bg-sky-50 text-sky-700" };
+        return { dot: "bg-info", badge: "border-info-subtle bg-info-subtle text-info" };
     if (code >= 400 && code < 500)
-        return { dot: "bg-amber-500", badge: "border-amber-200 bg-amber-50 text-amber-800" };
-    return { dot: "bg-rose-500", badge: "border-rose-200 bg-rose-50 text-rose-700" };
+        return {
+            dot: "bg-status-error",
+            badge: "border-status-error-subtle bg-status-error-subtle text-status-error",
+        };
+    return {
+        dot: "bg-error",
+        badge: "border-error-subtle bg-error-subtle text-error",
+    };
 }

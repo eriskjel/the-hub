@@ -16,7 +16,7 @@ export default function StaleState({
 
     return (
         <div className="space-y-4 text-white">
-            <div className="rounded-lg border border-red-500/30 bg-red-500/50 p-4 text-center">
+            <div className="border-status-error-muted bg-status-error/50 rounded-lg border p-4 text-center">
                 {t("staleBanner")}
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
