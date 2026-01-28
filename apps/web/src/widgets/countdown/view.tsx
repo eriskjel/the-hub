@@ -94,8 +94,12 @@ export default function CountdownView({
     if (d > 0) parts.push(t("units.day", { count: d }));
     if (h > 0) parts.push(t("units.hour", { count: h }));
     if (m > 0 || (d === 0 && h === 0 && totalSec > 0)) parts.push(t("units.minute", { count: m }));
-    const durationText =
+    const fullText =
         format.list(parts, { style: "long", type: "conjunction" }) + " " + t("units.left");
+
+    // Split at "og" for potential line break
+    const durationParts = fullText.split(" og ");
+    const hasMultipleParts = durationParts.length > 1;
 
     // Nice labels
     const whenText =
@@ -134,8 +138,17 @@ export default function CountdownView({
 
                     {/* middle content - timer centered vertically, sublabel below */}
                     <div className="flex flex-1 flex-col items-center justify-center">
-                        <div className="text-2xl font-bold whitespace-nowrap tabular-nums">
-                            {durationText}
+                        <div className="text-center text-2xl leading-tight font-bold tabular-nums">
+                            {hasMultipleParts ? (
+                                <>
+                                    <span className="inline-block whitespace-nowrap">
+                                        {durationParts[0]} og
+                                    </span>{" "}
+                                    <span className="inline-block">{durationParts[1]}</span>
+                                </>
+                            ) : (
+                                <span className="whitespace-nowrap">{fullText}</span>
+                            )}
                         </div>
                         <div className="mt-2 text-xs opacity-70">
                             {isOngoing
