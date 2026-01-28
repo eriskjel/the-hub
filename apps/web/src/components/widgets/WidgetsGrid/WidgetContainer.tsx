@@ -75,6 +75,19 @@ export default function WidgetContainer({
         </div>
     );
 
+    // Height logic:
+    // - Grocery: smaller min-h to allow auto-sizing for single items, but still has base height
+    // - All others: base height (190px, slightly increased from original 180px)
+    const isGrocery = widget.kind === "grocery-deals";
+
+    let heightClass: string;
+    if (isGrocery) {
+        // Grocery: smaller min-h allows it to shrink for single items, but still has reasonable base
+        heightClass = "min-h-[140px]";
+    } else {
+        heightClass = "min-h-[190px]";
+    }
+
     return (
         <GlassCard
             header={header}
@@ -82,7 +95,7 @@ export default function WidgetContainer({
             stale={stale}
             variant="solid"
             tone="light"
-            className="min-h-[180px]"
+            className={`h-fit self-start ${heightClass}`}
         >
             <WidgetCard widget={widget} userId={userId} staleLayout={stale} />
         </GlassCard>

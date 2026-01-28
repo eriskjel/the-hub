@@ -12,7 +12,7 @@ export default function GridList({
     userId: string | null;
 }): ReactElement {
     return (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
             {widgets.map((widget: AnyWidget): ReactElement => {
                 const x: number = (widget.grid?.x ?? 0) + 1;
                 const y: number = (widget.grid?.y ?? 0) + 1;
@@ -22,7 +22,7 @@ export default function GridList({
                 return (
                     <div
                         key={widget.instanceId}
-                        className="contents lg:block"
+                        className="contents lg:block lg:h-fit lg:self-start"
                         style={{
                             gridColumn: `${x} / span ${w}`,
                             gridRow: `${y} / span ${h}`,
