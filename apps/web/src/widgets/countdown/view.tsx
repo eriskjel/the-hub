@@ -118,22 +118,26 @@ export default function CountdownView({
     return (
         <div className="flex flex-1 flex-col p-2 text-center">
             {isOngoing || isUpcoming ? (
-                <>
+                <div className="flex flex-1 flex-col">
                     {/* top status pill only */}
                     <div className="mb-1 text-xs">
                         {isOngoing && (
-                            <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
+                            <span className="bg-success/20 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1">
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="bg-success absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
+                                    <span className="bg-success relative inline-flex h-1.5 w-1.5 rounded-full"></span>
+                                </span>
                                 {t("status.ongoing")}
                             </span>
                         )}
                     </div>
 
-                    {/* middle content */}
-                    <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="text-2xl font-bold tabular-nums">{durationText}</div>
-
-                        {/* sublabel under countdown (small gray) */}
-                        <div className="text-xs opacity-70">
+                    {/* middle content - timer centered vertically, sublabel below */}
+                    <div className="flex flex-1 flex-col items-center justify-center">
+                        <div className="text-2xl font-bold whitespace-nowrap tabular-nums">
+                            {durationText}
+                        </div>
+                        <div className="mt-2 text-xs opacity-70">
                             {isOngoing
                                 ? whenText && t("status.endsAt", { when: whenText })
                                 : whenText && t("status.startsAt", { when: whenText })}
@@ -142,14 +146,14 @@ export default function CountdownView({
 
                     {/* bottom progress bar (only when ongoing) */}
                     {isOngoing && (
-                        <div className="mt-auto h-1 w-full rounded-full bg-black/10">
+                        <div className="bg-success/20 mt-auto h-1.5 w-full rounded-full">
                             <div
-                                className="h-1 rounded-full bg-black/30"
+                                className="bg-success h-1.5 rounded-full shadow-[0_0_4px_rgba(5,150,105,0.4)] transition-all duration-300 ease-out"
                                 style={{ width: `${progressPct}%` }}
                             />
                         </div>
                     )}
-                </>
+                </div>
             ) : (
                 // Fallback: no future target known (backend gave no nextIso)
                 <div className="flex flex-1 items-center justify-center text-xs opacity-70">
