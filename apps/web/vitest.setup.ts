@@ -1,3 +1,11 @@
+/**
+ * Env used by auth routes (callback, confirm) via getSafeOrigin.
+ * CI sets this; locally it is often unset, so we default for tests.
+ */
+if (!process.env.NEXT_PUBLIC_SITE_URL) {
+    process.env.NEXT_PUBLIC_SITE_URL = "http://localhost:3000";
+}
+
 import "@testing-library/jest-dom";
 import { vi, afterEach } from "vitest";
 
