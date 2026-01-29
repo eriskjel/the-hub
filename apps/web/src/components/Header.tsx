@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { logout } from "@/app/auth/actions/auth";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
 import { isAdminFromUser } from "@/lib/auth/isAdmin";
 import LocaleToggle from "@/components/LocaleToggle";
@@ -12,7 +12,9 @@ type HeaderProps = {
 };
 
 export default async function Header({ variant = "solid", mode = "sticky" }: HeaderProps) {
-    const t = await getTranslations();
+    // getLocale() works because setRequestLocale() is called in parent layouts
+    const locale = await getLocale();
+    const t = await getTranslations({ locale });
     const supabase = await createClient();
     const {
         data: { user },

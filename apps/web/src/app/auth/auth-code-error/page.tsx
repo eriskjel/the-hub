@@ -13,7 +13,7 @@ export default async function AuthCodeErrorPage({
     const locale = qsLocale || (await resolveLocale());
     setRequestLocale(locale);
 
-    const t = await getTranslations("auth");
+    const t = await getTranslations({ locale, namespace: "auth" });
 
     const token = reason && isAuthReasonToken(reason) ? reason : "unknown_reason";
 
