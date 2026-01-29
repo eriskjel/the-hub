@@ -22,7 +22,7 @@ export default function CinemateketView({
     const listRef = React.useRef<HTMLUListElement>(null);
 
     if (!data?.length) {
-        return <div className="text-sm text-muted-light">{t("noShowings")}</div>;
+        return <div className="text-muted-light text-sm">{t("noShowings")}</div>;
     }
 
     const showings: FilmShowing[] = data;
@@ -59,7 +59,7 @@ export default function CinemateketView({
                                                 href={showing.filmUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="hover:text-primary truncate text-sm font-medium text-foreground hover:underline"
+                                                className="hover:text-primary text-foreground truncate text-sm font-medium hover:underline"
                                             >
                                                 {showing.title}
                                             </a>
@@ -120,7 +120,7 @@ export default function CinemateketView({
                         }
                         setExpanded((v) => !v);
                     }}
-                    className="group mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-subtle/50 px-3 py-2 text-xs font-medium text-muted transition-all duration-200 hover:bg-surface-subtle hover:text-primary"
+                    className="group bg-surface-subtle/50 text-muted hover:bg-surface-subtle hover:text-primary mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200"
                 >
                     <span>{expanded ? t("showLess") : t("showMore", { count: totalMore })}</span>
                     <ChevronDown
