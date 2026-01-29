@@ -4,6 +4,7 @@ import type { CinemateketWidget } from "@/widgets/schema";
 import { FilmShowing } from "@/widgets/cinemateket/types";
 import React, { ReactElement, useId, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 
 const INITIAL_COUNT = 2;
 
@@ -21,7 +22,7 @@ export default function CinemateketView({
     const listRef = React.useRef<HTMLUListElement>(null);
 
     if (!data?.length) {
-        return <div className="text-sm text-neutral-700">{t("noShowings")}</div>;
+        return <div className="text-sm text-muted-light">{t("noShowings")}</div>;
     }
 
     const showings: FilmShowing[] = data;
@@ -29,7 +30,7 @@ export default function CinemateketView({
     const hasMore = showings.length > INITIAL_COUNT;
 
     return (
-        <div>
+        <>
             <ul
                 ref={listRef}
                 id={listId}
@@ -58,7 +59,7 @@ export default function CinemateketView({
                                                 href={showing.filmUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="hover:text-primary truncate text-sm font-medium text-neutral-900 hover:underline"
+                                                className="hover:text-primary truncate text-sm font-medium text-foreground hover:underline"
                                             >
                                                 {showing.title}
                                             </a>
@@ -119,12 +120,18 @@ export default function CinemateketView({
                         }
                         setExpanded((v) => !v);
                     }}
-                    className="mt-1 inline-flex w-full items-center justify-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-800 transition-colors duration-200 hover:bg-neutral-100"
+                    className="group mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-surface-subtle/50 px-3 py-2 text-xs font-medium text-muted transition-all duration-200 hover:bg-surface-subtle hover:text-primary"
                 >
-                    {expanded ? t("showLess") : t("showMore", { count: totalMore })}
+                    <span>{expanded ? t("showLess") : t("showMore", { count: totalMore })}</span>
+                    <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                            expanded ? "rotate-180" : ""
+                        }`}
+                        aria-hidden="true"
+                    />
                 </button>
             )}
-        </div>
+        </>
     );
 }
 

@@ -120,11 +120,11 @@ export default function CountdownView({
         : null;
 
     return (
-        <div className="flex flex-1 flex-col p-2 text-center">
+        <div className="flex min-h-[140px] flex-1 flex-col p-2 text-center">
             {isOngoing || isUpcoming ? (
-                <div className="flex flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col">
                     {/* top status pill only */}
-                    <div className="mb-1 text-xs">
+                    <div className="mb-1 flex-none text-xs">
                         {isOngoing && (
                             <span className="bg-success/20 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1">
                                 <span className="relative flex h-1.5 w-1.5">
@@ -159,7 +159,7 @@ export default function CountdownView({
 
                     {/* bottom progress bar (only when ongoing) */}
                     {isOngoing && (
-                        <div className="bg-success/20 mt-auto h-1.5 w-full rounded-full">
+                        <div className="bg-success/20 mt-auto h-1.5 w-full flex-none rounded-full">
                             <div
                                 className="bg-success h-1.5 rounded-full shadow-[0_0_4px_rgba(5,150,105,0.4)] transition-all duration-300 ease-out"
                                 style={{ width: `${progressPct}%` }}
@@ -169,7 +169,7 @@ export default function CountdownView({
                 </div>
             ) : (
                 // Fallback: no future target known (backend gave no nextIso)
-                <div className="flex flex-1 items-center justify-center text-xs opacity-70">
+                <div className="flex min-h-[120px] flex-1 items-center justify-center text-xs opacity-70">
                     {hasPrev
                         ? t("nextNotAnnouncedWithDays", { days: daysSincePrev ?? 0 })
                         : t("nextNotAnnounced")}

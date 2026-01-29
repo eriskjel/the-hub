@@ -8,6 +8,9 @@
  * - Success: `bg-success-subtle`, `text-success`
  * - Info: `bg-info-subtle`, `text-info`
  * - Primary: `bg-primary`, `hover:bg-primary-muted`, `text-primary`
+ * - Muted (neutral text): `text-muted`, `text-muted-subtle`, `text-muted-light`
+ * - Surface (backgrounds): `bg-surface`, `bg-surface-subtle`, `bg-surface-light`
+ * - Border: `border-border`, `border-border-subtle`
  */
 
 export const error = {
@@ -38,4 +41,29 @@ export const primary = {
     bg: { default: "bg-primary", muted: "bg-primary-muted", subtle: "bg-primary-subtle" },
     text: { default: "text-primary" },
     hover: { muted: "hover:bg-primary-muted" },
+};
+
+export const muted = {
+    text: {
+        default: "text-muted",
+        subtle: "text-muted-subtle",
+        light: "text-muted-light",
+    },
+};
+
+export const surface = {
+    bg: {
+        default: "bg-surface",
+        subtle: "bg-surface-subtle",
+        light: "bg-surface-light",
+    },
+    hover: {
+        subtle: "hover:bg-surface-subtle",
+        light: "hover:bg-surface-light",
+    },
+};
+
+export const border = {
+    default: "border-border",
+    subtle: "border-border-subtle",
 };

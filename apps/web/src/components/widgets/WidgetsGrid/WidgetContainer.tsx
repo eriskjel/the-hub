@@ -76,17 +76,10 @@ export default function WidgetContainer({
     );
 
     // Height logic:
-    // - Grocery: smaller min-h to allow auto-sizing for single items, but still has base height
-    // - All others: base height (190px, slightly increased from original 180px)
+    // - Grocery: min-h 140px so it can shrink for single items
+    // - All others (countdown, cinemateket, etc.): min-h 190px so same base height as each other
     const isGrocery = widget.kind === "grocery-deals";
-
-    let heightClass: string;
-    if (isGrocery) {
-        // Grocery: smaller min-h allows it to shrink for single items, but still has reasonable base
-        heightClass = "min-h-[140px]";
-    } else {
-        heightClass = "min-h-[190px]";
-    }
+    const heightClass = isGrocery ? "min-h-[140px]" : "min-h-[190px]";
 
     return (
         <GlassCard
@@ -103,5 +96,5 @@ export default function WidgetContainer({
 }
 
 function Header({ title }: { title: string }): ReactElement {
-    return <div className="truncate text-sm font-semibold text-neutral-900">{title}</div>;
+    return <div className="text-foreground truncate text-sm font-semibold">{title}</div>;
 }

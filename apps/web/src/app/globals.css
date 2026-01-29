@@ -35,6 +35,20 @@
     --primary: #2563eb;
     --primary-muted: #3b82f6;
     --primary-subtle: #eff6ff;
+
+    /* Muted – neutral text colors (secondary, muted, subtle) */
+    --muted: #525252; /* neutral-600 */
+    --muted-subtle: #737373; /* neutral-500 */
+    --muted-light: #404040; /* neutral-700 */
+
+    /* Surface – card/container backgrounds */
+    --surface: #ffffff; /* white */
+    --surface-subtle: #fafafa; /* neutral-50 */
+    --surface-light: #f5f5f5; /* neutral-100 */
+
+    /* Border – borders and dividers */
+    --border: #e5e5e5; /* neutral-200 */
+    --border-subtle: #d4d4d4; /* neutral-300 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,6 +76,20 @@
         --primary: #60a5fa;
         --primary-muted: #93c5fd;
         --primary-subtle: #1e3a8a;
+
+        /* Muted – neutral text colors (adjusted for dark) */
+        --muted: #a3a3a3; /* neutral-400 */
+        --muted-subtle: #d4d4d4; /* neutral-300 */
+        --muted-light: #737373; /* neutral-500 */
+
+        /* Surface – card/container backgrounds */
+        --surface: #171717; /* neutral-900 */
+        --surface-subtle: #262626; /* neutral-800 */
+        --surface-light: #404040; /* neutral-700 */
+
+        /* Border – borders and dividers */
+        --border: #404040; /* neutral-700 */
+        --border-subtle: #525252; /* neutral-600 */
     }
 }
 
@@ -90,6 +118,17 @@
     --color-primary: var(--primary);
     --color-primary-muted: var(--primary-muted);
     --color-primary-subtle: var(--primary-subtle);
+
+    --color-muted: var(--muted);
+    --color-muted-subtle: var(--muted-subtle);
+    --color-muted-light: var(--muted-light);
+
+    --color-surface: var(--surface);
+    --color-surface-subtle: var(--surface-subtle);
+    --color-surface-light: var(--surface-light);
+
+    --color-border: var(--border);
+    --color-border-subtle: var(--border-subtle);
 }
 
 body {

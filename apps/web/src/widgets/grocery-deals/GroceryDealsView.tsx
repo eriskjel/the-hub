@@ -5,6 +5,7 @@ import { Deal } from "@/widgets/grocery-deals/types";
 import React, { ReactElement, useId, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 
 const formatPerKg = (n?: number) => (typeof n === "number" ? `${formatPrice(n)} kr/kg` : "");
 
@@ -68,7 +69,7 @@ export default function GroceryDealsView({
     const listRef = React.useRef<HTMLUListElement>(null);
 
     if (!data?.length) {
-        return <div className="text-sm text-neutral-700">{t("noDeals")}</div>;
+        return <div className="text-muted-light text-sm">{t("noDeals")}</div>;
     }
 
     const max = widget.settings.maxResults;
@@ -77,10 +78,9 @@ export default function GroceryDealsView({
     const collapsedCount = 1;
     const totalMore = Math.max(0, deals.length - collapsedCount);
     const hasMore = deals.length > collapsedCount;
-    const isSingleItem = deals.length === 1 && !hasMore;
 
     return (
-        <div className={isSingleItem ? "flex h-full min-h-0 flex-1 flex-col justify-center" : ""}>
+        <>
             <ul
                 ref={listRef}
                 id={listId}
@@ -104,12 +104,18 @@ export default function GroceryDealsView({
                         }
                         setExpanded((v) => !v);
                     }}
-                    className="mt-1 inline-flex w-full items-center justify-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-800 transition-colors duration-200 hover:bg-neutral-100"
+                    className="group bg-surface-subtle/50 text-muted hover:bg-surface-subtle hover:text-primary focus:ring-primary/20 mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 focus:ring-2 focus:outline-none"
                 >
-                    {expanded ? t("showLess") : t("showMore", { count: totalMore })}
+                    <span>{expanded ? t("showLess") : t("showMore", { count: totalMore })}</span>
+                    <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                            expanded ? "rotate-180" : ""
+                        }`}
+                        aria-hidden="true"
+                    />
                 </button>
             )}
-        </div>
+        </>
     );
 }
 
@@ -131,7 +137,7 @@ function renderRows(
         return (
             <li
                 key={i}
-                className={`flex items-start gap-3 rounded-lg px-2 py-2.5 transition-all duration-300 ease-in-out hover:bg-neutral-50 ${
+                className={`hover:bg-surface-subtle flex items-start gap-3 rounded-lg px-2 py-2.5 transition-all duration-300 ease-in-out ${
                     isHidden
                         ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
                         : "max-h-none opacity-100"
@@ -149,7 +155,7 @@ function renderRows(
                         />
                     </div>
                 ) : (
-                    <div className="h-8 w-8 shrink-0 rounded-md bg-neutral-100" />
+                    <div className="bg-surface-light h-8 w-8 shrink-0 rounded-md" />
                 )}
 
                 {/* LEFT: flexible, can truncate */}
@@ -175,18 +181,16 @@ function renderRows(
 
                 {/* RIGHT: fixed width so left side doesn't “move in” */}
                 <div className="shrink-0 grow-0 basis-28 text-right sm:basis-32">
-                    <div className="text-base font-bold text-neutral-900">
+                    <div className="text-foreground text-base font-bold">
                         {formatPrice(deal.price)} {t("currency")}
                     </div>
                     {deal.multipack && typeof deal.perPiecePrice === "number" ? (
-                        <div className="text-[11px] text-neutral-600">
+                        <div className="text-muted text-[11px]">
                             {formatPrice(deal.perPiecePrice)} {t("currency")}/stk
                         </div>
                     ) : null}
                     {typeof deal.unitPrice === "number" && !deal.multipack ? (
-                        <div className="text-[11px] text-neutral-600">
-                            {formatPerKg(deal.unitPrice)}
-                        </div>
+                        <div className="text-muted text-[11px]">{formatPerKg(deal.unitPrice)}</div>
                     ) : null}
                 </div>
             </li>
