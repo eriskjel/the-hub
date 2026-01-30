@@ -65,7 +65,7 @@ export function Select({
                 id={id}
                 aria-label={ariaLabel}
                 className={cn(
-                    "flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-left text-neutral-900 outline-none",
+                    "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-left text-neutral-900 outline-none",
                     "transition-colors",
                     "hover:border-neutral-400",
                     "focus:border-neutral-400 focus:ring-2 focus:ring-black/20",
