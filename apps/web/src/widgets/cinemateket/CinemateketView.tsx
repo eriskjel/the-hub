@@ -44,7 +44,7 @@ export default function CinemateketView({
                     return (
                         <li
                             key={`${showing.title}-${showing.showTime}`}
-                            className={`rounded-lg px-2 py-1 transition-all duration-300 ease-in-out ${
+                            className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-all duration-300 ease-in-out ${
                                 isHidden
                                     ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
                                     : "max-h-none opacity-100"
@@ -69,10 +69,8 @@ export default function CinemateketView({
                                             </div>
                                         )}
                                     </div>
-                                    <div className="shrink-0 text-right">
-                                        <div className="text-sm font-medium whitespace-nowrap text-neutral-700">
-                                            {formatShowTime(showing.showTime, format)}
-                                        </div>
+                                    <div className="shrink-0 text-right text-sm font-medium whitespace-nowrap text-neutral-700">
+                                        {formatShowTime(showing.showTime, format)}
                                     </div>
                                 </div>
 
@@ -92,18 +90,28 @@ export default function CinemateketView({
                                     </div>
                                 )}
 
-                                {/* Ticket link */}
-                                {showing.ticketUrl && (
-                                    <a
-                                        href={showing.ticketUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:text-primary-muted inline-flex w-fit items-center gap-1 text-xs hover:underline"
-                                    >
-                                        {t("buyTickets")}
-                                        <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
-                                    </a>
-                                )}
+                                {/* Buy tickets and date */}
+                                <div className="flex items-center justify-between gap-2">
+                                    {showing.ticketUrl ? (
+                                        <a
+                                            href={showing.ticketUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:text-primary-muted inline-flex w-fit items-center gap-1 text-xs hover:underline"
+                                        >
+                                            {t("buyTickets")}
+                                            <ExternalLink
+                                                className="h-3 w-3 shrink-0"
+                                                aria-hidden
+                                            />
+                                        </a>
+                                    ) : (
+                                        <span />
+                                    )}
+                                    <div className="text-right text-xs text-neutral-600">
+                                        {formatShowDate(showing.showTime, format)}
+                                    </div>
+                                </div>
                             </div>
                         </li>
                     );
@@ -136,11 +144,22 @@ export default function CinemateketView({
     );
 }
 
-function formatShowTime(iso: string, format: ReturnType<typeof useFormatter>): string {
+function formatShowDate(iso: string, format: ReturnType<typeof useFormatter>): string {
     try {
         const date = new Date(iso);
         return format.dateTime(date, {
             dateStyle: "short",
+            timeZone: "Europe/Oslo",
+        });
+    } catch {
+        return iso;
+    }
+}
+
+function formatShowTime(iso: string, format: ReturnType<typeof useFormatter>): string {
+    try {
+        const date = new Date(iso);
+        return format.dateTime(date, {
             timeStyle: "short",
             timeZone: "Europe/Oslo",
         });
