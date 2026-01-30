@@ -17,7 +17,7 @@ export async function Header({
     const name = pickDisplayName(profile, user);
 
     return (
-        <div className="mx-auto max-w-6xl p-4">
+        <div className="mx-auto max-w-7xl p-4">
             <header className="py-8 text-center">
                 <h1 className="mb-2 text-5xl font-bold text-white">The Hub</h1>
                 <p className="text-lg text-white">{t("welcome", { name })}</p>
@@ -28,7 +28,7 @@ export async function Header({
 
 export function HeaderSkeleton(): ReactElement {
     return (
-        <div className="mx-auto max-w-6xl p-4">
+        <div className="mx-auto max-w-7xl p-4">
             <header className="py-8 text-center">
                 <h1 className="relative mb-2 text-5xl font-bold text-transparent select-none">
                     The Hub
