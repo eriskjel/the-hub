@@ -44,7 +44,7 @@ export function Modal({
         // Outer layer is scroll container to handle very small viewports & keyboards
         <div
             className={clsx(
-                "fixed inset-0 z-[1000] overflow-y-auto" // bump way above any z-50 headers
+                "fixed inset-0 z-[1000] cursor-pointer overflow-y-auto" // bump way above any z-50 headers
             )}
             role="dialog"
             aria-modal="true"
@@ -52,7 +52,7 @@ export function Modal({
         >
             {/* Backdrop + centering wrapper (fills at least the viewport) */}
             <div
-                className="flex min-h-dvh items-center justify-center bg-black/60 p-4"
+                className="flex min-h-dvh cursor-default items-center justify-center bg-black/60 p-4"
                 onClick={(e) => e.stopPropagation()} // prevent backdrop click from reaching panel
             >
                 {/* The modal panel: cap height and let *it* scroll if needed */}
@@ -67,7 +67,7 @@ export function Modal({
                         <button
                             aria-label="Close"
                             onClick={onClose}
-                            className="rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 focus:ring-2 focus:ring-neutral-300 focus:outline-none"
+                            className="cursor-pointer rounded-lg p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 focus:ring-2 focus:ring-neutral-300 focus:outline-none"
                         >
                             <svg
                                 viewBox="0 0 20 20"

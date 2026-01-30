@@ -1,6 +1,7 @@
 "use client";
 
 import type { InputHTMLAttributes, ReactElement, ReactNode } from "react";
+import { Select } from "@/components/ui/Select";
 
 function cx(...parts: Array<string | false | null | undefined>) {
     return parts.filter(Boolean).join(" ");
@@ -74,24 +75,12 @@ export function FieldSelect({
     return (
         <FieldRow>
             <Label>{label}</Label>
-            <select
+            <Select
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className={cx(
-                    "w-full rounded-xl border border-neutral-300 bg-white",
-                    "px-3 py-2 text-neutral-900",
-                    "outline-none focus:border-neutral-400 focus:ring-2 focus:ring-black/20",
-                    selectClassName
-                )}
-            >
-                {options.map(
-                    (o): ReactElement => (
-                        <option key={o.value} value={o.value} disabled={o.disabled}>
-                            {o.label}
-                        </option>
-                    )
-                )}
-            </select>
+                onValueChange={onChange}
+                options={options}
+                className={cx("w-full", selectClassName)}
+            />
             <ErrorText>{error}</ErrorText>
             <Help>{help}</Help>
         </FieldRow>

@@ -1,23 +1,134 @@
 @import "tailwindcss";
 @import "flag-icons/css/flag-icons.min.css";
 
+/*
+ * Semantic colors live in :root (light) and are overridden in dark mode.
+ * @theme maps them into Tailwind so we get bg-error, text-success, etc.
+ * Use @theme (not @theme inline) so these tokens can change with prefers-color-scheme.
+ */
+
 :root {
     --background: #ffffff;
     --foreground: #171717;
-}
 
-@theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
+    /* Error – red (validation, destructive, server down) */
+    --error: #dc2626;
+    --error-muted: #f87171;
+    --error-subtle: #fef2f2;
+
+    /* Status-error – yellow (cached/stale pill, degraded state) */
+    --status-error: #eab308;
+    --status-error-muted: #facc15;
+    --status-error-subtle: #fef9c3;
+
+    /* Success – emerald */
+    --success: #059669;
+    --success-muted: #10b981;
+    --success-subtle: #ecfdf5;
+
+    /* Info – sky */
+    --info: #0284c7;
+    --info-muted: #0ea5e9;
+    --info-subtle: #f0f9ff;
+
+    /* Primary – blue (buttons, links) */
+    --primary: #2563eb;
+    --primary-muted: #3b82f6;
+    --primary-subtle: #eff6ff;
+
+    /* Muted – neutral text colors (secondary, muted, subtle) */
+    --muted: #525252; /* neutral-600 */
+    --muted-subtle: #737373; /* neutral-500 */
+    --muted-light: #404040; /* neutral-700 */
+
+    /* Surface – card/container backgrounds */
+    --surface: #ffffff; /* white */
+    --surface-subtle: #fafafa; /* neutral-50 */
+    --surface-light: #f5f5f5; /* neutral-100 */
+
+    /* Border – borders and dividers */
+    --border: #e5e5e5; /* neutral-200 */
+    --border-subtle: #d4d4d4; /* neutral-300 */
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         --background: #0a0a0a;
         --foreground: #ededed;
+
+        /* Slightly adjusted for dark backgrounds */
+        --error: #f87171;
+        --error-muted: #fca5a5;
+        --error-subtle: #450a0a;
+
+        --status-error: #facc15;
+        --status-error-muted: #fde047;
+        --status-error-subtle: #422006;
+
+        --success: #34d399;
+        --success-muted: #6ee7b7;
+        --success-subtle: #052e16;
+
+        --info: #38bdf8;
+        --info-muted: #7dd3fc;
+        --info-subtle: #0c4a6e;
+
+        --primary: #60a5fa;
+        --primary-muted: #93c5fd;
+        --primary-subtle: #1e3a8a;
+
+        /* Muted – neutral text colors (adjusted for dark) */
+        --muted: #a3a3a3; /* neutral-400 */
+        --muted-subtle: #d4d4d4; /* neutral-300 */
+        --muted-light: #737373; /* neutral-500 */
+
+        /* Surface – card/container backgrounds */
+        --surface: #171717; /* neutral-900 */
+        --surface-subtle: #262626; /* neutral-800 */
+        --surface-light: #404040; /* neutral-700 */
+
+        /* Border – borders and dividers */
+        --border: #404040; /* neutral-700 */
+        --border-subtle: #525252; /* neutral-600 */
     }
+}
+
+@theme {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+
+    --color-error: var(--error);
+    --color-error-muted: var(--error-muted);
+    --color-error-subtle: var(--error-subtle);
+
+    --color-status-error: var(--status-error);
+    --color-status-error-muted: var(--status-error-muted);
+    --color-status-error-subtle: var(--status-error-subtle);
+
+    --color-success: var(--success);
+    --color-success-muted: var(--success-muted);
+    --color-success-subtle: var(--success-subtle);
+
+    --color-info: var(--info);
+    --color-info-muted: var(--info-muted);
+    --color-info-subtle: var(--info-subtle);
+
+    --color-primary: var(--primary);
+    --color-primary-muted: var(--primary-muted);
+    --color-primary-subtle: var(--primary-subtle);
+
+    --color-muted: var(--muted);
+    --color-muted-subtle: var(--muted-subtle);
+    --color-muted-light: var(--muted-light);
+
+    --color-surface: var(--surface);
+    --color-surface-subtle: var(--surface-subtle);
+    --color-surface-light: var(--surface-light);
+
+    --color-border: var(--border);
+    --color-border-subtle: var(--border-subtle);
 }
 
 body {

@@ -5,6 +5,7 @@ import { Deal } from "@/widgets/grocery-deals/types";
 import React, { ReactElement, useId, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
 
 const formatPerKg = (n?: number) => (typeof n === "number" ? `${formatPrice(n)} kr/kg` : "");
 
@@ -65,29 +66,30 @@ export default function GroceryDealsView({
     const t = useTranslations("widgets.create.groceryDeals.view");
     const [expanded, setExpanded] = useState(false);
     const listId = useId();
+    const listRef = React.useRef<HTMLUListElement>(null);
 
     if (!data?.length) {
-        return <div className="text-sm text-neutral-700">{t("noDeals")}</div>;
+        return <div className="text-muted-light text-sm">{t("noDeals")}</div>;
     }
 
     const max = widget.settings.maxResults;
     const deals: Deal[] = data.slice(0, max);
 
     const collapsedCount = 1;
-    const rows: Deal[] = expanded ? deals : deals.slice(0, collapsedCount);
     const totalMore = Math.max(0, deals.length - collapsedCount);
     const hasMore = deals.length > collapsedCount;
 
     return (
-        <div>
+        <>
             <ul
+                ref={listRef}
                 id={listId}
-                className={`divide-y divide-neutral-200 [scrollbar-gutter:stable] [scrollbar-width:thin] ${
-                    expanded ? "max-h-64 overflow-y-auto pr-2 md:pr-3" : ""
+                className={`space-y-1 transition-all duration-300 ease-in-out [scrollbar-gutter:stable] [scrollbar-width:thin] ${
+                    expanded ? "max-h-64 overflow-y-auto pr-2 md:pr-3" : "max-h-24 overflow-hidden"
                 }`}
                 aria-live="polite"
             >
-                {renderRows(rows, t)}
+                {renderRows(deals, t, expanded, collapsedCount)}
             </ul>
 
             {hasMore && (
@@ -95,13 +97,25 @@ export default function GroceryDealsView({
                     type="button"
                     aria-controls={listId}
                     aria-expanded={expanded}
-                    onClick={() => setExpanded((v) => !v)}
-                    className="mt-1 inline-flex w-full items-center justify-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-800 transition hover:bg-neutral-100"
+                    onClick={() => {
+                        if (expanded && listRef.current) {
+                            // Scroll to top when collapsing
+                            listRef.current.scrollTop = 0;
+                        }
+                        setExpanded((v) => !v);
+                    }}
+                    className="group bg-surface-subtle/50 text-muted hover:bg-surface-subtle hover:text-primary focus:ring-primary/20 mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 focus:ring-2 focus:outline-none"
                 >
-                    {expanded ? t("showLess") : t("showMore", { count: totalMore })}
+                    <span>{expanded ? t("showLess") : t("showMore", { count: totalMore })}</span>
+                    <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                            expanded ? "rotate-180" : ""
+                        }`}
+                        aria-hidden="true"
+                    />
                 </button>
             )}
-        </div>
+        </>
     );
 }
 
@@ -112,59 +126,76 @@ const formatPrice = (n?: number) =>
 
 const formatDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("no-NO") : "");
 
-function renderRows(rows: Deal[], t: ReturnType<typeof useTranslations>): ReactElement[] {
-    return rows.map((deal: Deal, i) => (
-        <li key={i} className="flex items-start gap-3 py-2">
-            {deal.storeLogo ? (
-                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-neutral-100">
-                    <Image
-                        src={deal.storeLogo}
-                        alt={deal.store || "store"}
-                        fill
-                        sizes="32px"
-                        className="object-contain"
-                        unoptimized
-                    />
-                </div>
-            ) : (
-                <div className="h-8 w-8 shrink-0 rounded-md bg-neutral-100" />
-            )}
+function renderRows(
+    rows: Deal[],
+    t: ReturnType<typeof useTranslations>,
+    expanded: boolean,
+    collapsedCount: number
+): ReactElement[] {
+    return rows.map((deal: Deal, i) => {
+        const isHidden = !expanded && i >= collapsedCount;
+        return (
+            <li
+                key={i}
+                className={`hover:bg-surface-subtle flex items-start gap-3 rounded-lg px-2 py-2.5 transition-all duration-300 ease-in-out ${
+                    isHidden
+                        ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
+                        : "max-h-none opacity-100"
+                }`}
+            >
+                {deal.storeLogo ? (
+                    <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+                        <Image
+                            src={deal.storeLogo}
+                            alt={deal.store || "store"}
+                            fill
+                            sizes="32px"
+                            className="object-contain"
+                            unoptimized
+                        />
+                    </div>
+                ) : (
+                    <div className="bg-surface-light h-8 w-8 shrink-0 rounded-md" />
+                )}
 
-            {/* LEFT: flexible, can truncate */}
-            <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-neutral-900">{deal.name}</div>
-                <div className="truncate text-xs text-neutral-700">{deal.store}</div>
-                {(() => {
-                    const sub = subtitle(deal);
-                    return sub ? (
-                        <div className="truncate text-xs text-neutral-600">{sub}</div>
-                    ) : null;
-                })()}
-                {deal.validUntil ? (
-                    <div className="mt-0.5 text-[11px] text-neutral-600">
-                        {t("until")} {formatDate(deal.validUntil)}
+                {/* LEFT: flexible, can truncate */}
+                <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="truncate text-sm font-semibold text-neutral-900">
+                        {deal.name}
                     </div>
-                ) : null}
-            </div>
-
-            {/* RIGHT: fixed width so left side doesn't “move in” */}
-            <div className="shrink-0 grow-0 basis-28 text-right sm:basis-32">
-                <div className="text-sm font-semibold text-neutral-900">
-                    {formatPrice(deal.price)} {t("currency")}
+                    <div className="truncate text-xs font-medium text-neutral-600">
+                        {deal.store}
+                    </div>
+                    {(() => {
+                        const sub = subtitle(deal);
+                        return sub ? (
+                            <div className="truncate text-xs text-neutral-600">{sub}</div>
+                        ) : null;
+                    })()}
+                    {deal.validUntil ? (
+                        <div className="mt-0.5 text-[11px] text-neutral-600">
+                            {t("until")} {formatDate(deal.validUntil)}
+                        </div>
+                    ) : null}
                 </div>
-                {deal.multipack && typeof deal.perPiecePrice === "number" ? (
-                    <div className="text-[11px] text-neutral-600">
-                        {formatPrice(deal.perPiecePrice)} {t("currency")}/stk
+
+                {/* RIGHT: fixed width so left side doesn't “move in” */}
+                <div className="shrink-0 grow-0 basis-28 text-right sm:basis-32">
+                    <div className="text-foreground text-base font-bold">
+                        {formatPrice(deal.price)} {t("currency")}
                     </div>
-                ) : null}
-                {typeof deal.unitPrice === "number" && !deal.multipack ? (
-                    <div className="text-[11px] text-neutral-600">
-                        {formatPerKg(deal.unitPrice)}
-                    </div>
-                ) : null}
-            </div>
-        </li>
-    ));
+                    {deal.multipack && typeof deal.perPiecePrice === "number" ? (
+                        <div className="text-muted text-[11px]">
+                            {formatPrice(deal.perPiecePrice)} {t("currency")}/stk
+                        </div>
+                    ) : null}
+                    {typeof deal.unitPrice === "number" && !deal.multipack ? (
+                        <div className="text-muted text-[11px]">{formatPerKg(deal.unitPrice)}</div>
+                    ) : null}
+                </div>
+            </li>
+        );
+    });
 }
 
 const safePerKg = (n?: number) =>

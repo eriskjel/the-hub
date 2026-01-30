@@ -96,7 +96,7 @@ function EditWidgetModalContent({
                 <Settings form={form} isEdit initialSettings={widget.settings} />
 
                 {form.formState.errors.root?.message ? (
-                    <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                    <div className="border-error-muted bg-error-subtle text-error rounded-md border px-3 py-2 text-sm">
                         {form.formState.errors.root.message}
                     </div>
                 ) : null}

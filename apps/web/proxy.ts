@@ -5,7 +5,7 @@ import { updateSession } from "@/utils/supabase/middleware";
 
 const handleI18nRouting = createMiddleware(routing);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const response = handleI18nRouting(request) ?? NextResponse.next();
     // Pass the *same* response through Supabase updater
     return await updateSession(request, response);

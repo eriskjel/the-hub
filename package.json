@@ -22,9 +22,7 @@
       "import-in-the-middle": "^2.0.5",
       "require-in-the-middle": "^8.0.1"
     },
-    "onlyBuiltDependencies": [
-      "supabase"
-    ]
+    "neverBuiltDependencies": ["supabase"]
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",

@@ -12,7 +12,7 @@ function StateText({ children }: { children: ReactNode }): ReactElement {
 
 function ErrorBox({ msg }: { msg: string }): ReactElement {
     return (
-        <div className="rounded-lg border border-red-400/40 bg-red-400/15 p-3 text-sm text-red-100">
+        <div className="border-error-muted bg-error-subtle text-error rounded-lg border p-3 text-sm">
             {msg}
         </div>
     );

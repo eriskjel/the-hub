@@ -77,7 +77,7 @@ function LocationSection({
                 <div
                     role="status"
                     aria-live="polite"
-                    className="flex items-center justify-between rounded-md bg-emerald-600 px-3 py-2 text-sm text-white shadow-sm"
+                    className="bg-success flex items-center justify-between rounded-md px-3 py-2 text-sm text-white shadow-sm"
                     title={`${lat}, ${lon}`}
                 >
                     <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ function LocationSection({
                         onClick={onUseMyLocation}
                         className={`flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
                             locBusy ? "pointer-events-none opacity-50" : ""
-                        } bg-blue-600 text-white transition-colors hover:bg-blue-500`}
+                        } bg-primary hover:bg-primary-muted text-white transition-colors`}
                         aria-busy={locBusy}
                     >
                         <Crosshair className="h-4 w-4" aria-hidden />
@@ -115,7 +115,7 @@ function LocationSection({
                             {locBusy ? t("location.locating") : t("location.useMyLocation")}
                         </span>
                     </button>
-                    {geoErr ? <div className="mt-1 text-xs text-red-400">{geoErr}</div> : null}
+                    {geoErr ? <div className="text-error mt-1 text-xs">{geoErr}</div> : null}
                 </>
             )}
 
@@ -135,7 +135,7 @@ function LocationSection({
                     <span>{t("location.searching")}</span>
                 </div>
             ) : mode === "city" && hasCoords ? (
-                <div className="mt-1 inline-flex items-center gap-2 rounded-md bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800 ring-1 ring-emerald-200">
+                <div className="bg-success-subtle text-success ring-success-subtle mt-1 inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ring-1">
                     <MapPin className="h-3.5 w-3.5" aria-hidden />
                     <span>
                         {cityLabel
