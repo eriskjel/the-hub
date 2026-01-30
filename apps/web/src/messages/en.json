@@ -240,7 +240,8 @@
                     "day": "{count, plural, one {# day} other {# days}}",
                     "hour": "{count, plural, one {# hour} other {# hours}}",
                     "minute": "{count, plural, one {# minute} other {# minutes}}",
-                    "left": "left"
+                    "left": "left",
+                    "conjunction": " and "
                 },
                 "providerNames": {
                     "trippelTrumf": "Trippel-Trumf",

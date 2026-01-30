@@ -97,8 +97,9 @@ export default function CountdownView({
     const fullText =
         format.list(parts, { style: "long", type: "conjunction" }) + " " + t("units.left");
 
-    // Split at "og" for potential line break
-    const durationParts = fullText.split(" og ");
+    // Split at locale-aware conjunction for potential line break (e.g. " and " / " og ")
+    const conjunction = t("units.conjunction");
+    const durationParts = fullText.split(conjunction);
     const hasMultipleParts = durationParts.length > 1;
 
     // Nice labels
@@ -142,9 +143,12 @@ export default function CountdownView({
                             {hasMultipleParts ? (
                                 <>
                                     <span className="inline-block whitespace-nowrap">
-                                        {durationParts[0]} og
+                                        {durationParts[0].trimEnd()}
+                                        {conjunction}
                                     </span>{" "}
-                                    <span className="inline-block">{durationParts[1]}</span>
+                                    <span className="inline-block">
+                                        {durationParts[1].trimStart()}
+                                    </span>
                                 </>
                             ) : (
                                 <span className="whitespace-nowrap">{fullText}</span>
