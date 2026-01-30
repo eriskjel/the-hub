@@ -4,7 +4,7 @@ import type { CinemateketWidget } from "@/widgets/schema";
 import { FilmShowing } from "@/widgets/cinemateket/types";
 import React, { ReactElement, useId, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 
 const INITIAL_COUNT = 2;
 
@@ -34,7 +34,7 @@ export default function CinemateketView({
             <ul
                 ref={listRef}
                 id={listId}
-                className={`space-y-1 transition-all duration-300 ease-in-out [scrollbar-gutter:stable] [scrollbar-width:thin] ${
+                className={`space-y-px transition-all duration-300 ease-in-out [scrollbar-gutter:stable] [scrollbar-width:thin] ${
                     expanded ? "max-h-64 overflow-y-auto pr-2 md:pr-3" : "max-h-24 overflow-hidden"
                 }`}
                 aria-live="polite"
@@ -44,13 +44,13 @@ export default function CinemateketView({
                     return (
                         <li
                             key={`${showing.title}-${showing.showTime}`}
-                            className={`rounded-lg px-2 py-2 transition-all duration-300 ease-in-out ${
+                            className={`rounded-lg px-2 py-1 transition-all duration-300 ease-in-out ${
                                 isHidden
                                     ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
                                     : "max-h-none opacity-100"
                             }`}
                         >
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-px">
                                 {/* Title and time */}
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0 flex-1">
@@ -98,9 +98,10 @@ export default function CinemateketView({
                                         href={showing.ticketUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-primary hover:text-primary-muted mt-0.5 inline-flex w-fit items-center gap-1 text-xs hover:underline"
+                                        className="text-primary hover:text-primary-muted inline-flex w-fit items-center gap-1 text-xs hover:underline"
                                     >
-                                        {t("buyTickets")} →
+                                        {t("buyTickets")}
+                                        <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
                                     </a>
                                 )}
                             </div>
