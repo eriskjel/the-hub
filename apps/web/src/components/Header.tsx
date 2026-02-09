@@ -1,10 +1,10 @@
 import { Link } from "@/i18n/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { logout } from "@/app/auth/actions/auth";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
 import { isAdminFromUser } from "@/lib/auth/isAdmin";
-import LocaleToggle from "@/components/LocaleToggle";
+import ThemeToggle from "@/components/ThemeToggle";
+import UserMenu from "@/components/UserMenu";
 
 type HeaderProps = {
     variant?: "transparent" | "solid";
@@ -31,9 +31,10 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
                     <NavItems isLoggedIn={!!user} isAdmin={isAdminFromUser(user)} t={t} />
                 </ul>
 
-                {/* Right-only: locale flag */}
-                <div className="absolute right-8 flex items-center">
-                    <LocaleToggle />
+                {/* Right: theme toggle + user menu */}
+                <div className="absolute right-8 flex items-center gap-1">
+                    <ThemeToggle />
+                    <UserMenu isLoggedIn={!!user} logoutLabel={t("header.logout")} />
                 </div>
             </nav>
         </header>
@@ -70,13 +71,6 @@ function AuthLinks({ isAdmin, t }: { isAdmin: boolean; t: (k: string) => string 
                     </Link>
                 </li>
             )}
-            <li>
-                <form action={logout}>
-                    <button className="cursor-pointer hover:text-gray-300" aria-label="Log out">
-                        {t("header.logout")}
-                    </button>
-                </form>
-            </li>
         </>
     );
 }

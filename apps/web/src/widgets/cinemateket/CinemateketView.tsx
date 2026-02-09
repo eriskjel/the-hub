@@ -46,10 +46,9 @@ export default function CinemateketView({
                     return (
                         <li
                             key={`${showing.title}-${showing.showTime}`}
-                            className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-all duration-300 ease-in-out ${
-                                isHidden
-                                    ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
-                                    : "max-h-none opacity-100"
+                            inert={isHidden}
+                            className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-opacity duration-200 ease-in-out ${
+                                isHidden ? "pointer-events-none opacity-0" : "opacity-100"
                             }`}
                         >
                             <div className="flex flex-col gap-px">
@@ -61,24 +60,24 @@ export default function CinemateketView({
                                                 href={showing.filmUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="hover:text-primary text-foreground truncate text-sm font-medium hover:underline"
+                                                className="hover:text-primary text-foreground block truncate text-sm font-medium hover:underline"
                                             >
                                                 {showing.title}
                                             </a>
                                         ) : (
-                                            <div className="truncate text-sm font-medium text-neutral-900">
+                                            <div className="text-foreground truncate text-sm font-medium">
                                                 {showing.title}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="shrink-0 text-right text-sm font-medium whitespace-nowrap text-neutral-700">
+                                    <div className="text-muted-light shrink-0 text-right text-sm font-medium whitespace-nowrap">
                                         {formatShowTime(showing.showTime, format)}
                                     </div>
                                 </div>
 
                                 {/* Director and year */}
                                 {(showing.director || showing.year) && (
-                                    <div className="truncate text-xs text-neutral-600">
+                                    <div className="text-muted truncate text-xs">
                                         {showing.director || ""}
                                         {showing.director && showing.year ? " " : ""}
                                         {showing.year ? showing.year : ""}
@@ -87,7 +86,7 @@ export default function CinemateketView({
 
                                 {/* Organizer */}
                                 {showing.organizer && (
-                                    <div className="truncate text-xs text-neutral-500 italic">
+                                    <div className="text-muted-subtle truncate text-xs italic">
                                         {showing.organizer}
                                     </div>
                                 )}
@@ -110,7 +109,7 @@ export default function CinemateketView({
                                     ) : (
                                         <span />
                                     )}
-                                    <div className="text-right text-xs text-neutral-600">
+                                    <div className="text-muted text-right text-xs">
                                         {formatShowDate(showing.showTime, format)}
                                     </div>
                                 </div>

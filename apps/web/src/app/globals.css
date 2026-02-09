@@ -2,141 +2,291 @@
 @import "flag-icons/css/flag-icons.min.css";
 
 /*
- * Semantic colors live in :root (light) and are overridden in dark mode.
- * @theme maps them into Tailwind so we get bg-error, text-success, etc.
- * Use @theme (not @theme inline) so these tokens can change with prefers-color-scheme.
+ * Register Tailwind color tokens with initial values.
+ * Actual values are set in :root (light) and [data-theme="dark"] below.
+ * This ensures Tailwind generates the utility classes (bg-background, text-foreground, etc.)
+ * while allowing runtime theme switching via data-theme attribute.
  */
-
-:root {
-    --background: #ffffff;
-    --foreground: #171717;
-
-    /* Error – red (validation, destructive, server down) */
-    --error: #dc2626;
-    --error-muted: #f87171;
-    --error-subtle: #fef2f2;
-
-    /* Status-error – yellow (cached/stale pill, degraded state) */
-    --status-error: #eab308;
-    --status-error-muted: #facc15;
-    --status-error-subtle: #fef9c3;
-
-    /* Success – emerald */
-    --success: #059669;
-    --success-muted: #10b981;
-    --success-subtle: #ecfdf5;
-
-    /* Info – sky */
-    --info: #0284c7;
-    --info-muted: #0ea5e9;
-    --info-subtle: #f0f9ff;
-
-    /* Primary – blue (buttons, links) */
-    --primary: #2563eb;
-    --primary-muted: #3b82f6;
-    --primary-subtle: #eff6ff;
-
-    /* Muted – neutral text colors (secondary, muted, subtle) */
-    --muted: #525252; /* neutral-600 */
-    --muted-subtle: #737373; /* neutral-500 */
-    --muted-light: #404040; /* neutral-700 */
-
-    /* Surface – card/container backgrounds */
-    --surface: #ffffff; /* white */
-    --surface-subtle: #fafafa; /* neutral-50 */
-    --surface-light: #f5f5f5; /* neutral-100 */
-
-    /* Border – borders and dividers */
-    --border: #e5e5e5; /* neutral-200 */
-    --border-subtle: #d4d4d4; /* neutral-300 */
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
-
-        /* Slightly adjusted for dark backgrounds */
-        --error: #f87171;
-        --error-muted: #fca5a5;
-        --error-subtle: #450a0a;
-
-        --status-error: #facc15;
-        --status-error-muted: #fde047;
-        --status-error-subtle: #422006;
-
-        --success: #34d399;
-        --success-muted: #6ee7b7;
-        --success-subtle: #052e16;
-
-        --info: #38bdf8;
-        --info-muted: #7dd3fc;
-        --info-subtle: #0c4a6e;
-
-        --primary: #60a5fa;
-        --primary-muted: #93c5fd;
-        --primary-subtle: #1e3a8a;
-
-        /* Muted – neutral text colors (adjusted for dark) */
-        --muted: #a3a3a3; /* neutral-400 */
-        --muted-subtle: #d4d4d4; /* neutral-300 */
-        --muted-light: #737373; /* neutral-500 */
-
-        /* Surface – card/container backgrounds */
-        --surface: #171717; /* neutral-900 */
-        --surface-subtle: #262626; /* neutral-800 */
-        --surface-light: #404040; /* neutral-700 */
-
-        /* Border – borders and dividers */
-        --border: #404040; /* neutral-700 */
-        --border-subtle: #525252; /* neutral-600 */
-    }
-}
-
 @theme {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
     --font-sans: var(--font-geist-sans);
     --font-mono: var(--font-geist-mono);
 
-    --color-error: var(--error);
-    --color-error-muted: var(--error-muted);
-    --color-error-subtle: var(--error-subtle);
+    /* Register color tokens - values will be overridden by :root / [data-theme] */
+    --color-background: #ffffff;
+    --color-foreground: #171717;
 
-    --color-status-error: var(--status-error);
-    --color-status-error-muted: var(--status-error-muted);
-    --color-status-error-subtle: var(--status-error-subtle);
+    --color-error: #dc2626;
+    --color-error-muted: #f87171;
+    --color-error-subtle: #fef2f2;
 
-    --color-success: var(--success);
-    --color-success-muted: var(--success-muted);
-    --color-success-subtle: var(--success-subtle);
+    --color-status-error: #eab308;
+    --color-status-error-muted: #facc15;
+    --color-status-error-subtle: #fef9c3;
 
-    --color-info: var(--info);
-    --color-info-muted: var(--info-muted);
-    --color-info-subtle: var(--info-subtle);
+    --color-success: #059669;
+    --color-success-muted: #10b981;
+    --color-success-subtle: #ecfdf5;
 
-    --color-primary: var(--primary);
-    --color-primary-muted: var(--primary-muted);
-    --color-primary-subtle: var(--primary-subtle);
+    --color-info: #0284c7;
+    --color-info-muted: #0ea5e9;
+    --color-info-subtle: #f0f9ff;
 
-    --color-muted: var(--muted);
-    --color-muted-subtle: var(--muted-subtle);
-    --color-muted-light: var(--muted-light);
+    --color-primary: #2563eb;
+    --color-primary-muted: #3b82f6;
+    --color-primary-subtle: #eff6ff;
 
-    --color-surface: var(--surface);
-    --color-surface-subtle: var(--surface-subtle);
-    --color-surface-light: var(--surface-light);
+    --color-muted: #525252;
+    --color-muted-subtle: #737373;
+    --color-muted-light: #404040;
 
-    --color-border: var(--border);
-    --color-border-subtle: var(--border-subtle);
+    --color-surface: #ffffff;
+    --color-surface-subtle: #fafafa;
+    --color-surface-light: #f5f5f5;
+
+    --color-border: #e5e5e5;
+    --color-border-subtle: #d4d4d4;
+}
+
+/*
+ * Light theme (default) - override the Tailwind tokens with actual values.
+ * These use the --color-* naming to match Tailwind's generated utility classes.
+ */
+:root {
+    --color-background: #ffffff;
+    --color-foreground: #171717;
+
+    /* Error – red (validation, destructive, server down) */
+    --color-error: #dc2626;
+    --color-error-muted: #f87171;
+    --color-error-subtle: #fef2f2;
+
+    /* Status-error – yellow (cached/stale pill, degraded state) */
+    --color-status-error: #eab308;
+    --color-status-error-muted: #facc15;
+    --color-status-error-subtle: #fef9c3;
+
+    /* Success – emerald */
+    --color-success: #059669;
+    --color-success-muted: #10b981;
+    --color-success-subtle: #ecfdf5;
+
+    /* Info – sky */
+    --color-info: #0284c7;
+    --color-info-muted: #0ea5e9;
+    --color-info-subtle: #f0f9ff;
+
+    /* Primary – blue (buttons, links) */
+    --color-primary: #2563eb;
+    --color-primary-muted: #3b82f6;
+    --color-primary-subtle: #eff6ff;
+
+    /* Muted – neutral text colors */
+    --color-muted: #525252;
+    --color-muted-subtle: #737373;
+    --color-muted-light: #404040;
+
+    /* Surface – card/container backgrounds */
+    --color-surface: #ffffff;
+    --color-surface-subtle: #fafafa;
+    --color-surface-light: #f5f5f5;
+
+    /* Border – borders and dividers */
+    --color-border: #e5e5e5;
+    --color-border-subtle: #d4d4d4;
+}
+
+/* Dark theme: applied when user or system chooses dark (script sets data-theme on <html>) */
+[data-theme="dark"] {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+
+    --color-error: #f87171;
+    --color-error-muted: #fca5a5;
+    --color-error-subtle: #450a0a;
+
+    --color-status-error: #facc15;
+    --color-status-error-muted: #fde047;
+    --color-status-error-subtle: #422006;
+
+    --color-success: #34d399;
+    --color-success-muted: #6ee7b7;
+    --color-success-subtle: #052e16;
+
+    --color-info: #38bdf8;
+    --color-info-muted: #7dd3fc;
+    --color-info-subtle: #0c4a6e;
+
+    --color-primary: #60a5fa;
+    --color-primary-muted: #93c5fd;
+    --color-primary-subtle: #1e3a8a;
+
+    --color-muted: #a3a3a3;
+    --color-muted-subtle: #d4d4d4;
+    --color-muted-light: #737373;
+
+    --color-surface: #171717;
+    --color-surface-subtle: #262626;
+    --color-surface-light: #404040;
+
+    --color-border: #404040;
+    --color-border-subtle: #525252;
 }
 
 body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
 }
 
 .scroll-gutter-stable {
     scrollbar-gutter: stable both-edges;
+}
+
+/*
+ * Widget glassmorphism - theme-aware frosted glass effect
+ * Light: frosted white glass with colored shadow, vibrant
+ * Dark: deep frosted glass with subtle glow
+ */
+.widget-glass {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow:
+        0 8px 32px rgba(139, 92, 246, 0.12),
+        0 4px 16px rgba(59, 130, 246, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+[data-theme="dark"] .widget-glass {
+    background: rgba(23, 23, 23, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(130%);
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+}
+
+.widget-glass-glow {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 40%);
+}
+
+[data-theme="dark"] .widget-glass-glow {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
+}
+
+/*
+ * Dashboard gradient background - theme-aware
+ * Light: modern soft gradients with depth and subtle animation
+ * Dark: deep northern lights inspired (dark blues, teals, aurora greens)
+ */
+.dashboard-gradient {
+    background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(139, 92, 246, 0.4) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(59, 130, 246, 0.35) 0%, transparent 45%),
+        radial-gradient(ellipse 70% 45% at 50% 80%, rgba(20, 184, 166, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 35% at 90% 70%, rgba(236, 72, 153, 0.15) 0%, transparent 45%),
+        linear-gradient(
+            160deg,
+            #a78bfa 0%,
+            #818cf8 20%,
+            #60a5fa 45%,
+            #38bdf8 65%,
+            #2dd4bf 85%,
+            #34d399 100%
+        );
+}
+
+/* Light mode animated glow */
+.dashboard-gradient::before {
+    content: "";
+    position: absolute;
+    inset: -10% -5%;
+    background:
+        radial-gradient(ellipse 100% 60% at 30% 0%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 80% 50% at 70% 20%, rgba(59, 130, 246, 0.25) 0%, transparent 45%);
+    animation: aurora-shift 10s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.dashboard-gradient::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 40% at 85% 90%, rgba(20, 184, 166, 0.25) 0%, transparent 45%),
+        radial-gradient(ellipse 50% 35% at 15% 85%, rgba(168, 85, 247, 0.2) 0%, transparent 40%);
+    animation: aurora-shift 14s ease-in-out infinite reverse;
+    pointer-events: none;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .dashboard-gradient::before,
+[data-theme="dark"] .dashboard-gradient::after {
+    /* Reset light mode animations, dark mode has its own below */
+    animation: none;
+    background: none;
+}
+
+[data-theme="dark"] .dashboard-gradient {
+    background:
+        radial-gradient(ellipse 90% 60% at 50% -5%, rgba(16, 185, 129, 0.28) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 50% at 85% 15%, rgba(59, 130, 246, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 15% 25%, rgba(139, 92, 246, 0.22) 0%, transparent 45%),
+        radial-gradient(ellipse 50% 35% at 70% 70%, rgba(6, 182, 212, 0.18) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 30% at 25% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
+        linear-gradient(180deg, #0a1628 0%, #0c1222 30%, #080c14 100%);
+}
+
+/* Animated aurora effect for dark mode */
+@keyframes aurora-shift {
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: translateY(0) scale(1);
+    }
+    33% {
+        opacity: 0.8;
+        transform: translateY(-1%) scale(1.01);
+    }
+    66% {
+        opacity: 0.7;
+        transform: translateY(0.5%) scale(0.99);
+    }
+}
+
+@keyframes aurora-drift {
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+    50% {
+        transform: translateX(2%) rotate(0.5deg);
+    }
+}
+
+[data-theme="dark"] .dashboard-gradient::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10%;
+    background:
+        radial-gradient(ellipse 120% 70% at 20% -15%, rgba(16, 185, 129, 0.35) 0%, transparent 55%),
+        radial-gradient(ellipse 100% 50% at 80% 5%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 80% 45% at 50% 30%, rgba(139, 92, 246, 0.2) 0%, transparent 55%);
+    animation:
+        aurora-shift 12s ease-in-out infinite,
+        aurora-drift 20s ease-in-out infinite;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .dashboard-gradient::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 40% at 75% 85%, rgba(6, 182, 212, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 35% at 30% 75%, rgba(236, 72, 153, 0.12) 0%, transparent 45%);
+    animation: aurora-shift 15s ease-in-out infinite reverse;
+    pointer-events: none;
 }

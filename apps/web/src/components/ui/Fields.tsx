@@ -17,12 +17,12 @@ export function Label({ children }: { children: ReactNode }): ReactElement {
 
 export function Help({ children }: { children?: ReactNode }): ReactElement | null {
     if (!children) return null;
-    return <p className="text-xs text-neutral-500">{children}</p>;
+    return <p className="text-muted-subtle text-xs">{children}</p>;
 }
 
 export function ErrorText({ children }: { children?: ReactNode }): ReactElement | null {
     if (!children) return null;
-    return <p className="mt-1 text-xs text-red-600">{children}</p>;
+    return <p className="text-error mt-1 text-xs">{children}</p>;
 }
 
 export function FieldText(
@@ -40,9 +40,9 @@ export function FieldText(
             <input
                 {...rest}
                 className={cx(
-                    "w-full rounded-xl border border-neutral-300 bg-white",
-                    "px-3 py-2 text-neutral-900 placeholder-neutral-500",
-                    "outline-none focus:border-neutral-400 focus:ring-2 focus:ring-black/20",
+                    "border-border bg-surface w-full rounded-xl border",
+                    "text-foreground placeholder-muted px-3 py-2",
+                    "focus:border-border-subtle focus:ring-primary/20 outline-none focus:ring-2",
                     inputClassName,
                     className
                 )}
@@ -105,8 +105,8 @@ export function Button({
     const base = "rounded-xl px-3 py-1.5 text-sm cursor-pointer disabled:opacity-50";
     const styles =
         variant === "outline"
-            ? "border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-50"
-            : "bg-black text-white hover:bg-black/90";
+            ? "border border-border bg-surface text-foreground hover:bg-surface-subtle"
+            : "bg-primary text-white hover:bg-primary-muted";
     return (
         <button
             type={type}

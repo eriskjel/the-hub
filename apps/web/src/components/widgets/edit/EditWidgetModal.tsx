@@ -28,7 +28,7 @@ export default function EditWidgetModal({
         return (
             <Modal title={t("title", { default: "Edit widget" })} onClose={onClose}>
                 <div className="space-y-4">
-                    <p className="text-sm text-neutral-700">
+                    <p className="text-muted text-sm">
                         {t("unsupported", {
                             default: "Editing isn’t available for this widget type yet.",
                         })}

@@ -121,7 +121,8 @@ export default function CountdownView({
         : null;
 
     return (
-        <div className="flex min-h-[140px] flex-1 flex-col p-2 text-center">
+        // min-h ensures countdown fills the widget content area (matches grocery at 136px content)
+        <div className="flex min-h-[136px] flex-1 flex-col text-center">
             {isOngoing || isUpcoming ? (
                 <div className="flex min-h-0 flex-1 flex-col">
                     {/* top status pill only */}
@@ -173,7 +174,7 @@ export default function CountdownView({
                 </div>
             ) : (
                 // Fallback: no future target known (backend gave no nextIso)
-                <div className="flex min-h-[120px] flex-1 items-center justify-center text-xs opacity-70">
+                <div className="flex flex-1 items-center justify-center text-xs opacity-70">
                     {hasPrev
                         ? t("nextNotAnnouncedWithDays", { days: daysSincePrev ?? 0 })
                         : t("nextNotAnnounced")}

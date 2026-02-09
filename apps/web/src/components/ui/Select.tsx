@@ -65,18 +65,18 @@ export function Select({
                 id={id}
                 aria-label={ariaLabel}
                 className={cn(
-                    "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-left text-neutral-900 outline-none",
+                    "border-border bg-surface text-foreground flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left outline-none",
                     "transition-colors",
-                    "hover:border-neutral-400",
-                    "focus:border-neutral-400 focus:ring-2 focus:ring-black/20",
-                    "data-[placeholder]:text-neutral-500",
+                    "hover:border-border-subtle",
+                    "focus:border-border-subtle focus:ring-primary/20 focus:ring-2",
+                    "data-[placeholder]:text-muted",
                     "disabled:cursor-not-allowed disabled:opacity-50",
                     className
                 )}
             >
                 <SelectValue placeholder={placeholder} />
                 <SelectIcon asChild>
-                    <ChevronDown className="h-4 w-4 shrink-0 text-neutral-500" aria-hidden />
+                    <ChevronDown className="text-muted h-4 w-4 shrink-0" aria-hidden />
                 </SelectIcon>
             </SelectTrigger>
             <Portal>
@@ -84,7 +84,7 @@ export function Select({
                     position="popper"
                     sideOffset={4}
                     className={cn(
-                        "relative z-[9999] max-h-[var(--radix-select-content-available-height,280px)] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg"
+                        "border-border bg-surface text-foreground relative z-[9999] max-h-[var(--radix-select-content-available-height,280px)] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border shadow-lg"
                     )}
                     style={{
                         width: "var(--radix-select-trigger-width)",
@@ -100,7 +100,7 @@ export function Select({
                                 textValue={opt.label}
                                 className={cn(
                                     "relative flex cursor-default items-center gap-2 rounded-lg py-2 pr-8 pl-3 text-sm outline-none select-none",
-                                    "data-[highlighted]:bg-neutral-100",
+                                    "data-[highlighted]:bg-surface-subtle",
                                     "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
                                     "data-[state=checked]:bg-primary-subtle data-[state=checked]:text-foreground"
                                 )}

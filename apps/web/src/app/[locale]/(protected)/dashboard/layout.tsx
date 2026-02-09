@@ -17,7 +17,7 @@ export default async function DashboardSectionLayout({
         <PageWrapper
             headerVariant="transparent"
             headerMode="fixed"
-            className="overflow-hidden bg-gradient-to-br from-purple-600 via-blue-500 to-teal-400"
+            className="dashboard-gradient relative overflow-hidden"
         >
             {children}
         </PageWrapper>

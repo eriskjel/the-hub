@@ -10,14 +10,14 @@ export default function WidgetCardSkeleton(): ReactElement {
                 <div className="relative h-4 w-44">
                     <span
                         aria-hidden
-                        className="absolute inset-0 animate-pulse rounded bg-white/20"
+                        className="bg-surface-light absolute inset-0 animate-pulse rounded"
                     />
                 </div>
             }
             actions={
                 <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded bg-white/20" />
-                    <div className="h-7 w-7 rounded bg-white/20" />
+                    <div className="bg-surface-light h-7 w-7 rounded" />
+                    <div className="bg-surface-light h-7 w-7 rounded" />
                 </div>
             }
             variant="solid"
@@ -27,7 +27,7 @@ export default function WidgetCardSkeleton(): ReactElement {
             <div className="relative min-h-[144px] w-full">
                 <span
                     aria-hidden
-                    className="absolute inset-0 animate-pulse rounded-lg bg-white/10"
+                    className="bg-surface-subtle absolute inset-0 animate-pulse rounded-lg"
                 />
             </div>
         </GlassCard>
