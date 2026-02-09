@@ -27,21 +27,23 @@ export default function GlassCard({
     const isSolid = variant === "solid";
     const isLight = tone === "light";
 
-    const base = "relative overflow-hidden rounded-2xl shadow-xl transition-colors flex flex-col";
+    const base = "relative overflow-hidden rounded-2xl transition-all duration-300 flex flex-col";
+    
+    // Modern glassmorphism - uses CSS class defined in globals.css for theme-aware styling
     const look = isSolid
-        ? "bg-white/90 shadow-black/10"
+        ? "widget-glass"
         : clsx(
-              "bg-white/[0.08] shadow-black/20",
+              "bg-white/10 border border-white/20 shadow-xl",
               "supports-[backdrop-filter]:bg-white/[0.07] supports-[backdrop-filter]:backdrop-blur-md",
-              "supports-[backdrop-filter]:backdrop-brightness-95 supports-[backdrop-filter]:backdrop-contrast-125"
+              "supports-[backdrop-filter]:backdrop-saturate-150"
           );
+    
     const textTone = isLight ? "text-foreground" : "text-white";
 
     return (
         <div className={clsx(base, look, className)}>
-            {!isSolid && (
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/15 via-black/10 to-black/5" />
-            )}
+            {/* Subtle inner glow for depth */}
+            <div className="pointer-events-none absolute inset-0 rounded-2xl widget-glass-glow" />
 
             {(header || actions || stale) && (
                 <div

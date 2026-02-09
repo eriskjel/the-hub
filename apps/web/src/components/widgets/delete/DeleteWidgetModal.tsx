@@ -32,7 +32,7 @@ export function DeleteWidgetModal({
             onClose={() => (busy ? null : onClose())}
         >
             <div className="space-y-4">
-                <p className="text-sm text-neutral-700">{t("confirmText")}</p>
+                <p className="text-sm text-muted">{t("confirmText")}</p>
 
                 {err ? (
                     <div className="border-error-muted bg-error-subtle text-error rounded-md border px-3 py-2 text-sm">

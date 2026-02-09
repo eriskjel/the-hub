@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
 import { isAdminFromUser } from "@/lib/auth/isAdmin";
 import LocaleToggle from "@/components/LocaleToggle";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type HeaderProps = {
     variant?: "transparent" | "solid";
@@ -31,8 +32,9 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
                     <NavItems isLoggedIn={!!user} isAdmin={isAdminFromUser(user)} t={t} />
                 </ul>
 
-                {/* Right-only: locale flag */}
-                <div className="absolute right-8 flex items-center">
+                {/* Right: theme toggle + locale flag */}
+                <div className="absolute right-8 flex items-center gap-1">
+                    <ThemeToggle />
                     <LocaleToggle />
                 </div>
             </nav>

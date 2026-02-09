@@ -10,11 +10,24 @@ export const metadata: Metadata = {
     description: "The Hub",
 };
 
+const themeScript = `
+(function() {
+  try {
+    var t = localStorage.getItem('theme');
+    if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
     return (
-        <html lang="en" className="h-full">
+        <html lang="en" className="h-full" suppressHydrationWarning>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+            </head>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} min-h-dvh overflow-x-hidden bg-neutral-950 antialiased`}
+                className={`${geistSans.variable} ${geistMono.variable} min-h-dvh overflow-x-hidden bg-background text-foreground antialiased`}
             >
                 {children}
             </body>

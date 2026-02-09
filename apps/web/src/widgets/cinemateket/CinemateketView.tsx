@@ -46,10 +46,8 @@ export default function CinemateketView({
                     return (
                         <li
                             key={`${showing.title}-${showing.showTime}`}
-                            className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-all duration-300 ease-in-out ${
-                                isHidden
-                                    ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
-                                    : "max-h-none opacity-100"
+                            className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-opacity duration-200 ease-in-out ${
+                                isHidden ? "pointer-events-none opacity-0" : "opacity-100"
                             }`}
                         >
                             <div className="flex flex-col gap-px">
@@ -66,19 +64,19 @@ export default function CinemateketView({
                                                 {showing.title}
                                             </a>
                                         ) : (
-                                            <div className="truncate text-sm font-medium text-neutral-900">
+                                            <div className="truncate text-sm font-medium text-foreground">
                                                 {showing.title}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="shrink-0 text-right text-sm font-medium whitespace-nowrap text-neutral-700">
+                                    <div className="shrink-0 text-right text-sm font-medium whitespace-nowrap text-muted-light">
                                         {formatShowTime(showing.showTime, format)}
                                     </div>
                                 </div>
 
                                 {/* Director and year */}
                                 {(showing.director || showing.year) && (
-                                    <div className="truncate text-xs text-neutral-600">
+                                    <div className="truncate text-xs text-muted">
                                         {showing.director || ""}
                                         {showing.director && showing.year ? " " : ""}
                                         {showing.year ? showing.year : ""}
@@ -87,7 +85,7 @@ export default function CinemateketView({
 
                                 {/* Organizer */}
                                 {showing.organizer && (
-                                    <div className="truncate text-xs text-neutral-500 italic">
+                                    <div className="truncate text-xs text-muted-subtle italic">
                                         {showing.organizer}
                                     </div>
                                 )}
@@ -110,7 +108,7 @@ export default function CinemateketView({
                                     ) : (
                                         <span />
                                     )}
-                                    <div className="text-right text-xs text-neutral-600">
+                                    <div className="text-right text-xs text-muted">
                                         {formatShowDate(showing.showTime, format)}
                                     </div>
                                 </div>

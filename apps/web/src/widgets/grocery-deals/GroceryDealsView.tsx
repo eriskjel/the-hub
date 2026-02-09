@@ -137,14 +137,12 @@ function renderRows(
         return (
             <li
                 key={i}
-                className={`hover:bg-surface-subtle flex items-start gap-3 rounded-lg px-2 py-2.5 transition-all duration-300 ease-in-out ${
-                    isHidden
-                        ? "pointer-events-none -mt-1 max-h-0 overflow-hidden opacity-0"
-                        : "max-h-none opacity-100"
+                className={`hover:bg-surface-subtle flex items-start gap-3 rounded-lg px-2 py-2.5 transition-opacity duration-200 ease-in-out ${
+                    isHidden ? "pointer-events-none opacity-0" : "opacity-100"
                 }`}
             >
                 {deal.storeLogo ? (
-                    <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-md bg-neutral-100">
+                    <div className="relative h-8 w-8 shrink-0">
                         <Image
                             src={deal.storeLogo}
                             alt={deal.store || "store"}
@@ -160,20 +158,20 @@ function renderRows(
 
                 {/* LEFT: flexible, can truncate */}
                 <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="truncate text-sm font-semibold text-neutral-900">
+                    <div className="truncate text-sm font-semibold text-foreground">
                         {deal.name}
                     </div>
-                    <div className="truncate text-xs font-medium text-neutral-600">
+                    <div className="truncate text-xs font-medium text-muted">
                         {deal.store}
                     </div>
                     {(() => {
                         const sub = subtitle(deal);
                         return sub ? (
-                            <div className="truncate text-xs text-neutral-600">{sub}</div>
+                            <div className="truncate text-xs text-muted">{sub}</div>
                         ) : null;
                     })()}
                     {deal.validUntil ? (
-                        <div className="mt-0.5 text-[11px] text-neutral-600">
+                        <div className="mt-0.5 text-[11px] text-muted">
                             {t("until")} {formatDate(deal.validUntil)}
                         </div>
                     ) : null}

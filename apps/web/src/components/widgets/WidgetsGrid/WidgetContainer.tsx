@@ -75,12 +75,8 @@ export default function WidgetContainer({
         </div>
     );
 
-    // Height logic:
-    // - Grocery: min-h 140px so it can shrink for single items
-    // - All others (countdown, cinemateket, etc.): min-h 190px so same base height as each other
-    const isGrocery = widget.kind === "grocery-deals";
-    const heightClass = isGrocery ? "min-h-[140px]" : "min-h-[190px]";
-
+    // Minimum height for all widgets - can expand beyond this (e.g., grocery expanded)
+    // Header ~48px + content ~148px = 196px base
     return (
         <GlassCard
             header={header}
@@ -88,7 +84,7 @@ export default function WidgetContainer({
             stale={stale}
             variant="solid"
             tone="light"
-            className={`h-fit self-start ${heightClass}`}
+            className="min-h-[196px] self-start"
         >
             <WidgetCard widget={widget} userId={userId} staleLayout={stale} />
         </GlassCard>

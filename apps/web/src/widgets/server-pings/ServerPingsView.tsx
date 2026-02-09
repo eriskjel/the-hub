@@ -9,7 +9,7 @@ export default function ServerPingsView({
     data: PingsData | null | undefined;
 }): ReactElement {
     if (!data || !Array.isArray(data.data)) {
-        return <div className="p-3 text-sm text-neutral-600">No ping data available</div>;
+        return <div className="p-3 text-sm text-muted">No ping data available</div>;
     }
 
     const updated = new Date(data.updatedAt ?? Date.now());
@@ -18,16 +18,16 @@ export default function ServerPingsView({
     if (data.data.length === 0) {
         return (
             <div>
-                <div className="mb-2 text-xs text-neutral-600">Oppdatert {updatedStr}</div>
-                <div className="p-3 text-sm text-neutral-600">Ingen endepunkter å vise</div>
+                <div className="mb-2 text-xs text-muted">Oppdatert {updatedStr}</div>
+                <div className="p-3 text-sm text-muted">Ingen endepunkter å vise</div>
             </div>
         );
     }
 
     return (
         <div>
-            <div className="mb-2 text-xs text-neutral-600">Oppdatert {updatedStr}</div>
-            <ul className="divide-y divide-neutral-200">
+            <div className="mb-2 text-xs text-muted">Oppdatert {updatedStr}</div>
+            <ul className="divide-y divide-border">
                 {data.data.map((row: PingsRow) => {
                     const { host, path } = toParts(row.url);
                     const cls = statusClasses(row.status);
@@ -36,11 +36,11 @@ export default function ServerPingsView({
                             <div className="flex min-w-0 items-center gap-2">
                                 <span className={`h-2 w-2 rounded-full ${cls.dot}`} />
                                 <div className="min-w-0">
-                                    <div className="truncate text-sm font-medium text-neutral-900">
+                                    <div className="truncate text-sm font-medium text-foreground">
                                         {host}
                                     </div>
                                     {path ? (
-                                        <div className="truncate text-xs text-neutral-600">
+                                        <div className="truncate text-xs text-muted">
                                             {path}
                                         </div>
                                     ) : null}
@@ -54,7 +54,7 @@ export default function ServerPingsView({
                                     {row.status}
                                 </span>
                                 <span
-                                    className="rounded-md border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-[11px] text-neutral-800 tabular-nums"
+                                    className="rounded-md border border-border bg-surface-subtle px-1.5 py-0.5 text-[11px] text-foreground tabular-nums"
                                     title="Latency"
                                 >
                                     {row.ms} ms
