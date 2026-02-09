@@ -59,12 +59,12 @@ jobs:
         if: needs.detect.outputs.changed == 'true'
 
       - name: Generate CalVer tag
-        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request'
+        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         id: calver
         run: echo "tag=$(date -u +'%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - uses: docker/login-action@v3
-        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request'
+        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -80,9 +80,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: false
 
-      # Build & Push on main (push or manual dispatch)
+      # Build & Push on main only (push or manual dispatch)
       - name: Build & Push (GHCR)
-        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request'
+        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
           context: services/spring
