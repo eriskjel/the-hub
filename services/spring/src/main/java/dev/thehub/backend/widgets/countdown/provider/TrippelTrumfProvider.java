@@ -11,17 +11,20 @@ import org.springframework.web.client.RestTemplate;
 /**
  * CountdownProvider implementation for "Trippel Trumf" campaign days.
  * <p>
- * Source: a public overview table on EuroBonusguiden (see {@link #sourceUrl()}).
- * Update the URL once a year when EuroBonusguiden publishes the new year's page
- * (path/month in URL is not predictable, e.g. 2025 used /10/, 2026 used /01/).
- * For every listed date a time window is created in Europe/Oslo: [07:00, 22:00).
+ * Source: a public overview table on EuroBonusguiden (see
+ * {@link #sourceUrl()}). Update the URL once a year when EuroBonusguiden
+ * publishes the new year's page (path/month in URL is not predictable, e.g.
+ * 2025 used /10/, 2026 used /01/). For every listed date a time window is
+ * created in Europe/Oslo: [07:00, 22:00).
  */
 public class TrippelTrumfProvider implements CountdownProvider {
     private static final Logger log = LoggerFactory.getLogger(TrippelTrumfProvider.class);
 
     private final RestTemplate http;
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");
-    /** Current year's overview page – update annually when new page is published. */
+    /**
+     * Current year's overview page – update annually when new page is published.
+     */
     private static final String URL = "https://eurobonusguiden.no/2026/01/trippel-trumf-torsdag-datoer-2026/";
 
     // Trippel window times (tweak if you prefer 00:00..24:00)

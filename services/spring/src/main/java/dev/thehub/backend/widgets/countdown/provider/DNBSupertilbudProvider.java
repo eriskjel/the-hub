@@ -29,11 +29,9 @@ public class DNBSupertilbudProvider implements CountdownProvider {
     private static String toPlainText(String html) {
         return java.text.Normalizer.normalize(
                 html.replaceAll("(?is)<script[^>]*>.*?</script>", " ").replaceAll("(?is)<style[^>]*>.*?</style>", " ")
-                        .replace("&nbsp;", " ").replace("&#160;", " ")
-                        .replace("&ndash;", "–").replace("&mdash;", "—")
-                        .replace("&#8211;", "–").replace("&#x2013;", "–")
-                        .replace("&#8212;", "—").replace("&#x2014;", "—")
-                        .replaceAll("(?is)<[^>]+>", " ").replaceAll("\\s+", " ").trim(),
+                        .replace("&nbsp;", " ").replace("&#160;", " ").replace("&ndash;", "–").replace("&mdash;", "—")
+                        .replace("&#8211;", "–").replace("&#x2013;", "–").replace("&#8212;", "—")
+                        .replace("&#x2014;", "—").replaceAll("(?is)<[^>]+>", " ").replaceAll("\\s+", " ").trim(),
                 java.text.Normalizer.Form.NFKC);
     }
 
