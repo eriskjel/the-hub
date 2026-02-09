@@ -5,8 +5,6 @@ RUN corepack enable
 # Copy only what's needed to install deps first (faster caching)
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/
-# If you have shared packages, keep this; otherwise you can remove the next line
-COPY packages ./packages
 
 RUN pnpm install --frozen-lockfile
 
