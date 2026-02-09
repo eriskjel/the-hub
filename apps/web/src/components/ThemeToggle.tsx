@@ -58,7 +58,7 @@ export default function ThemeToggle() {
             onClick={toggle}
             aria-label={label}
             title={label}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-white/10 focus:ring-2 focus:ring-white/40 focus:outline-none"
+            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md hover:bg-white/10 focus:ring-2 focus:ring-white/40 focus:outline-none"
         >
             {isDark ? (
                 <Sun className="h-5 w-5 text-white" aria-hidden />
