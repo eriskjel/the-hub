@@ -1,7 +1,7 @@
 name: backend-ci
 
 on:
-  workflow_dispatch:            # manual run (build only)
+  workflow_dispatch:            # manual run (build & push)
   pull_request:                 # build on PRs to main
     branches: [ main ]
   push:                         # build & push only on main
@@ -59,15 +59,15 @@ jobs:
         if: needs.detect.outputs.changed == 'true'
 
       - uses: docker/login-action@v3
-        if: needs.detect.outputs.changed == 'true' && github.event_name == 'push'
+        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build for PRs and manual runs (no push)
+      # Build for PRs only (no push)
       - name: Build (no push)
-        if: needs.detect.outputs.changed == 'true' && github.event_name != 'push'
+        if: needs.detect.outputs.changed == 'true' && github.event_name == 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: services/spring
@@ -75,9 +75,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: false
 
-      # Build & Push on main
+      # Build & Push on main (push or manual dispatch)
       - name: Build & Push (GHCR)
-        if: needs.detect.outputs.changed == 'true' && github.event_name == 'push'
+        if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: services/spring
