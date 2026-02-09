@@ -27,7 +27,8 @@ export default function GlassCard({
     const isSolid = variant === "solid";
     const isLight = tone === "light";
 
-    const base = "relative overflow-hidden rounded-2xl transition-all duration-300 flex flex-col";
+    const base =
+        "relative overflow-hidden rounded-2xl transition-[colors,box-shadow,transform] duration-300 flex flex-col";
 
     // Modern glassmorphism - uses CSS class defined in globals.css for theme-aware styling
     const look = isSolid

@@ -46,6 +46,7 @@ export default function CinemateketView({
                     return (
                         <li
                             key={`${showing.title}-${showing.showTime}`}
+                            aria-hidden={isHidden}
                             className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-opacity duration-200 ease-in-out ${
                                 isHidden ? "pointer-events-none opacity-0" : "opacity-100"
                             }`}

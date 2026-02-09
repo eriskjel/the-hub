@@ -137,6 +137,7 @@ function renderRows(
         return (
             <li
                 key={i}
+                aria-hidden={isHidden}
                 className={`hover:bg-surface-subtle flex items-start gap-3 rounded-lg px-2 py-2.5 transition-opacity duration-200 ease-in-out ${
                     isHidden ? "pointer-events-none opacity-0" : "opacity-100"
                 }`}
