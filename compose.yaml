@@ -7,12 +7,10 @@ services:
       target: dev
     ports:
       - "8080:8080"
+    env_file:
+      - ./services/spring/.env
     environment:
       SPRING_PROFILES_ACTIVE: dev,docker
-      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
     volumes:
       - ./services/spring:/app
       - m2:/root/.m2
