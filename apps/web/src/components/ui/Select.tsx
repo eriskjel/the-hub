@@ -65,10 +65,10 @@ export function Select({
                 id={id}
                 aria-label={ariaLabel}
                 className={cn(
-                    "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-left text-foreground outline-none",
+                    "border-border bg-surface text-foreground flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left outline-none",
                     "transition-colors",
                     "hover:border-border-subtle",
-                    "focus:border-border-subtle focus:ring-2 focus:ring-primary/20",
+                    "focus:border-border-subtle focus:ring-primary/20 focus:ring-2",
                     "data-[placeholder]:text-muted",
                     "disabled:cursor-not-allowed disabled:opacity-50",
                     className
@@ -76,7 +76,7 @@ export function Select({
             >
                 <SelectValue placeholder={placeholder} />
                 <SelectIcon asChild>
-                    <ChevronDown className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                    <ChevronDown className="text-muted h-4 w-4 shrink-0" aria-hidden />
                 </SelectIcon>
             </SelectTrigger>
             <Portal>
@@ -84,7 +84,7 @@ export function Select({
                     position="popper"
                     sideOffset={4}
                     className={cn(
-                        "relative z-[9999] max-h-[var(--radix-select-content-available-height,280px)] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-border bg-surface text-foreground shadow-lg"
+                        "border-border bg-surface text-foreground relative z-[9999] max-h-[var(--radix-select-content-available-height,280px)] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border shadow-lg"
                     )}
                     style={{
                         width: "var(--radix-select-trigger-width)",

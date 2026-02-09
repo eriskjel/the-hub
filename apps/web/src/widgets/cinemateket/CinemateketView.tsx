@@ -64,19 +64,19 @@ export default function CinemateketView({
                                                 {showing.title}
                                             </a>
                                         ) : (
-                                            <div className="truncate text-sm font-medium text-foreground">
+                                            <div className="text-foreground truncate text-sm font-medium">
                                                 {showing.title}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="shrink-0 text-right text-sm font-medium whitespace-nowrap text-muted-light">
+                                    <div className="text-muted-light shrink-0 text-right text-sm font-medium whitespace-nowrap">
                                         {formatShowTime(showing.showTime, format)}
                                     </div>
                                 </div>
 
                                 {/* Director and year */}
                                 {(showing.director || showing.year) && (
-                                    <div className="truncate text-xs text-muted">
+                                    <div className="text-muted truncate text-xs">
                                         {showing.director || ""}
                                         {showing.director && showing.year ? " " : ""}
                                         {showing.year ? showing.year : ""}
@@ -85,7 +85,7 @@ export default function CinemateketView({
 
                                 {/* Organizer */}
                                 {showing.organizer && (
-                                    <div className="truncate text-xs text-muted-subtle italic">
+                                    <div className="text-muted-subtle truncate text-xs italic">
                                         {showing.organizer}
                                     </div>
                                 )}
@@ -108,7 +108,7 @@ export default function CinemateketView({
                                     ) : (
                                         <span />
                                     )}
-                                    <div className="text-right text-xs text-muted">
+                                    <div className="text-muted text-right text-xs">
                                         {formatShowDate(showing.showTime, format)}
                                     </div>
                                 </div>

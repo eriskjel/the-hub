@@ -56,18 +56,16 @@ export function Modal({
                 onClick={(e) => e.stopPropagation()} // prevent backdrop click from reaching panel
             >
                 {/* The modal panel: cap height and let *it* scroll if needed */}
-                <div className="my-8 w-full max-w-md rounded-2xl border border-border bg-surface p-6 text-foreground shadow-2xl">
+                <div className="border-border bg-surface text-foreground my-8 w-full max-w-md rounded-2xl border p-6 shadow-2xl">
                     <div className="mb-5 flex items-start justify-between gap-4">
                         <div className="min-w-0">
                             <h2 className="text-lg font-semibold">{title}</h2>
-                            {subtitle ? (
-                                <p className="text-sm text-muted">{subtitle}</p>
-                            ) : null}
+                            {subtitle ? <p className="text-muted text-sm">{subtitle}</p> : null}
                         </div>
                         <button
                             aria-label="Close"
                             onClick={onClose}
-                            className="cursor-pointer rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-light hover:text-foreground focus:ring-2 focus:ring-border focus:outline-none"
+                            className="text-muted hover:bg-surface-light hover:text-foreground focus:ring-border cursor-pointer rounded-lg p-1.5 transition-colors focus:ring-2 focus:outline-none"
                         >
                             <svg
                                 viewBox="0 0 20 20"

@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
             </head>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} min-h-dvh overflow-x-hidden bg-background text-foreground antialiased`}
+                className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground min-h-dvh overflow-x-hidden antialiased`}
             >
                 {children}
             </body>

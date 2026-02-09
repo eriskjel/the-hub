@@ -17,12 +17,12 @@ export function Label({ children }: { children: ReactNode }): ReactElement {
 
 export function Help({ children }: { children?: ReactNode }): ReactElement | null {
     if (!children) return null;
-    return <p className="text-xs text-muted-subtle">{children}</p>;
+    return <p className="text-muted-subtle text-xs">{children}</p>;
 }
 
 export function ErrorText({ children }: { children?: ReactNode }): ReactElement | null {
     if (!children) return null;
-    return <p className="mt-1 text-xs text-error">{children}</p>;
+    return <p className="text-error mt-1 text-xs">{children}</p>;
 }
 
 export function FieldText(
@@ -40,9 +40,9 @@ export function FieldText(
             <input
                 {...rest}
                 className={cx(
-                    "w-full rounded-xl border border-border bg-surface",
-                    "px-3 py-2 text-foreground placeholder-muted",
-                    "outline-none focus:border-border-subtle focus:ring-2 focus:ring-primary/20",
+                    "border-border bg-surface w-full rounded-xl border",
+                    "text-foreground placeholder-muted px-3 py-2",
+                    "focus:border-border-subtle focus:ring-primary/20 outline-none focus:ring-2",
                     inputClassName,
                     className
                 )}

@@ -187,7 +187,15 @@ body {
         radial-gradient(ellipse 60% 40% at 80% 10%, rgba(59, 130, 246, 0.35) 0%, transparent 45%),
         radial-gradient(ellipse 70% 45% at 50% 80%, rgba(20, 184, 166, 0.3) 0%, transparent 50%),
         radial-gradient(ellipse 50% 35% at 90% 70%, rgba(236, 72, 153, 0.15) 0%, transparent 45%),
-        linear-gradient(160deg, #a78bfa 0%, #818cf8 20%, #60a5fa 45%, #38bdf8 65%, #2dd4bf 85%, #34d399 100%);
+        linear-gradient(
+            160deg,
+            #a78bfa 0%,
+            #818cf8 20%,
+            #60a5fa 45%,
+            #38bdf8 65%,
+            #2dd4bf 85%,
+            #34d399 100%
+        );
 }
 
 /* Light mode animated glow */
@@ -233,14 +241,29 @@ body {
 
 /* Animated aurora effect for dark mode */
 @keyframes aurora-shift {
-    0%, 100% { opacity: 0.6; transform: translateY(0) scale(1); }
-    33% { opacity: 0.8; transform: translateY(-1%) scale(1.01); }
-    66% { opacity: 0.7; transform: translateY(0.5%) scale(0.99); }
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: translateY(0) scale(1);
+    }
+    33% {
+        opacity: 0.8;
+        transform: translateY(-1%) scale(1.01);
+    }
+    66% {
+        opacity: 0.7;
+        transform: translateY(0.5%) scale(0.99);
+    }
 }
 
 @keyframes aurora-drift {
-    0%, 100% { transform: translateX(0) rotate(0deg); }
-    50% { transform: translateX(2%) rotate(0.5deg); }
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+    50% {
+        transform: translateX(2%) rotate(0.5deg);
+    }
 }
 
 [data-theme="dark"] .dashboard-gradient::before {
@@ -249,9 +272,11 @@ body {
     inset: -20% -10%;
     background:
         radial-gradient(ellipse 120% 70% at 20% -15%, rgba(16, 185, 129, 0.35) 0%, transparent 55%),
-        radial-gradient(ellipse 100% 50% at 80% 5%, rgba(59, 130, 246, 0.30) 0%, transparent 50%),
-        radial-gradient(ellipse 80% 45% at 50% 30%, rgba(139, 92, 246, 0.20) 0%, transparent 55%);
-    animation: aurora-shift 12s ease-in-out infinite, aurora-drift 20s ease-in-out infinite;
+        radial-gradient(ellipse 100% 50% at 80% 5%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 80% 45% at 50% 30%, rgba(139, 92, 246, 0.2) 0%, transparent 55%);
+    animation:
+        aurora-shift 12s ease-in-out infinite,
+        aurora-drift 20s ease-in-out infinite;
     pointer-events: none;
 }
 

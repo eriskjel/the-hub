@@ -9,9 +9,9 @@ export function IconButton(props: ButtonHTMLAttributes<HTMLButtonElement>): Reac
         <button
             {...rest}
             className={clsx(
-                "cursor-pointer rounded-lg p-1.5 text-muted transition-colors",
+                "text-muted cursor-pointer rounded-lg p-1.5 transition-colors",
                 "hover:bg-surface-light hover:text-foreground",
-                "focus:ring-2 focus:ring-border focus:outline-none",
+                "focus:ring-border focus:ring-2 focus:outline-none",
                 className
             )}
         />
