@@ -19,7 +19,7 @@ public class DNBSupertilbudProvider implements CountdownProvider {
     private static final Logger log = LoggerFactory.getLogger(DNBSupertilbudProvider.class);
     private final RestTemplate http;
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");
-    private static final String URL = "https://www.rabo.no/1292/dnb-supertilbud-2025-oversikt-over-neste-kampanjer/";
+    private static final String URL = "https://www.rabo.no/1336/dnb-supertilbud-2026-oversikt-over-neste-kampanjer/";
 
     private static final Pattern TWO_MONTH = Pattern
             .compile("(?iu)(\\d{1,2})\\.?\\s*([a-zæøå]+)\\s*[\\p{Pd}]\\s*(\\d{1,2})\\.?\\s*([a-zæøå]+)");
@@ -80,6 +80,11 @@ public class DNBSupertilbudProvider implements CountdownProvider {
             return Optional.empty();
         return wins.stream().map(s -> s.start.atStartOfDay(ZONE).toInstant()).filter(i -> i.isBefore(now))
                 .max(Comparator.naturalOrder());
+    }
+
+    @Override
+    public Optional<String> sourceUrl() {
+        return Optional.of(URL);
     }
 
     private static final class Span {
