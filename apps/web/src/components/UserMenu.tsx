@@ -71,15 +71,11 @@ export default function UserMenu({ isLoggedIn, logoutLabel }: UserMenuProps) {
             </button>
 
             {open && (
-                <div
-                    role="menu"
-                    className="border-border bg-surface absolute top-full right-0 mt-2 w-44 origin-top-right rounded-xl border py-1 shadow-lg"
-                >
+                <div className="border-border bg-surface absolute top-full right-0 mt-2 w-44 origin-top-right rounded-xl border py-1 shadow-lg">
                     {/* Language toggle */}
                     <Link
                         href={localeHref}
                         locale={nextLocale}
-                        role="menuitem"
                         onClick={() => setOpen(false)}
                         className="text-foreground hover:bg-surface-subtle flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors"
                     >
@@ -94,7 +90,6 @@ export default function UserMenu({ isLoggedIn, logoutLabel }: UserMenuProps) {
                             <form action={logout}>
                                 <button
                                     type="submit"
-                                    role="menuitem"
                                     onClick={() => setOpen(false)}
                                     className="text-foreground hover:bg-surface-subtle flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm transition-colors"
                                 >

@@ -46,7 +46,7 @@ export default function CinemateketView({
                     return (
                         <li
                             key={`${showing.title}-${showing.showTime}`}
-                            aria-hidden={isHidden}
+                            inert={isHidden}
                             className={`hover:bg-surface-subtle rounded-lg px-2 py-1 transition-opacity duration-200 ease-in-out ${
                                 isHidden ? "pointer-events-none opacity-0" : "opacity-100"
                             }`}
@@ -60,7 +60,7 @@ export default function CinemateketView({
                                                 href={showing.filmUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="hover:text-primary text-foreground truncate text-sm font-medium hover:underline"
+                                                className="hover:text-primary text-foreground block truncate text-sm font-medium hover:underline"
                                             >
                                                 {showing.title}
                                             </a>
