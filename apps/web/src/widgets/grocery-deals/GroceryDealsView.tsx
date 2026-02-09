@@ -158,20 +158,18 @@ function renderRows(
 
                 {/* LEFT: flexible, can truncate */}
                 <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="truncate text-sm font-semibold text-foreground">
+                    <div className="text-foreground truncate text-sm font-semibold">
                         {deal.name}
                     </div>
-                    <div className="truncate text-xs font-medium text-muted">
-                        {deal.store}
-                    </div>
+                    <div className="text-muted truncate text-xs font-medium">{deal.store}</div>
                     {(() => {
                         const sub = subtitle(deal);
                         return sub ? (
-                            <div className="truncate text-xs text-muted">{sub}</div>
+                            <div className="text-muted truncate text-xs">{sub}</div>
                         ) : null;
                     })()}
                     {deal.validUntil ? (
-                        <div className="mt-0.5 text-[11px] text-muted">
+                        <div className="text-muted mt-0.5 text-[11px]">
                             {t("until")} {formatDate(deal.validUntil)}
                         </div>
                     ) : null}
