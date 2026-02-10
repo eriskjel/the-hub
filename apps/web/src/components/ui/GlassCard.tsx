@@ -64,7 +64,10 @@ export default function GlassCard({
             )}
 
             <div
-                className={clsx("relative z-[1] flex min-h-0 flex-1 flex-col px-3 pb-3", contentTone)}
+                className={clsx(
+                    "relative z-[1] flex min-h-0 flex-1 flex-col px-3 pb-3",
+                    contentTone
+                )}
             >
                 {children}
             </div>
