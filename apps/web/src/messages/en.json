@@ -3,7 +3,9 @@
         "home": "Home",
         "login": "Sign in",
         "logout": "Log out",
-        "admin": "Admin"
+        "admin": "Admin",
+        "themeLight": "Light mode",
+        "themeDark": "Dark mode"
     },
     "login": {
         "title": "Please sign in",

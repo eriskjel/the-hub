@@ -31,10 +31,17 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
                     <NavItems isLoggedIn={!!user} isAdmin={isAdminFromUser(user)} t={t} />
                 </ul>
 
-                {/* Right: theme toggle + user menu */}
+                {/* Right: theme (wide) + user menu; theme also in dropdown on narrow */}
                 <div className="absolute right-8 flex items-center gap-1">
-                    <ThemeToggle />
-                    <UserMenu isLoggedIn={!!user} logoutLabel={t("header.logout")} />
+                    <div className="hidden sm:block">
+                        <ThemeToggle />
+                    </div>
+                    <UserMenu
+                        isLoggedIn={!!user}
+                        logoutLabel={t("header.logout")}
+                        themeLightLabel={t("header.themeLight")}
+                        themeDarkLabel={t("header.themeDark")}
+                    />
                 </div>
             </nav>
         </header>

@@ -3,7 +3,9 @@
         "home": "Hjem",
         "login": "Logg inn",
         "logout": "Logg ut",
-        "admin": "Admin"
+        "admin": "Admin",
+        "themeLight": "Lys modus",
+        "themeDark": "Mørk modus"
     },
     "login": {
         "title": "Vennligst logg inn",

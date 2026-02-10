@@ -22,7 +22,17 @@ function setTheme(next: Theme) {
     document.documentElement.dataset.theme = next;
 }
 
-export default function ThemeToggle() {
+type ThemeToggleProps = {
+    variant?: "icon" | "dropdownItem";
+    themeLightLabel?: string;
+    themeDarkLabel?: string;
+};
+
+export default function ThemeToggle({
+    variant = "icon",
+    themeLightLabel = "Light mode",
+    themeDarkLabel = "Dark mode",
+}: ThemeToggleProps) {
     const [theme, setThemeState] = useState<Theme>("light");
     const [mounted, setMounted] = useState(false);
 
@@ -51,6 +61,25 @@ export default function ThemeToggle() {
 
     const isDark = theme === "dark";
     const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+    const displayLabel = isDark ? themeLightLabel : themeDarkLabel;
+
+    if (variant === "dropdownItem") {
+        return (
+            <button
+                type="button"
+                onClick={toggle}
+                aria-label={label}
+                className="text-foreground hover:bg-surface-subtle flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+            >
+                {isDark ? (
+                    <Sun className="text-muted h-4 w-4" aria-hidden />
+                ) : (
+                    <Moon className="text-muted h-4 w-4" aria-hidden />
+                )}
+                <span>{displayLabel}</span>
+            </button>
+        );
+    }
 
     return (
         <button

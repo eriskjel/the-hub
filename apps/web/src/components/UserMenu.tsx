@@ -7,13 +7,21 @@ import { useTypedLocale } from "@/i18n/useTypedLocale";
 import { type Locale, NEXT_LOCALE } from "@/i18n/routing";
 import { User, LogOut, Languages } from "lucide-react";
 import { logout } from "@/app/auth/actions/auth";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type UserMenuProps = {
     isLoggedIn: boolean;
     logoutLabel: string;
+    themeLightLabel: string;
+    themeDarkLabel: string;
 };
 
-export default function UserMenu({ isLoggedIn, logoutLabel }: UserMenuProps) {
+export default function UserMenu({
+    isLoggedIn,
+    logoutLabel,
+    themeLightLabel,
+    themeDarkLabel,
+}: UserMenuProps) {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -72,6 +80,15 @@ export default function UserMenu({ isLoggedIn, logoutLabel }: UserMenuProps) {
 
             {open && (
                 <div className="border-border bg-surface absolute top-full right-0 mt-2 w-44 origin-top-right rounded-xl border py-1 shadow-lg">
+                    {/* Theme toggle - only on narrow viewport (wide: theme in header) */}
+                    <div className="sm:hidden">
+                        <ThemeToggle
+                            variant="dropdownItem"
+                            themeLightLabel={themeLightLabel}
+                            themeDarkLabel={themeDarkLabel}
+                        />
+                        <div className="bg-border my-1 h-px" />
+                    </div>
                     {/* Language toggle */}
                     <Link
                         href={localeHref}
