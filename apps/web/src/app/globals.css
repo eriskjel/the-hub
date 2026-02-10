@@ -45,6 +45,13 @@
 
     --color-border: #e5e5e5;
     --color-border-subtle: #d4d4d4;
+
+    --color-widget-content: #1e1e1e;
+    --color-stale: #eab308;
+    --color-stale-muted: #facc15;
+    --color-stale-subtle: #fef9c3;
+    --color-cta: #2563eb;
+    --color-cta-muted: #3b82f6;
 }
 
 /*
@@ -93,6 +100,18 @@
     /* Border – borders and dividers */
     --color-border: #e5e5e5;
     --color-border-subtle: #d4d4d4;
+
+    /* Widget content – soft black on glass, easier on the eye than pitch black */
+    --color-widget-content: #1e1e1e;
+
+    /* Stale – same as status-error in light */
+    --color-stale: #eab308;
+    --color-stale-muted: #facc15;
+    --color-stale-subtle: #fef9c3;
+
+    /* CTA – matches primary in light */
+    --color-cta: #2563eb;
+    --color-cta-muted: #3b82f6;
 }
 
 /* Dark theme: applied when user or system chooses dark (script sets data-theme on <html>) */
@@ -130,6 +149,18 @@
 
     --color-border: #404040;
     --color-border-subtle: #525252;
+
+    /* Widget content – soft white on dark glass, clean and readable */
+    --color-widget-content: #e8e8e8;
+
+    /* Stale – redder/amber in dark for clearer “cached” warning */
+    --color-stale: #ea580c;
+    --color-stale-muted: #f97316;
+    --color-stale-subtle: #431407;
+
+    /* CTA – teal to match dark dashboard aurora, less bright than primary blue */
+    --color-cta: #0d9488;
+    --color-cta-muted: #0f766e;
 }
 
 body {

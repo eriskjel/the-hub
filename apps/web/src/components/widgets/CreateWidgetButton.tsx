@@ -15,7 +15,7 @@ export default function CreateWidgetButton({ className }: { className?: string }
             <button
                 onClick={() => setOpen(true)}
                 className={cn(
-                    "bg-primary hover:bg-primary-muted focus:ring-primary-muted focus:ring-offset-background inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-offset-2 focus:outline-none",
+                    "bg-cta hover:bg-cta-muted focus:ring-cta-muted focus:ring-offset-background inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:ring-2 focus:ring-offset-2 focus:outline-none",
                     className
                 )}
             >

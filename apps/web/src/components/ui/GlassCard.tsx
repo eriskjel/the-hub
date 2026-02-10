@@ -40,6 +40,7 @@ export default function GlassCard({
           );
 
     const textTone = isLight ? "text-foreground" : "text-white";
+    const contentTone = isSolid ? "text-widget-content" : textTone;
 
     return (
         <div className={clsx(base, look, className)}>
@@ -50,7 +51,7 @@ export default function GlassCard({
                 <div
                     className={clsx(
                         "relative z-[1] flex items-center justify-between gap-2 px-3 pt-3 pb-2",
-                        textTone,
+                        contentTone,
                         "flex-none"
                     )}
                 >
@@ -63,13 +64,13 @@ export default function GlassCard({
             )}
 
             <div
-                className={clsx("relative z-[1] flex min-h-0 flex-1 flex-col px-3 pb-3", textTone)}
+                className={clsx("relative z-[1] flex min-h-0 flex-1 flex-col px-3 pb-3", contentTone)}
             >
                 {children}
             </div>
 
             {footer && (
-                <div className={clsx("relative z-[1] px-3 py-2", textTone, "flex-none")}>
+                <div className={clsx("relative z-[1] px-3 py-2", contentTone, "flex-none")}>
                     {footer}
                 </div>
             )}
