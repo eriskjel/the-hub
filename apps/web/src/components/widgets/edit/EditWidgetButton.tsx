@@ -6,20 +6,36 @@ import EditWidgetModal from "@/components/widgets/edit/EditWidgetModal";
 import { IconButton } from "@/components/ui/IconButton";
 import { Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { isEditableKind } from "@/widgets/create/registry";
 
-type EditWidgetButtonProps = { widget: AnyWidget; forceDisabledTooltip?: string; userId?: string };
+type EditWidgetButtonProps = {
+    widget: AnyWidget;
+    forceDisabledTooltip?: string;
+    userId?: string;
+    backendUnreachable?: boolean;
+};
 
 export function EditWidgetButton({
     widget,
     forceDisabledTooltip,
     userId,
+    backendUnreachable = false,
 }: EditWidgetButtonProps): ReactElement {
     const t = useTranslations("widgets.edit");
+    const tStates = useTranslations("dashboard.states");
     const [open, setOpen] = useState(false);
 
     const editable = isEditableKind(widget.kind);
     const aria = t("ariaEdit", { default: "Edit widget" });
+
+    const handleClick = () => {
+        if (backendUnreachable) {
+            toast.error(tStates("backendUnreachableAction"));
+            return;
+        }
+        if (editable) setOpen(true);
+    };
 
     return (
         <>
@@ -31,7 +47,7 @@ export function EditWidgetButton({
                         : (forceDisabledTooltip ??
                           t("notEditable", { default: "Not editable yet" }))
                 }
-                onClick={() => editable && setOpen(true)}
+                onClick={handleClick}
                 disabled={!editable}
                 className={editable ? "cursor-pointer" : "cursor-not-allowed opacity-60"}
             >

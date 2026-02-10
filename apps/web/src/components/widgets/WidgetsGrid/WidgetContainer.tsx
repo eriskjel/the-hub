@@ -64,13 +64,18 @@ export default function WidgetContainer({
     const actions = (
         <div className="flex items-center gap-2">
             {isEditableKind(widget.kind) && (
-                <EditWidgetButton widget={widget} userId={userId ?? undefined} />
+                <EditWidgetButton
+                    widget={widget}
+                    userId={userId ?? undefined}
+                    backendUnreachable={stale}
+                />
             )}
             <DeleteWidgetButton
                 widgetId={widget.instanceId}
                 widgetTitle={title}
                 userId={userId}
                 kind={widget.kind}
+                backendUnreachable={stale}
             />
         </div>
     );

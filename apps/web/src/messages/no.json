@@ -52,7 +52,8 @@
             "errorBody": "Noe gikk galt.",
             "errorTryRefresh": "Prøv å oppdatere siden.",
             "loading": "Laster…",
-            "unknownWidget": "Ukjent widget: {kind}"
+            "unknownWidget": "Ukjent widget: {kind}",
+            "backendUnreachableAction": "Ikke mulig når backend er utilgjengelig."
         }
     },
     "monster": {

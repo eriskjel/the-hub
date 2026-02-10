@@ -51,7 +51,7 @@ async function ActionsBar({ widgetsPromise }: { widgetsPromise: Promise<WidgetsR
         return result.offline ? <div className="h-10" /> : null;
     }
 
-    return <CreateWidgetButton />;
+    return <CreateWidgetButton backendUnreachable={result.stale ?? false} />;
 }
 
 function DashboardSkeleton(): ReactElement {
