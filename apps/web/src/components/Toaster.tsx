@@ -1,8 +1,9 @@
 "use client";
 
+import type { ReactElement } from "react";
 import { Toaster as SonnerToaster } from "sonner";
 
-export function Toaster(): React.ReactElement {
+export function Toaster(): ReactElement {
     return (
         <SonnerToaster
             richColors
