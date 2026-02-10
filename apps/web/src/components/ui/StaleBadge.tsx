@@ -7,8 +7,8 @@ export function StaleBadge({ solid }: { solid: boolean }): ReactElement {
             className={clsx(
                 "rounded-full px-2 py-0.5 text-[10px] tracking-wide uppercase",
                 solid
-                    ? "border-status-error-muted bg-status-error-subtle text-foreground"
-                    : "border-status-error/40 bg-status-error/15 text-status-error"
+                    ? "border-stale-muted bg-stale-subtle text-foreground"
+                    : "border-stale/40 bg-stale/15 text-stale"
             )}
         >
             Cached

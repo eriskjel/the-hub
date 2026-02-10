@@ -3,7 +3,9 @@
         "home": "Home",
         "login": "Sign in",
         "logout": "Log out",
-        "admin": "Admin"
+        "admin": "Admin",
+        "themeLight": "Light mode",
+        "themeDark": "Dark mode"
     },
     "login": {
         "title": "Please sign in",
@@ -50,7 +52,8 @@
             "errorBody": "An error occurred.",
             "errorTryRefresh": "Please try refreshing the page.",
             "loading": "Loading…",
-            "unknownWidget": "Unknown widget: {kind}"
+            "unknownWidget": "Unknown widget: {kind}",
+            "backendUnreachableAction": "Not possible while the backend is unreachable."
         }
     },
     "monster": {
