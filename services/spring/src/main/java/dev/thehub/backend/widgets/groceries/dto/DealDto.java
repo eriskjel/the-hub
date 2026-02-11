@@ -47,6 +47,12 @@ package dev.thehub.backend.widgets.groceries.dto;
  *            computed worst-case unit price per kg based on sizes (nullable)
  * @param multipack
  *            indicates whether the offer is a multipack
+ * @param displayName
+ *            optional LLM-cleaned product name (e.g. "Monster Green 0.5l")
+ * @param displayUnit
+ *            optional display unit label (e.g. "kr/l", "kr/kg", "kr/stk")
+ * @param displayPricePerUnit
+ *            optional price per display unit when normalized by LLM
  */
 public record DealDto(String name, String store, double price, Double unitPrice, // vendor-provided per baseUnit (e.g.,
                                                                                  // kr/kg)
@@ -56,6 +62,17 @@ public record DealDto(String name, String store, double price, Double unitPrice,
         Double perPiecePrice, // computed: price / pieceCountFrom (when >1)
         Double unitPriceMin, // computed from sizes (best-case per-kg)
         Double unitPriceMax, // computed from sizes (worst-case per-kg)
-        Boolean multipack // (pieceCountFrom != null && >1)
-) {
+        Boolean multipack, // (pieceCountFrom != null && >1)
+        String displayName, String displayUnit, Double displayPricePerUnit) {
+
+    /**
+     * Creates a copy of this deal with LLM display fields set. Used when merging
+     * Gemini filter/enrich results.
+     */
+    public DealDto withDisplay(String displayName, String displayUnit, Double displayPricePerUnit) {
+        return new DealDto(name(), store(), price(), unitPrice(), validFrom(), validUntil(), image(), storeLogo(),
+                unit(), pieceCountFrom(), pieceCountTo(), unitSizeFrom(), unitSizeTo(), unitSymbol(), baseUnit(),
+                perPiecePrice(), unitPriceMin(), unitPriceMax(), multipack(), displayName, displayUnit,
+                displayPricePerUnit);
+    }
 }
