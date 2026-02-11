@@ -52,7 +52,7 @@ export default function CinemateketView({
                             }`}
                         >
                             <div className="flex flex-col gap-px">
-                                {/* Title and time */}
+                                {/* Title and time (organizer hidden for now) */}
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0 flex-1">
                                         {showing.filmUrl ? (
@@ -84,12 +84,7 @@ export default function CinemateketView({
                                     </div>
                                 )}
 
-                                {/* Organizer */}
-                                {showing.organizer && (
-                                    <div className="text-muted-subtle truncate text-xs italic">
-                                        {showing.organizer}
-                                    </div>
-                                )}
+                                {/* Organizer hidden for now (e.g. "Trondheim filmklubb") */}
 
                                 {/* Buy tickets and date */}
                                 <div className="flex items-center justify-between gap-2">

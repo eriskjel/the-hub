@@ -138,24 +138,26 @@ export default function CountdownView({
                         )}
                     </div>
 
-                    {/* middle content - timer centered vertically, sublabel below */}
-                    <div className="flex flex-1 flex-col items-center justify-center">
-                        <div className="text-center text-2xl leading-tight font-bold tabular-nums">
-                            {hasMultipleParts ? (
-                                <>
-                                    <span className="inline-block whitespace-nowrap">
-                                        {durationParts[0].trimEnd()}
-                                        {conjunction}
-                                    </span>{" "}
-                                    <span className="inline-block">
-                                        {durationParts[1].trimStart()}
-                                    </span>
-                                </>
-                            ) : (
-                                <span className="whitespace-nowrap">{fullText}</span>
-                            )}
+                    {/* middle: countdown vertically centered; helper text pinned to bottom (same Y across widgets) */}
+                    <div className="flex min-h-0 flex-1 flex-col items-center">
+                        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+                            <div className="text-center text-2xl leading-tight font-bold tabular-nums">
+                                {hasMultipleParts ? (
+                                    <>
+                                        <span className="inline-block whitespace-nowrap">
+                                            {durationParts[0].trimEnd()}
+                                            {conjunction}
+                                        </span>{" "}
+                                        <span className="inline-block">
+                                            {durationParts[1].trimStart()}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="whitespace-nowrap">{fullText}</span>
+                                )}
+                            </div>
                         </div>
-                        <div className="mt-2 text-xs opacity-70">
+                        <div className="mt-2 flex-none text-xs opacity-70">
                             {isOngoing
                                 ? whenText && t("status.endsAt", { when: whenText })
                                 : whenText && t("status.startsAt", { when: whenText })}
