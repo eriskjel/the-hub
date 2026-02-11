@@ -174,5 +174,5 @@ export function useWidgetData<D = unknown>(
         };
     }, [load, intervalMs, loadCache]);
 
-    return state;
+    return { state, refetch: load };
 }

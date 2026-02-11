@@ -2,6 +2,7 @@ package dev.thehub.backend.widgets.groceries;
 
 import dev.thehub.backend.widgets.WidgetSettingsService;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
+import dev.thehub.backend.widgets.groceries.dto.GroceryDealsResponse;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -76,12 +77,12 @@ public class GroceriesController {
      * @return HTTP 200 with a list of deals, or 400 when required inputs are
      *         missing
      */
-    @Operation(summary = "Fetch grocery deals", description = "Fetches deals by a saved widget instance (instanceId) or by ad-hoc query parameters.")
+    @Operation(summary = "Fetch grocery deals", description = "Fetches deals by a saved widget instance (instanceId) or by ad-hoc query parameters. Returns wrapper with deals and isEnriched for fast-first refetch-later.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = DealDto.class)))),
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = GroceryDealsResponse.class))),
             @ApiResponse(responseCode = "400", description = "Missing required inputs")})
     @GetMapping
-    public ResponseEntity<List<DealDto>> deals(@Parameter(hidden = true) JwtAuthenticationToken auth,
+    public ResponseEntity<GroceryDealsResponse> deals(@Parameter(hidden = true) JwtAuthenticationToken auth,
             @Parameter(description = "Widget instance id owned by the caller") @RequestParam(required = false) UUID instanceId,
             @Parameter(description = "Search query when no instanceId is provided") @RequestParam(name = "q", required = false) String q,
             @Parameter(description = "Result limit override") @RequestParam(required = false) Integer limit,
@@ -115,13 +116,13 @@ public class GroceriesController {
         int fetchLimit = Optional.ofNullable(settings.maxResults()).orElse(svc.getDefaultLimit());
         Integer effectiveTop = (top != null && top > 0) ? Math.min(fetchLimit, top) : fetchLimit;
 
-        var deals = svc.fetchDeals(settings, effectiveTop);
+        var result = svc.fetchDeals(settings, effectiveTop);
 
         double priceCap = Optional.ofNullable(maxPrice).orElse(svc.getDefaultMaxPrice());
 
-        List<DealDto> filtered = deals.stream().filter(d -> d.price() <= priceCap).toList();
+        List<DealDto> filtered = result.deals().stream().filter(d -> d.price() <= priceCap).toList();
 
-        return ResponseEntity.ok(filtered);
+        return ResponseEntity.ok(new GroceryDealsResponse(filtered, result.isEnriched()));
     }
 
     /**

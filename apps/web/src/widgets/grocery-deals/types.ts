@@ -22,7 +22,16 @@ export type Deal = {
     unitPriceMin?: number; // computed
     unitPriceMax?: number; // computed
     multipack?: boolean;
+    /** LLM-cleaned name when Gemini filter ran */
+    displayName?: string;
+    /** e.g. "kr/l", "kr/kg", "kr/stk" when Gemini normalized units */
+    displayUnit?: string;
+    /** Price per display unit when set by Gemini */
+    displayPricePerUnit?: number;
 };
+
+/** API response: list plus flag so frontend can refetch when enrichment completes */
+export type GroceryDealsResponse = { deals: Deal[]; isEnriched: boolean };
 
 type GrocerySettingsUnion =
     | z.infer<typeof groceryCreateSettingsSchema>

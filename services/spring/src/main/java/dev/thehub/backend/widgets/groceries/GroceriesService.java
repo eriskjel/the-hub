@@ -2,6 +2,7 @@ package dev.thehub.backend.widgets.groceries;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
+import dev.thehub.backend.widgets.groceries.dto.GeminiDealDecision;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -16,6 +17,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -105,9 +107,13 @@ public class GroceriesService {
      * @param metrics
      *            Micrometer registry for recording request metrics
      */
-    public GroceriesService(RestTemplate http, MeterRegistry metrics) {
+    private final GeminiGroceryEnricher geminiEnricher;
+
+    public GroceriesService(RestTemplate http, MeterRegistry metrics,
+            @Autowired(required = false) GeminiGroceryEnricher geminiEnricher) {
         this.http = http;
         this.metrics = metrics;
+        this.geminiEnricher = geminiEnricher;
     }
 
     /**
@@ -125,7 +131,7 @@ public class GroceriesService {
      *             if network or parsing fails
      */
     public List<DealDto> fetchDeals(GroceryDealsSettings s) throws IOException {
-        return fetchDeals(s, null);
+        return fetchDeals(s, null).deals();
     }
 
     /**
@@ -144,16 +150,16 @@ public class GroceriesService {
      *            optional cap on the number of deals to return (must be > 0 to
      *            apply); when null or invalid, {@code maxResults} from settings or
      *            the configured default limit is used
-     * @return a price-ascending list of deals; empty if the search term is blank or
-     *         no data is available
+     * @return result with deals list and whether Gemini enrichment was applied
+     *         (cache hit); empty list if the search term is blank or no data
      * @throws IOException
      *             if the response payload cannot be parsed as valid NDJSON/JSON
      */
-    public List<DealDto> fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
+    public FetchDealsResult fetchDeals(GroceryDealsSettings s, Integer top) throws IOException {
         final long t0 = System.nanoTime();
         String term = Optional.ofNullable(s.query()).map(String::trim).orElse("");
         if (term.isEmpty())
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
 
         final int desiredReturn = (top != null && top > 0)
                 ? top
@@ -198,7 +204,7 @@ public class GroceriesService {
             if (!resp.getStatusCode().is2xxSuccessful()) {
                 log.warn("Etilbudsavis non2xx status={} reason={}", resp.getStatusCode().value(), resp.getStatusCode());
                 recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
-                return List.of();
+                return new FetchDealsResult(List.of(), true);
             }
             raw = Optional.ofNullable(resp.getBody()).orElse("");
         } catch (HttpStatusCodeException e) {
@@ -208,7 +214,7 @@ public class GroceriesService {
             log.warn("Etilbudsavis error status={} reason={} body={}", e.getStatusCode().value(), e.getStatusText(),
                     truncated);
             recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
         } catch (Exception e) {
             log.error("Etilbudsavis call failed", e);
             recordMetrics(term, s.city(), fetchLimit, 0, t0, false);
@@ -216,22 +222,22 @@ public class GroceriesService {
         }
         if (raw.isBlank()) {
             recordMetrics(term, s.city(), fetchLimit, 0, t0, true);
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
         }
 
         List<Map<String, Object>> lines = parseNdjson(raw);
         if (lines.isEmpty())
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
         Map<String, Object> offersBlock = pickOffersBlock(lines);
         if (offersBlock == null)
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
 
         Object valueObj = offersBlock.get("value");
         if (!(valueObj instanceof Map<?, ?> vm))
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
         Object dataObj = vm.get("data");
         if (!(dataObj instanceof List<?> dl) || dl.isEmpty())
-            return List.of();
+            return new FetchDealsResult(List.of(), true);
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> data = (List<Map<String, Object>>) (List<?>) dl;
@@ -267,15 +273,31 @@ public class GroceriesService {
                 .filter(d -> !excluded.contains(canonicalizeVendor(d.store()))).sorted(cmp).toList();
 
         List<DealDto> capped = sorted.stream().limit(desiredReturn).toList();
+        boolean isEnriched = true;
+
+        // Fast-first, refetch-later: use cache if hit; else return raw and trigger async Gemini
+        if (geminiEnricher != null && geminiEnricher.isEnabled() && !capped.isEmpty()) {
+            var city = cityOrDefault(s);
+            Optional<List<DealDto>> cached = geminiEnricher.getCachedEnrichment(term, city);
+            if (cached.isPresent()) {
+                capped = cached.get();
+                isEnriched = true;
+                if (log.isDebugEnabled())
+                    log.debug("Groceries Gemini cache hit term={} city={} size={}", norm(term), norm(city), capped.size());
+            } else {
+                geminiEnricher.triggerAsyncEnrichment(term, city, capped);
+                isEnriched = false;
+            }
+        }
 
         if (log.isDebugEnabled() || sample(0.02)) {
             long ms = (System.nanoTime() - t0) / 1_000_000;
-            log.info("Groceries fetched term={} city={} fetchLimit={} returned={} ms={}", norm(term),
-                    norm(cityOrDefault(s)), fetchLimit, capped.size(), ms);
+            log.info("Groceries fetched term={} city={} fetchLimit={} returned={} isEnriched={} ms={}", norm(term),
+                    norm(cityOrDefault(s)), fetchLimit, capped.size(), isEnriched, ms);
         }
 
         recordMetrics(term, s.city(), fetchLimit, capped.size(), t0, true);
-        return capped;
+        return new FetchDealsResult(capped, isEnriched);
     }
 
     /**
@@ -424,7 +446,7 @@ public class GroceriesService {
 
         return new DealDto(name, store, price, unitPrice, validFrom, validUntil, image, logo, unit, pieceCountFrom,
                 pieceCountTo, unitSizeFrom, unitSizeTo, unitSymbol, baseUnit, perPiecePrice, unitPriceMin, unitPriceMax,
-                multipack);
+                multipack, null, null, null);
     }
 
     /**

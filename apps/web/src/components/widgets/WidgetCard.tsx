@@ -76,7 +76,7 @@ function WidgetWithData({
     const t = useTranslations("dashboard.states");
     const entry = registry[widget.kind]!;
     const interval = entry.pollMs ?? 30_000;
-    const state = useWidgetData(widget, interval, userId ?? "anon");
+    const { state, refetch } = useWidgetData(widget, interval, userId ?? "anon");
 
     if (state.status === "loading") return <StateText>{t("loading")}</StateText>;
     if (state.status === "error") return <ErrorBox msg={state.error} />;
@@ -84,8 +84,9 @@ function WidgetWithData({
     const Component = entry.Component as (props: {
         data: unknown;
         widget: AnyWidget;
+        refetch?: () => void;
     }) => ReactElement;
-    return <Component data={state.data} widget={widget} />;
+    return <Component data={state.data} widget={widget} refetch={refetch} />;
 }
 
 export default function WidgetCard({
