@@ -103,7 +103,7 @@ public class GeminiGroceryEnricher {
                 if (e instanceof HttpClientErrorException.TooManyRequests) {
                     log.warn("Gemini rate limit exceeded, skipping enrichment");
                 } else {
-                    log.warn("Gemini async enrichment failed", e);
+                    log.warn("Gemini async enrichment failed: {}", e.getMessage());
                 }
             } finally {
                 inFlightRequests.remove(key);
@@ -188,12 +188,8 @@ public class GeminiGroceryEnricher {
      */
     @SuppressWarnings("unchecked")
     public List<GeminiDealDecision> filterAndEnrich(String userQuery, List<DealDto> deals) {
-        if (!isEnabled() || deals == null || deals.isEmpty()) {
-            if (log.isDebugEnabled())
-                log.debug("Gemini groceries skip: enabled={} dealsSize={}", isEnabled(),
-                        deals == null ? 0 : deals.size());
+        if (!isEnabled() || deals == null || deals.isEmpty())
             return List.of();
-        }
 
         log.info("Gemini groceries calling model query='{}' dealCount={}", userQuery, deals.size());
         List<Map<String, Object>> itemsForPrompt = new ArrayList<>();
@@ -213,14 +209,6 @@ public class GeminiGroceryEnricher {
 
         String prompt = buildPrompt(userQuery, itemsForPrompt);
         Map<String, Object> requestBody = buildRequestBody(prompt);
-        if (log.isDebugEnabled()) {
-            try {
-                String itemsJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(itemsForPrompt);
-                log.debug("Gemini groceries request payload (products): {}", itemsJson);
-            } catch (Exception e) {
-                log.debug("Gemini groceries request payload (serialize skip): {}", e.getMessage());
-            }
-        }
 
         try {
             String url = GEMINI_URL + "?key=" + apiKey;
@@ -242,10 +230,6 @@ public class GeminiGroceryEnricher {
                 return List.of();
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Gemini groceries response raw (first 800 chars): {}",
-                        text.length() > 800 ? text.substring(0, 800) + "..." : text);
-
             List<Map<String, Object>> rawList = mapper.readValue(text,
                     mapper.getTypeFactory().constructCollectionType(List.class, Map.class));
             List<GeminiDealDecision> decisions = new ArrayList<>();
@@ -259,21 +243,12 @@ public class GeminiGroceryEnricher {
                 String cleanName = string(o.get("clean_name"), o.get("cleanName"));
                 String displayUnit = string(o.get("display_unit"), o.get("displayUnit"));
                 Double displayPrice = toDouble(o.get("display_price_per_unit"), o.get("displayPricePerUnit"));
-                if (log.isDebugEnabled())
-                    log.debug("Gemini decision index={} isRelevant={} display_unit={} display_price_per_unit={}", index,
-                            isRelevant, displayUnit, displayPrice);
                 decisions.add(new GeminiDealDecision(index, isRelevant, cleanName, displayUnit, displayPrice));
             }
-            if (!decisions.isEmpty() && log.isInfoEnabled())
-                log.info(
-                        "Gemini groceries ok decisions={} relevant={} sample display_unit={} display_price_per_unit={}",
-                        decisions.size(), relevantCount, decisions.get(0).displayUnit(),
-                        decisions.get(0).displayPricePerUnit());
-            else
-                log.info("Gemini groceries ok decisions={} relevant={}", decisions.size(), relevantCount);
+            log.info("Gemini groceries ok decisions={} relevant={}", decisions.size(), relevantCount);
             return decisions;
         } catch (Exception e) {
-            log.warn("Gemini groceries call failed, using unfiltered list: {}", e.getMessage(), e);
+            log.warn("Gemini groceries call failed, using unfiltered list: {}", e.getMessage());
             return List.of();
         }
     }
