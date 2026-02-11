@@ -103,7 +103,10 @@ export default function GroceryDealsView({
             refetchScheduledRef.current = false;
             refetch();
         }, REFETCH_DELAY_MS);
-        return () => clearTimeout(tId);
+        return () => {
+            clearTimeout(tId);
+            refetchScheduledRef.current = false;
+        };
     }, [isEnriched, refetch]);
 
     if (!rawDeals.length) {

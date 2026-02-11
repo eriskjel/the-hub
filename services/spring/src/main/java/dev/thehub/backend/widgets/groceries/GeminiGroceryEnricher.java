@@ -6,6 +6,7 @@ import dev.thehub.backend.widgets.groceries.dto.GeminiDealDecision;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,12 +34,13 @@ public class GeminiGroceryEnricher {
     private final Executor executor;
 
     private final ConcurrentHashMap<String, List<DealDto>> cache = new ConcurrentHashMap<>();
+    private final Set<String> inFlightRequests = ConcurrentHashMap.newKeySet();
+
+    @Value("${groceries.gemini.enabled:true}")
+    private boolean enabled;
 
     @Value("${groceries.gemini.api-key:}")
     private String apiKey;
-
-    @Value("${groceries.gemini.timeout-seconds:15}")
-    private int timeoutSeconds;
 
     public GeminiGroceryEnricher(@Qualifier("geminiRestTemplate") RestTemplate http,
             @Qualifier("groceryEnrichmentExecutor") Executor executor) {
@@ -51,7 +53,7 @@ public class GeminiGroceryEnricher {
      * used.
      */
     public boolean isEnabled() {
-        return apiKey != null && !apiKey.isBlank();
+        return enabled && apiKey != null && !apiKey.isBlank();
     }
 
     private static String buildCacheKey(String query, String city) {
@@ -82,6 +84,10 @@ public class GeminiGroceryEnricher {
         String key = buildCacheKey(query, city);
         if (cache.containsKey(key))
             return;
+        if (!inFlightRequests.add(key))
+            return;
+        if (cache.size() > 1000)
+            cache.clear();
         List<DealDto> dealSnapshot = new ArrayList<>(deals);
         executor.execute(() -> {
             try {
@@ -99,28 +105,35 @@ public class GeminiGroceryEnricher {
                 } else {
                     log.warn("Gemini async enrichment failed", e);
                 }
+            } finally {
+                inFlightRequests.remove(key);
             }
         });
     }
 
     private static List<DealDto> merge(List<DealDto> deals, List<GeminiDealDecision> decisions) {
+        Map<Integer, GeminiDealDecision> decisionMap = decisions.stream()
+                .collect(Collectors.toMap(GeminiDealDecision::index, d -> d, (a, b) -> a));
         List<DealDto> out = new ArrayList<>();
-        for (GeminiDealDecision dec : decisions) {
-            if (!dec.isRelevant() || dec.index() < 0 || dec.index() >= deals.size())
+        for (int i = 0; i < deals.size(); i++) {
+            DealDto original = deals.get(i);
+            GeminiDealDecision dec = decisionMap.get(i);
+            if (dec != null && !dec.isRelevant())
                 continue;
-            DealDto d = deals.get(dec.index());
-            String displayUnit = dec.displayUnit();
-            Double displayPricePerUnit = dec.displayPricePerUnit();
-            // Fallback: if deal has volume unit (l/cl/ml) and Gemini didn't return kr/l,
-            // compute it
-            if (isLiquidUnit(d.unitSymbol()) && !"kr/l".equals(displayUnit)) {
-                Double perLiter = computePricePerLiter(d);
-                if (perLiter != null) {
-                    displayUnit = "kr/l";
-                    displayPricePerUnit = perLiter;
+            if (dec != null) {
+                String displayUnit = dec.displayUnit();
+                Double displayPricePerUnit = dec.displayPricePerUnit();
+                if (isLiquidUnit(original.unitSymbol()) && !"kr/l".equals(displayUnit)) {
+                    Double perLiter = computePricePerLiter(original);
+                    if (perLiter != null) {
+                        displayUnit = "kr/l";
+                        displayPricePerUnit = perLiter;
+                    }
                 }
+                out.add(original.withDisplay(dec.cleanName(), displayUnit, displayPricePerUnit));
+            } else {
+                out.add(original);
             }
-            out.add(d.withDisplay(dec.cleanName(), displayUnit, displayPricePerUnit));
         }
         return out.isEmpty() ? deals : out;
     }
@@ -139,9 +152,11 @@ public class GeminiGroceryEnricher {
      */
     private static Double computePricePerLiter(DealDto d) {
         Integer pcs = d.pieceCountFrom();
+        if (pcs == null)
+            pcs = 1;
         Double size = d.unitSizeFrom();
         String sym = d.unitSymbol();
-        if (pcs == null || pcs <= 0 || size == null || size <= 0 || sym == null || sym.isBlank())
+        if (pcs <= 0 || size == null || size <= 0 || sym == null || sym.isBlank())
             return null;
         String s = sym.trim().toLowerCase(Locale.ROOT);
         double litersPerPiece;
@@ -270,9 +285,10 @@ public class GeminiGroceryEnricher {
                     You are a grocery backend assistant. Filter and format raw API search results for a grocery price comparison widget.
 
                     Rules:
-                    1. Relevance: Mark is_relevant false for any product that does NOT match the user's search intent. (e.g. if the user searched for "Monster" energy drink, mark false for "Monster" brand car parts, cables, door protectors, spades, or other non-food items.) Keep only food/drink that matches the query.
-                    2. Units: If unitSymbol is "l", "cl", or "ml", or the product name suggests liquid (e.g. soda, Pepsi, 0.33l, 1.5l, 33cl), you MUST use display_unit "kr/l" and set display_price_per_unit to price per liter: total_liters = (pieceCountFrom or 1) * (unitSizeFrom in liters: if unitSymbol is "cl" divide by 100, if "ml" divide by 1000). display_price_per_unit = price / total_liters. Never use "kr/kg" for beverages or liquids. For dry goods by weight only use "kr/kg". For piece counts (e.g. dishwasher tabs) use "kr/stk".
-                    3. Clean name: Set clean_name to a short product name (e.g. "Monster Green 0.5l"); remove text like "4-pak", "billig!", extra marketing.
+                    1. Relevance: Mark is_relevant = true if the product matches the User Query in a supermarket context (Food, Drinks, Hygiene, Household, Baby, etc.). E.g. query "soap" + "Dish Soap" = relevant; query "Monster" + "Monster Energy 0.5l" = relevant.
+                    2. Irrelevance: Mark is_relevant = false ONLY if the product is clearly unrelated to the query or not typically sold in a grocery store (e.g. car parts, cables, spades, door protectors). E.g. query "soap" + result that is car wax or car parts = irrelevant. Do NOT mark false just because something is not food (e.g. soap, detergent, hygiene) — if it matches the query and is commonly sold in supermarkets, mark relevant.
+                    3. Units: If unitSymbol is "l", "cl", or "ml", or the product name suggests liquid (e.g. soda, Pepsi, 0.33l, 1.5l, 33cl), you MUST use display_unit "kr/l" and set display_price_per_unit to price per liter: total_liters = (pieceCountFrom or 1) * (unitSizeFrom in liters: if unitSymbol is "cl" divide by 100, if "ml" divide by 1000). display_price_per_unit = price / total_liters. Never use "kr/kg" for beverages or liquids. For dry goods by weight only use "kr/kg". For piece counts (e.g. dishwasher tabs) use "kr/stk".
+                    4. Clean name: Set clean_name to a short product name (e.g. "Monster Green 0.5l"); remove text like "4-pak", "billig!", extra marketing.
 
                     User query: "%s"
 
