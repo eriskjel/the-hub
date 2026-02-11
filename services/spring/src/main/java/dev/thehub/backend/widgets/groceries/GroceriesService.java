@@ -2,7 +2,6 @@ package dev.thehub.backend.widgets.groceries;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
-import dev.thehub.backend.widgets.groceries.dto.GeminiDealDecision;
 import dev.thehub.backend.widgets.groceries.dto.GroceryDealsSettings;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -275,7 +274,8 @@ public class GroceriesService {
         List<DealDto> capped = sorted.stream().limit(desiredReturn).toList();
         boolean isEnriched = true;
 
-        // Fast-first, refetch-later: use cache if hit; else return raw and trigger async Gemini
+        // Fast-first, refetch-later: use cache if hit; else return raw and trigger
+        // async Gemini
         if (geminiEnricher != null && geminiEnricher.isEnabled() && !capped.isEmpty()) {
             var city = cityOrDefault(s);
             Optional<List<DealDto>> cached = geminiEnricher.getCachedEnrichment(term, city);
@@ -283,7 +283,8 @@ public class GroceriesService {
                 capped = cached.get();
                 isEnriched = true;
                 if (log.isDebugEnabled())
-                    log.debug("Groceries Gemini cache hit term={} city={} size={}", norm(term), norm(city), capped.size());
+                    log.debug("Groceries Gemini cache hit term={} city={} size={}", norm(term), norm(city),
+                            capped.size());
             } else {
                 geminiEnricher.triggerAsyncEnrichment(term, city, capped);
                 isEnriched = false;

@@ -47,8 +47,8 @@ public class GeminiGroceryEnricher {
     }
 
     /**
-     * Returns true if the enricher is configured (non-blank API key) and should
-     * be used.
+     * Returns true if the enricher is configured (non-blank API key) and should be
+     * used.
      */
     public boolean isEnabled() {
         return apiKey != null && !apiKey.isBlank();
@@ -61,9 +61,9 @@ public class GeminiGroceryEnricher {
     }
 
     /**
-     * Returns cached enriched list for this query+city if present. Used for
-     * "fast first, refetch later": first request returns raw and triggers
-     * async; refetch gets cache hit.
+     * Returns cached enriched list for this query+city if present. Used for "fast
+     * first, refetch later": first request returns raw and triggers async; refetch
+     * gets cache hit.
      */
     public Optional<List<DealDto>> getCachedEnrichment(String query, String city) {
         String key = buildCacheKey(query, city);
@@ -72,9 +72,9 @@ public class GeminiGroceryEnricher {
     }
 
     /**
-     * Runs Gemini in the background and caches the merged result. Call when
-     * cache miss: return raw list immediately, then call this so the next
-     * request gets enriched from cache.
+     * Runs Gemini in the background and caches the merged result. Call when cache
+     * miss: return raw list immediately, then call this so the next request gets
+     * enriched from cache.
      */
     public void triggerAsyncEnrichment(String query, String city, List<DealDto> deals) {
         if (!isEnabled() || deals == null || deals.isEmpty())
@@ -111,7 +111,8 @@ public class GeminiGroceryEnricher {
             DealDto d = deals.get(dec.index());
             String displayUnit = dec.displayUnit();
             Double displayPricePerUnit = dec.displayPricePerUnit();
-            // Fallback: if deal has volume unit (l/cl/ml) and Gemini didn't return kr/l, compute it
+            // Fallback: if deal has volume unit (l/cl/ml) and Gemini didn't return kr/l,
+            // compute it
             if (isLiquidUnit(d.unitSymbol()) && !"kr/l".equals(displayUnit)) {
                 Double perLiter = computePricePerLiter(d);
                 if (perLiter != null) {
@@ -126,12 +127,16 @@ public class GeminiGroceryEnricher {
 
     /** True if unit symbol indicates volume (liters). */
     private static boolean isLiquidUnit(String unitSymbol) {
-        if (unitSymbol == null || unitSymbol.isBlank()) return false;
+        if (unitSymbol == null || unitSymbol.isBlank())
+            return false;
         String s = unitSymbol.trim().toLowerCase(Locale.ROOT);
         return "l".equals(s) || "cl".equals(s) || "ml".equals(s) || "liter".equals(s) || "litre".equals(s);
     }
 
-    /** Computes price per liter when pieceCountFrom, unitSizeFrom and unitSymbol (l/cl/ml) are present. */
+    /**
+     * Computes price per liter when pieceCountFrom, unitSizeFrom and unitSymbol
+     * (l/cl/ml) are present.
+     */
     private static Double computePricePerLiter(DealDto d) {
         Integer pcs = d.pieceCountFrom();
         Double size = d.unitSizeFrom();
@@ -149,15 +154,16 @@ public class GeminiGroceryEnricher {
         else
             return null;
         double totalLiters = pcs * litersPerPiece;
-        if (totalLiters <= 0) return null;
+        if (totalLiters <= 0)
+            return null;
         return d.price() / totalLiters;
     }
 
     /**
      * Sends the deal list and user query to Gemini and returns one decision per
-     * deal (index, isRelevant, cleanName, displayUnit, displayPricePerUnit). On
-     * any failure returns an empty list; caller should treat that as "keep all
-     * deals unchanged".
+     * deal (index, isRelevant, cleanName, displayUnit, displayPricePerUnit). On any
+     * failure returns an empty list; caller should treat that as "keep all deals
+     * unchanged".
      *
      * @param userQuery
      *            the widget search term (e.g. "Monster", "Pepsi max")
@@ -169,7 +175,8 @@ public class GeminiGroceryEnricher {
     public List<GeminiDealDecision> filterAndEnrich(String userQuery, List<DealDto> deals) {
         if (!isEnabled() || deals == null || deals.isEmpty()) {
             if (log.isDebugEnabled())
-                log.debug("Gemini groceries skip: enabled={} dealsSize={}", isEnabled(), deals == null ? 0 : deals.size());
+                log.debug("Gemini groceries skip: enabled={} dealsSize={}", isEnabled(),
+                        deals == null ? 0 : deals.size());
             return List.of();
         }
 
@@ -208,7 +215,8 @@ public class GeminiGroceryEnricher {
             ResponseEntity<String> resp = http.exchange(url, HttpMethod.POST, req, String.class);
 
             if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
-                log.warn("Gemini groceries non-2xx or empty body status={} bodyNull={}", resp.getStatusCode(), resp.getBody() == null);
+                log.warn("Gemini groceries non-2xx or empty body status={} bodyNull={}", resp.getStatusCode(),
+                        resp.getBody() == null);
                 return List.of();
             }
 
@@ -220,7 +228,8 @@ public class GeminiGroceryEnricher {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Gemini groceries response raw (first 800 chars): {}", text.length() > 800 ? text.substring(0, 800) + "..." : text);
+                log.debug("Gemini groceries response raw (first 800 chars): {}",
+                        text.length() > 800 ? text.substring(0, 800) + "..." : text);
 
             List<Map<String, Object>> rawList = mapper.readValue(text,
                     mapper.getTypeFactory().constructCollectionType(List.class, Map.class));
@@ -230,16 +239,21 @@ public class GeminiGroceryEnricher {
                 int index = number(o.get("index"), 0).intValue();
                 boolean isRelevant = Boolean.TRUE.equals(o.get("is_relevant"))
                         || Boolean.TRUE.equals(o.get("isRelevant"));
-                if (isRelevant) relevantCount++;
+                if (isRelevant)
+                    relevantCount++;
                 String cleanName = string(o.get("clean_name"), o.get("cleanName"));
                 String displayUnit = string(o.get("display_unit"), o.get("displayUnit"));
                 Double displayPrice = toDouble(o.get("display_price_per_unit"), o.get("displayPricePerUnit"));
                 if (log.isDebugEnabled())
-                    log.debug("Gemini decision index={} isRelevant={} display_unit={} display_price_per_unit={}", index, isRelevant, displayUnit, displayPrice);
+                    log.debug("Gemini decision index={} isRelevant={} display_unit={} display_price_per_unit={}", index,
+                            isRelevant, displayUnit, displayPrice);
                 decisions.add(new GeminiDealDecision(index, isRelevant, cleanName, displayUnit, displayPrice));
             }
             if (!decisions.isEmpty() && log.isInfoEnabled())
-                log.info("Gemini groceries ok decisions={} relevant={} sample display_unit={} display_price_per_unit={}", decisions.size(), relevantCount, decisions.get(0).displayUnit(), decisions.get(0).displayPricePerUnit());
+                log.info(
+                        "Gemini groceries ok decisions={} relevant={} sample display_unit={} display_price_per_unit={}",
+                        decisions.size(), relevantCount, decisions.get(0).displayUnit(),
+                        decisions.get(0).displayPricePerUnit());
             else
                 log.info("Gemini groceries ok decisions={} relevant={}", decisions.size(), relevantCount);
             return decisions;
@@ -276,13 +290,13 @@ public class GeminiGroceryEnricher {
     @SuppressWarnings("unchecked")
     private Map<String, Object> buildRequestBody(String prompt) {
         Map<String, Object> schema = Map.of("type", "array", "items",
-                Map.of("type", "object", "properties",
-                        Map.of("index", Map.of("type", "integer", "description", "Zero-based index of the product"),
-                                "is_relevant", Map.of("type", "boolean", "description", "True if product matches search intent"),
-                                "clean_name", Map.of("type", "string", "description", "Short product name"),
-                                "display_unit", Map.of("type", "string", "description", "e.g. kr/l, kr/kg, kr/stk"),
-                                "display_price_per_unit", Map.of("type", "number", "description", "Price per display unit")),
-                        "required", List.of("index", "is_relevant")));
+                Map.of("type", "object", "properties", Map.of("index",
+                        Map.of("type", "integer", "description", "Zero-based index of the product"), "is_relevant",
+                        Map.of("type", "boolean", "description", "True if product matches search intent"), "clean_name",
+                        Map.of("type", "string", "description", "Short product name"), "display_unit",
+                        Map.of("type", "string", "description", "e.g. kr/l, kr/kg, kr/stk"), "display_price_per_unit",
+                        Map.of("type", "number", "description", "Price per display unit")), "required",
+                        List.of("index", "is_relevant")));
 
         Map<String, Object> generationConfig = new LinkedHashMap<>();
         generationConfig.put("responseMimeType", "application/json");
