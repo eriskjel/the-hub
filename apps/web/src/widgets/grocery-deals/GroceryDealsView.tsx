@@ -4,8 +4,8 @@ import type { GroceryDealsWidget } from "@/widgets/schema";
 import { Deal, GroceryDealsResponse } from "@/widgets/grocery-deals/types";
 import React, { ReactElement, useEffect, useId, useRef, useState } from "react";
 
-/** Refetch when backend returned raw list (Gemini still running). First at 15s, then repeat so we catch slow Gemini (e.g. 20–45s). */
-const REFETCH_DELAY_MS = 15_000;
+/** Refetch when backend returned raw list (Gemini still running). Delay 20s so first refetch runs after typical Gemini (e.g. 6–17s); then repeat to catch very slow runs (20–45s). */
+const REFETCH_DELAY_MS = 20_000;
 const MAX_REFETCH_ATTEMPTS = 4;
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -93,7 +93,7 @@ export default function GroceryDealsView({
     const refetchScheduledRef = useRef(false);
     const refetchCountRef = useRef(0);
 
-    // Fast-first, refetch-later: when data is not enriched, schedule one refetch after 15s (up to MAX_REFETCH_ATTEMPTS)
+    // Fast-first, refetch-later: when data is not enriched, schedule refetches every REFETCH_DELAY_MS (up to MAX_REFETCH_ATTEMPTS)
     useEffect(() => {
         if (isEnriched || !refetch || refetchCountRef.current >= MAX_REFETCH_ATTEMPTS) return;
         if (refetchScheduledRef.current) return;
