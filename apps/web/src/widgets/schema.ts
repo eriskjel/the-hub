@@ -35,23 +35,11 @@ export type GroceryDealsSettings = {
     lon?: number; // optional
 };
 
-export type CountdownSource =
-    | { source: "fixed-date"; targetIso: string }
-    | {
-          source: "monthly-rule";
-          time: string; // "08:00" (client local)
-          byWeekday?: "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
-          bySetPos?: number; // e.g., 1, 2, -1
-          dayOfMonth?: number; // alternative to weekday+setpos
-      }
-    | {
-          source: "provider";
-          provider: "trippel-trumf" | "dnb-supertilbud";
-      };
-
 export type CountdownSettings = {
     showHours?: boolean;
-} & CountdownSource;
+    source: "provider";
+    provider: "trippel-trumf" | "dnb-supertilbud";
+};
 
 export type CinemateketSettings = Record<string, never>;
 

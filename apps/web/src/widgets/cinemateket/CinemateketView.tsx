@@ -34,7 +34,7 @@ export default function CinemateketView({
             <ul
                 ref={listRef}
                 id={listId}
-                className={`transition-all duration-300 ease-in-out [scrollbar-gutter:stable] [scrollbar-width:thin] ${
+                className={`widget-scrollbar transition-all duration-300 ease-in-out ${
                     expanded
                         ? "max-h-64 space-y-2 overflow-y-auto pr-2 md:pr-3"
                         : "max-h-24 space-y-px overflow-hidden"
@@ -75,20 +75,27 @@ export default function CinemateketView({
                                     </div>
                                 </div>
 
-                                {/* Director and year */}
+                                {/* Director/year — includes date on the right when no ticket link */}
                                 {(showing.director || showing.year) && (
-                                    <div className="text-muted truncate text-xs">
-                                        {showing.director || ""}
-                                        {showing.director && showing.year ? " " : ""}
-                                        {showing.year ? showing.year : ""}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="text-muted truncate text-xs">
+                                            {showing.director || ""}
+                                            {showing.director && showing.year ? " " : ""}
+                                            {showing.year ? showing.year : ""}
+                                        </div>
+                                        {!showing.ticketUrl && (
+                                            <div className="text-muted shrink-0 text-right text-xs">
+                                                {formatShowDate(showing.showTime, format)}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* Organizer hidden for now (e.g. "Trondheim filmklubb") */}
 
                                 {/* Buy tickets and date */}
-                                <div className="flex items-center justify-between gap-2">
-                                    {showing.ticketUrl ? (
+                                {showing.ticketUrl ? (
+                                    <div className="flex items-center justify-between gap-2">
                                         <a
                                             href={showing.ticketUrl}
                                             target="_blank"
@@ -101,13 +108,16 @@ export default function CinemateketView({
                                                 aria-hidden
                                             />
                                         </a>
-                                    ) : (
-                                        <span />
-                                    )}
+                                        <div className="text-muted text-right text-xs">
+                                            {formatShowDate(showing.showTime, format)}
+                                        </div>
+                                    </div>
+                                ) : !(showing.director || showing.year) ? (
+                                    /* No ticket link AND no director/year: date on its own */
                                     <div className="text-muted text-right text-xs">
                                         {formatShowDate(showing.showTime, format)}
                                     </div>
-                                </div>
+                                ) : null}
                             </div>
                         </li>
                     );

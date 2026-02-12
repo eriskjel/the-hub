@@ -103,7 +103,7 @@
             "submit": "Opprett widget",
             "submitting": "Oppretter…",
             "errors": {
-                "duplicate_provider": "Du har allerede en widget for denne tilbyderen.",
+                "duplicate_provider": "Du har allerede en nedtelling for denne tilbyderen.",
                 "duplicate_target": "Du har allerede en widget med dette målet.",
                 "duplicate_groceries": "Du har allerede en dagligvare-widget med dette søket og byen.",
                 "limit_reached": "Du har nådd grensen for denne widget-typen.",
@@ -222,7 +222,8 @@
                     "label": "Tilbyder",
                     "options": {
                         "trippelTrumf": "Trippel-Trumf",
-                        "dnbSupertilbud": "DNB Supertilbud"
+                        "dnbSupertilbud": "DNB Supertilbud",
+                        "customDate": "Egendefinert dato (kommer)"
                     }
                 },
                 "showHours": "Vis timer/minutter i nedtellingen",

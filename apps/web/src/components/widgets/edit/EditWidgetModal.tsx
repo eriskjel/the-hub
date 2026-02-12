@@ -62,9 +62,10 @@ function EditWidgetModalContent({
     userId?: string | null;
 }) {
     const t = useTranslations("widgets.edit");
+    const tCreate = useTranslations("widgets.create");
     const router = useRouter();
 
-    const { form, active } = useCreateWidgetForm(widget.kind, t, "edit");
+    const { form, active } = useCreateWidgetForm(widget.kind, tCreate, "edit");
     const Settings = active.SettingsForm;
 
     useEditWidgetPrefill(form, widget);
@@ -84,7 +85,15 @@ function EditWidgetModalContent({
                         purgeWidgetLocalCache(userId, widget.kind, widget.instanceId);
                         router.refresh();
                     } else {
-                        form.setError("root", { type: "server", message: res.error });
+                        const code = res.error ?? "";
+                        const keyish = /^[a-z0-9._-]+$/i.test(code) ? code : "generic";
+                        const errorKey = `errors.${keyish}` as const;
+                        form.setError("root", {
+                            type: "server",
+                            message: tCreate.has(errorKey)
+                                ? tCreate(errorKey)
+                                : tCreate("errors.generic"),
+                        });
                     }
                 })}
             >
