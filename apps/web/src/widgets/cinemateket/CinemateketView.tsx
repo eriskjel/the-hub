@@ -34,7 +34,7 @@ export default function CinemateketView({
             <ul
                 ref={listRef}
                 id={listId}
-                className={`transition-all duration-300 ease-in-out [scrollbar-gutter:stable] [scrollbar-width:thin] ${
+                className={`widget-scrollbar transition-all duration-300 ease-in-out ${
                     expanded
                         ? "max-h-64 space-y-2 overflow-y-auto pr-2 md:pr-3"
                         : "max-h-24 space-y-px overflow-hidden"

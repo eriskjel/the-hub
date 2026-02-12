@@ -125,7 +125,7 @@ export default function GroceryDealsView({
             <ul
                 ref={listRef}
                 id={listId}
-                className={`space-y-1 transition-all duration-300 ease-in-out [scrollbar-gutter:stable] [scrollbar-width:thin] ${
+                className={`widget-scrollbar space-y-1 transition-all duration-300 ease-in-out ${
                     expanded ? "max-h-64 overflow-y-auto pr-2 md:pr-3" : "max-h-24 overflow-hidden"
                 }`}
                 aria-live="polite"

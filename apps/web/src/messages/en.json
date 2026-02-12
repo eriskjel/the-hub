@@ -103,7 +103,7 @@
             "submit": "Create widget",
             "submitting": "Creating…",
             "errors": {
-                "duplicate_provider": "You already have a widget for this provider.",
+                "duplicate_provider": "You already have a countdown for this provider.",
                 "duplicate_target": "You already have a widget with this target.",
                 "duplicate_groceries": "You already have a grocery widget with that search and city.",
                 "limit_reached": "You reached the limit for this widget type.",
@@ -222,7 +222,8 @@
                     "label": "Provider",
                     "options": {
                         "trippelTrumf": "Trippel-Trumf",
-                        "dnbSupertilbud": "DNB Supertilbud"
+                        "dnbSupertilbud": "DNB Supertilbud",
+                        "customDate": "Custom date (coming)"
                     }
                 },
                 "showHours": "Show hours/minutes in countdown",

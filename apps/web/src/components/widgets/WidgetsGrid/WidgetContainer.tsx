@@ -17,15 +17,28 @@ const KIND_KEYS: Record<WidgetKind, string> = {
     cinemateket: "cinemateket",
 };
 
-function toPascalCase(s: string): string {
-    return s.length ? s[0].toUpperCase() + s.slice(1).toLowerCase() : "";
+/** "pepsi max" → "Pepsi Max", "monster" → "Monster" */
+function toTitleCase(s: string): string {
+    return s
+        .split(/\s+/)
+        .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""))
+        .join(" ");
 }
 
-function resolveRightTitle(widget: AnyWidget): string {
+/** "Trondheim, Trøndelag, Norge" → "Trondheim" */
+function cityOnly(raw: string): string {
+    return raw.split(",")[0].trim();
+}
+
+/** Build a descriptive title; falls back to the translated kind label. */
+function resolveTitle(widget: AnyWidget, kindLabel: string): string {
     switch (widget.kind) {
         case "grocery-deals": {
-            const query = (widget as GroceryDealsWidget).settings?.query;
-            return query ? toPascalCase(query.trim()) : "";
+            const s = (widget as GroceryDealsWidget).settings;
+            const query = s?.query ? toTitleCase(s.query.trim()) : "";
+            const city = s?.city ? cityOnly(s.city) : "";
+            if (query && city) return `${query} · ${city}`;
+            return query || kindLabel;
         }
         case "countdown": {
             const s = widget.settings;
@@ -33,14 +46,14 @@ function resolveRightTitle(widget: AnyWidget): string {
                 if (s.provider === "trippel-trumf") return "Trippel-Trumf";
                 if (s.provider === "dnb-supertilbud") return "DNB Supertilbud";
             }
-            return "";
+            return kindLabel;
         }
         case "server-pings": {
             const target = widget.settings?.target;
-            return typeof target === "string" ? target : "";
+            return typeof target === "string" ? target : kindLabel;
         }
         default:
-            return "";
+            return kindLabel;
     }
 }
 
@@ -56,9 +69,7 @@ export default function WidgetContainer({
     const tKinds = useTranslations("widgets.create.kinds");
     const kindLabel = tKinds(KIND_KEYS[widget.kind]);
 
-    const right = resolveRightTitle(widget);
-
-    const title = right ? `${kindLabel} | ${right}` : kindLabel;
+    const title = resolveTitle(widget, kindLabel);
 
     const header: ReactElement = <Header title={title} />;
     const actions = (
