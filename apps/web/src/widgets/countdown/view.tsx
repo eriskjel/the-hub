@@ -125,39 +125,40 @@ export default function CountdownView({
         <div className="flex min-h-[136px] flex-1 flex-col text-center">
             {isOngoing || isUpcoming ? (
                 <div className="flex min-h-0 flex-1 flex-col">
-                    {/* top status pill only */}
-                    <div className="mb-1 flex-none text-xs">
-                        {isOngoing && (
-                            <span className="bg-success/20 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1">
-                                <span className="relative flex h-1.5 w-1.5">
-                                    <span className="bg-success absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
-                                    <span className="bg-success relative inline-flex h-1.5 w-1.5 rounded-full"></span>
-                                </span>
-                                {t("status.ongoing")}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* middle: countdown vertically centered; helper text pinned to bottom (same Y across widgets) */}
+                    {/* middle: countdown vertically centered; helper text pinned above progress bar */}
                     <div className="flex min-h-0 flex-1 flex-col items-center">
                         <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-                            <div className="text-center text-2xl leading-tight font-bold tabular-nums">
-                                {hasMultipleParts ? (
-                                    <>
-                                        <span className="inline-block whitespace-nowrap">
-                                            {durationParts[0].trimEnd()}
-                                            {conjunction}
-                                        </span>{" "}
-                                        <span className="inline-block">
-                                            {durationParts[1].trimStart()}
+                            {/* relative wrapper so pill can sit just above countdown without affecting layout */}
+                            <div className="relative">
+                                {isOngoing && (
+                                    <div className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap">
+                                        <span className="bg-success/20 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs">
+                                            <span className="relative flex h-1.5 w-1.5">
+                                                <span className="bg-success absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" />
+                                                <span className="bg-success relative inline-flex h-1.5 w-1.5 rounded-full" />
+                                            </span>
+                                            {t("status.ongoing")}
                                         </span>
-                                    </>
-                                ) : (
-                                    <span className="whitespace-nowrap">{fullText}</span>
+                                    </div>
                                 )}
+                                <div className="text-center text-2xl leading-tight font-bold tabular-nums">
+                                    {hasMultipleParts ? (
+                                        <>
+                                            <span className="inline-block whitespace-nowrap">
+                                                {durationParts[0].trimEnd()}
+                                                {conjunction}
+                                            </span>{" "}
+                                            <span className="inline-block">
+                                                {durationParts[1].trimStart()}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <span className="whitespace-nowrap">{fullText}</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <div className="mt-2 flex-none text-xs opacity-70">
+                        <div className="mt-2 mb-2 flex-none text-xs opacity-70">
                             {isOngoing
                                 ? whenText && t("status.endsAt", { when: whenText })
                                 : whenText && t("status.startsAt", { when: whenText })}
