@@ -11,10 +11,7 @@ type FormType = UseFormReturn<{
     settings: z.infer<typeof countdownSettingsSchema>;
 }>;
 
-type Provider = Extract<
-    z.infer<typeof countdownSettingsSchema>,
-    { source: "provider" }
->["provider"];
+type Provider = z.infer<typeof countdownSettingsSchema>["provider"];
 
 export function Settings({ form }: { form: FormType }): ReactElement {
     const t = useTranslations("widgets.countdown.create");

@@ -49,50 +49,11 @@ export const buildGrocerySettingsSchema = (t: (key: string) => string, mode: "cr
         }
     );
 
-const countdownFixed = z.object({
-    source: z.literal("fixed-date"),
-    targetIso: z.string().min(1, "Choose a date/time"),
-});
-
-const countdownMonthlyRule = z.object({
-    source: z.literal("monthly-rule"),
-    time: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM"),
-    byWeekday: z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"]).optional(),
-    bySetPos: z.number().int().min(-5).max(5).optional(),
-    dayOfMonth: z.number().int().min(1).max(31).optional(),
-});
-
-const countdownProvider = z.object({
+export const countdownSettingsSchema = z.object({
+    showHours: z.boolean().default(true),
     source: z.literal("provider"),
     provider: z.enum(["trippel-trumf", "dnb-supertilbud"]),
 });
-
-export const countdownSettingsSchemaBase = z.object({
-    showHours: z.boolean().default(true),
-});
-
-export const countdownSettingsSchema = countdownSettingsSchemaBase
-    .and(z.discriminatedUnion("source", [countdownFixed, countdownMonthlyRule, countdownProvider]))
-    .superRefine((val, ctx) => {
-        if (val.source === "monthly-rule") {
-            const byPair = !!val.byWeekday && typeof val.bySetPos === "number";
-            const byDay = typeof val.dayOfMonth === "number";
-            if (!(byPair || byDay)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["dayOfMonth"],
-                    message: "Pick either dayOfMonth OR (weekday + set position)",
-                });
-            }
-            if (byPair && byDay) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["dayOfMonth"],
-                    message: "Use dayOfMonth OR weekday+setpos, not both",
-                });
-            }
-        }
-    });
 
 export const cinemateketSettingsSchema = z.object({});
 

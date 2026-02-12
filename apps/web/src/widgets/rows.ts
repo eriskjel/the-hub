@@ -17,7 +17,7 @@ export type WidgetListItem = {
     settings: unknown;
 };
 
-type Provider = Extract<CountdownSettings, { source: "provider" }>["provider"];
+type Provider = CountdownSettings["provider"];
 
 export function toAnyWidget(row: WidgetListItem): AnyWidget {
     if (row.kind === "server-pings") {
@@ -41,33 +41,15 @@ export function toAnyWidget(row: WidgetListItem): AnyWidget {
     }
     if (row.kind === "countdown") {
         const o = (row.settings ?? {}) as Partial<CountdownSettings>;
-
-        let settings: CountdownSettings;
-        if (o.source === "fixed-date" && typeof o.targetIso === "string") {
-            settings = {
-                source: "fixed-date",
-                targetIso: o.targetIso,
-                showHours: typeof o.showHours === "boolean" ? o.showHours : true,
-            };
-        } else if (o.source === "monthly-rule" && typeof o.time === "string") {
-            settings = {
-                source: "monthly-rule",
-                time: o.time,
-                byWeekday: o.byWeekday,
-                bySetPos: o.bySetPos,
-                dayOfMonth: o.dayOfMonth,
-                showHours: typeof o.showHours === "boolean" ? o.showHours : true,
-            };
-        } else if (o.source === "provider" && typeof o.provider === "string") {
-            settings = {
-                source: "provider",
-                provider: o.provider as Provider,
-                showHours: typeof o.showHours === "boolean" ? o.showHours : true,
-            };
-        } else {
-            settings = { source: "fixed-date", targetIso: "", showHours: true };
-        }
-
+        const validProvider =
+            o.source === "provider" &&
+            typeof o.provider === "string" &&
+            (o.provider === "trippel-trumf" || o.provider === "dnb-supertilbud");
+        const settings: CountdownSettings = {
+            source: "provider",
+            provider: validProvider ? (o.provider as Provider) : "trippel-trumf",
+            showHours: typeof o.showHours === "boolean" ? o.showHours : true,
+        };
         return { ...row, kind: "countdown", settings } as AnyWidget;
     }
     if (row.kind === "cinemateket") {

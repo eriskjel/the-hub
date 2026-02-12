@@ -42,10 +42,8 @@ function resolveTitle(widget: AnyWidget, kindLabel: string): string {
         }
         case "countdown": {
             const s = widget.settings;
-            if (s?.source === "provider") {
-                if (s.provider === "trippel-trumf") return "Trippel-Trumf";
-                if (s.provider === "dnb-supertilbud") return "DNB Supertilbud";
-            }
+            if (s?.provider === "trippel-trumf") return "Trippel-Trumf";
+            if (s?.provider === "dnb-supertilbud") return "DNB Supertilbud";
             return kindLabel;
         }
         case "server-pings": {
