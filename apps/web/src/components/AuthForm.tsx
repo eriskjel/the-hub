@@ -30,6 +30,14 @@ export default function AuthForm(): ReactElement {
 
     return (
         <div className="w-full max-w-sm text-center">
+            <Image
+                src="/web-app-manifest-192x192.png"
+                alt="The Hub"
+                width={48}
+                height={48}
+                className="mx-auto mb-3 h-12 w-12"
+                priority
+            />
             <h1 className="mb-2 text-4xl font-bold">{isLogin ? t("title") : t("registerTitle")}</h1>
             <p className="mb-4 text-sm text-gray-500">
                 {isLogin ? t("subtitleLogin") : t("subtitleSignup")}
