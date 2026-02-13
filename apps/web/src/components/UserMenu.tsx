@@ -107,7 +107,6 @@ export default function UserMenu({
                             <form action={logout}>
                                 <button
                                     type="submit"
-                                    onClick={() => setOpen(false)}
                                     className="text-foreground hover:bg-surface-subtle flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm transition-colors"
                                 >
                                     <LogOut className="text-muted h-4 w-4" aria-hidden />
