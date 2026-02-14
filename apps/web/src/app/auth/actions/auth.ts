@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
 import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRole";
@@ -71,6 +72,27 @@ export async function signup(formData: FormData) {
     await ensureDefaultRole();
     revalidatePath(`/${locale}`, "layout");
     redirect(`/${locale}/dashboard`);
+}
+
+export async function requestPasswordReset(formData: FormData) {
+    const locale = await resolveLocale();
+    const supabase = await createClient();
+    const email = String(formData.get("email") || "").trim();
+    if (!email) {
+        return { error: "invalid-email" as const };
+    }
+    const headersList = await headers();
+    const host = headersList.get("host") ?? "";
+    const proto =
+        headersList.get("x-forwarded-proto") ??
+        (process.env.NODE_ENV === "development" ? "http" : "https");
+    const origin = `${proto}://${host}`;
+    const redirectTo = `${origin}/auth/confirm?next=/${locale}/dashboard`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) {
+        return { error: "rate-limited" as const };
+    }
+    return { success: true };
 }
 
 export async function logout() {

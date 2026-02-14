@@ -10,7 +10,7 @@
     "login": {
         "title": "Vennligst logg inn",
         "registerTitle": "Opprett konto",
-        "subtitleLogin": "Velkommen tilbake.",
+        "subtitleLogin": "Velkommen tilbake",
         "subtitleSignup": "Bli med på et minutt.",
         "name": "Navn",
         "email": "E-post",
@@ -25,6 +25,10 @@
         "haveAccount": "Har du allerede en konto?",
         "goToRegister": "Registrer deg",
         "goToLogin": "Logg inn",
+        "forgotPassword": "Glemt passord?",
+        "sendResetLink": "Send tilbakestillingslenke",
+        "checkYourEmail": "Sjekk e-posten din for en lenke for å tilbakestille passordet.",
+        "backToLogin": "Tilbake til innlogging",
         "errors": {
             "generic": "Noe gikk galt.",
             "invalidCredentials": "Feil e-post eller passord.",

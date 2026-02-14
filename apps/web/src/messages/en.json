@@ -10,7 +10,7 @@
     "login": {
         "title": "Please sign in",
         "registerTitle": "Create account",
-        "subtitleLogin": "Welcome back.",
+        "subtitleLogin": "Welcome back",
         "subtitleSignup": "Join us in a minute.",
         "name": "Name",
         "email": "Email",
@@ -25,6 +25,10 @@
         "haveAccount": "Already have an account?",
         "goToRegister": "Sign up",
         "goToLogin": "Sign in",
+        "forgotPassword": "Forgot password?",
+        "sendResetLink": "Send reset link",
+        "checkYourEmail": "Check your email for a link to reset your password.",
+        "backToLogin": "Back to sign in",
         "errors": {
             "generic": "Something went wrong.",
             "invalidCredentials": "Invalid email or password.",
