@@ -19,7 +19,7 @@ the-hub/
 ├── supabase/             # Supabase config & SQL migrations
 ├── docs/                 # Developer documentation (merging strategy, etc.)
 ├── compose.yaml          # Docker Compose for local development
-├── compose.prod.yaml     # Docker Compose for production
+├── compose.prod.yaml     # Docker Compose for production (WIP — not yet ready for use)
 ├── pnpm-workspace.yaml   # pnpm workspace definition
 └── package.json          # Root scripts & shared dev-dependencies
 ```
@@ -111,12 +111,15 @@ Copy the example env file for the backend and fill in your values:
 cp services/spring/.env.example services/spring/.env
 ```
 
-The frontend requires Supabase keys — set these in your shell or a `.env.local` in `apps/web/`:
+The frontend requires Supabase keys — set these in a `.env.local` in `apps/web/`:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
+
+> ⚠️ `SUPABASE_SERVICE_ROLE_KEY` is a **server-only** secret used for admin operations (e.g. role assignment on signup). Never prefix it with `NEXT_PUBLIC_`.
 
 ### 3. Run with Docker Compose (recommended)
 
@@ -137,7 +140,7 @@ docker compose up
 pnpm dev          # runs Next.js dev server with Turbopack
 ```
 
-**Backend only (requires Maven & JDK 21):**
+**Backend only (requires JDK 21 — Maven is downloaded automatically by the wrapper):**
 
 ```bash
 cd services/spring
@@ -163,14 +166,14 @@ Root-level pnpm scripts (defined in `package.json`):
 
 ## 🔄 CI/CD
 
-Four GitHub Actions workflows automate quality checks:
+Four GitHub Actions workflows handle CI and deployment:
 
 | Workflow | Trigger | Description |
 | --- | --- | --- |
 | `web-ci.yml` | PR → `main` | Prettier check, Vitest tests, Next.js build |
 | `backend-ci.yml` | PR/push → `main` | Docker build (PR) or build & push to GHCR (main) |
 | `backend-lint.yml` | PR/push → `main` | Checkstyle + Spotless formatting verification |
-| `main.yml` | Push → `main` (migrations) | Applies Supabase SQL migrations to production |
+| `main.yml` | Push → `main` (migrations path) | Applies Supabase SQL migrations to production |
 
 ---
 
@@ -183,7 +186,7 @@ Contributions are very welcome — just open a PR!
 3. Commit with clear messages
 4. Open a Pull Request (link to any issue if relevant)
 
-See [`docs/merging.md`](docs/merging.md) for details on the branching and merging strategy.
+See [`docs/merging.md`](docs/merging.md) for details on the branching and merging strategy. Feature PRs target `dev` first and are squash-merged; `dev` is then merged into `main` via merge commit. CI workflows run on PRs to `main`.
 
 ---
 
