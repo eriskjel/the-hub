@@ -1,5 +1,9 @@
 # The Hub — Fullstack Monorepo
 
+<p align="center">
+  <img src="apps/web/public/web-app-manifest-512x512.png" alt="The Hub logo" width="128" />
+</p>
+
 A personal dashboard application built as a **pnpm monorepo** with a **Next.js 16 (TypeScript)** frontend, a **Spring Boot 3.5 (Java 21)** backend, and **Supabase** for authentication and Postgres.
 
 Users log in and manage a customisable grid of **widgets** — each widget fetches live data from the backend and renders it on the dashboard.
