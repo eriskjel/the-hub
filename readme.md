@@ -186,7 +186,7 @@ Contributions are very welcome — just open a PR!
 3. Commit with clear messages
 4. Open a Pull Request (link to any issue if relevant)
 
-See [`docs/merging.md`](docs/merging.md) for details on the branching and merging strategy. Feature PRs target `dev` first and are squash-merged; `dev` is then merged into `main` via merge commit. CI workflows run on PRs to `main`.
+See [`docs/merging.md`](docs/merging.md) for details on the branching and merging strategy. Feature branches are opened from `main` and merged via squash; CI runs on PRs to `main`.
 
 ---
 
