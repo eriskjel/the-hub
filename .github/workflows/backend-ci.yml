@@ -79,6 +79,8 @@ jobs:
           file: services/spring/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: false
+          build-args: |
+            APP_VERSION=dev
 
       # Build & Push on main only (push or manual dispatch)
       - name: Build & Push (GHCR)
@@ -89,6 +91,8 @@ jobs:
           file: services/spring/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            APP_VERSION=${{ steps.calver.outputs.tag }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/the-hub-api:latest
             ghcr.io/${{ github.repository_owner }}/the-hub-api:${{ steps.calver.outputs.tag }}
