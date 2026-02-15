@@ -3,7 +3,7 @@
 import { login, signup } from "@/app/auth/actions/auth";
 import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
-import { ReactElement, ReactNode, useCallback, useMemo } from "react";
+import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { startGithubOAuth } from "@/utils/auth/startGithubOAuth";
 import { useAuthMode } from "@/hooks/useAuthMode";
@@ -12,16 +12,45 @@ import Script from "next/script";
 import { Divider } from "@/components/ui/Divider";
 import { type AuthErrorCode, getAuthErrorMessage } from "@/utils/auth/errorCodes";
 
+type TurnstileApi = {
+    ready: (cb: () => void) => void;
+    render: (
+        container: string | HTMLElement,
+        options: {
+            sitekey: string;
+            theme?: "light" | "dark" | "auto";
+            size?: "normal" | "compact" | "flexible";
+            action?: string;
+            callback?: (token: string) => void;
+            "error-callback"?: () => void;
+            "expired-callback"?: () => void;
+        }
+    ) => string;
+    reset: (widgetId?: string) => void;
+    remove: (widgetId: string) => void;
+};
+
+function getTurnstile(): TurnstileApi | null {
+    if (typeof window === "undefined") return null;
+    const api = (window as Window & { turnstile?: TurnstileApi }).turnstile;
+    return api ?? null;
+}
+
 export default function AuthForm(): ReactElement {
     const locale = useLocale();
     const t = useTranslations("login");
     const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    const turnstileEnabled = Boolean(turnstileSiteKey);
 
     const searchParams = useSearchParams();
     const errorCode = searchParams.get("error") as AuthErrorCode | null;
     const errorMessage = getAuthErrorMessage(t, errorCode);
 
     const { mode, isLogin, switchTo } = useAuthMode();
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const widgetIdRef = useRef<string | null>(null);
+    const [isScriptReady, setIsScriptReady] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState("");
 
     const handleGithub = useCallback(
         () => startGithubOAuth(locale, "/dashboard", mode),
@@ -29,6 +58,45 @@ export default function AuthForm(): ReactElement {
     );
 
     const formAction = useMemo(() => (isLogin ? login : signup), [isLogin]);
+
+    useEffect(() => {
+        if (!turnstileEnabled) return;
+        if (getTurnstile()) setIsScriptReady(true);
+    }, [turnstileEnabled]);
+
+    useEffect(() => {
+        if (!turnstileEnabled || !isScriptReady || !containerRef.current || !turnstileSiteKey) return;
+
+        const turnstile = getTurnstile();
+        if (!turnstile) return;
+
+        if (widgetIdRef.current) {
+            turnstile.remove(widgetIdRef.current);
+            widgetIdRef.current = null;
+        }
+
+        setTurnstileToken("");
+
+        widgetIdRef.current = turnstile.render(containerRef.current, {
+            sitekey: turnstileSiteKey,
+            theme: "auto",
+            size: "flexible",
+            action: isLogin ? "login" : "signup",
+            callback: (token) => setTurnstileToken(token),
+            "error-callback": () => setTurnstileToken(""),
+            "expired-callback": () => {
+                setTurnstileToken("");
+                if (widgetIdRef.current) turnstile.reset(widgetIdRef.current);
+            },
+        });
+
+        return () => {
+            if (widgetIdRef.current) {
+                turnstile.remove(widgetIdRef.current);
+                widgetIdRef.current = null;
+            }
+        };
+    }, [isLogin, isScriptReady, turnstileEnabled, turnstileSiteKey]);
 
     return (
         <div className="w-full max-w-sm text-center">
@@ -47,8 +115,12 @@ export default function AuthForm(): ReactElement {
 
             <ErrorAlert message={errorMessage} />
 
-            {turnstileSiteKey && (
-                <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+            {turnstileEnabled && (
+                <Script
+                    src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+                    strategy="afterInteractive"
+                    onLoad={() => setIsScriptReady(true)}
+                />
             )}
 
             <form action={formAction} className="space-y-4" autoComplete="on">
@@ -92,14 +164,11 @@ export default function AuthForm(): ReactElement {
                     />
                 )}
 
-                {turnstileSiteKey && (
-                    <div
-                        className="cf-turnstile"
-                        data-sitekey={turnstileSiteKey}
-                        data-theme="auto"
-                        data-action={isLogin ? "login" : "signup"}
-                        data-size="flexible"
-                    />
+                {turnstileEnabled && (
+                    <>
+                        <input type="hidden" name="cf-turnstile-response" value={turnstileToken} readOnly />
+                        <div ref={containerRef} className="min-h-[65px]" />
+                    </>
                 )}
 
                 {/* Single submit, full width */}
