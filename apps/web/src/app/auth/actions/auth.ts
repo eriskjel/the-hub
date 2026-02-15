@@ -117,6 +117,17 @@ const signupSchema = z
         message: "password-mismatch",
         path: ["confirmPassword"],
     });
+
+const updatePasswordSchema = z
+    .object({
+        password: z.string().min(6, "password-too-short"),
+        confirmPassword: z.string(),
+    })
+    .refine((v) => v.password === v.confirmPassword, {
+        message: "password-mismatch",
+        path: ["confirmPassword"],
+    });
+
 export async function signup(formData: FormData) {
     const locale = await resolveLocale();
     const supabase = await createClient();
@@ -162,7 +173,7 @@ export async function requestPasswordReset(formData: FormData) {
     const supabase = await createClient();
     const email = String(formData.get("email") || "").trim();
     if (!email) {
-        return { error: "invalid-email" as const };
+        redirect(`/${locale}/login?mode=forgot&error=invalid-email`);
     }
     const headersList = await headers();
     const host = headersList.get("host") ?? "";
@@ -170,12 +181,39 @@ export async function requestPasswordReset(formData: FormData) {
         headersList.get("x-forwarded-proto") ??
         (process.env.NODE_ENV === "development" ? "http" : "https");
     const origin = `${proto}://${host}`;
-    const redirectTo = `${origin}/auth/confirm?next=/${locale}/dashboard`;
+    const redirectTo = `${origin}/auth/callback?locale=${locale}&next=/${locale}/reset-password`;
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) {
-        return { error: "rate-limited" as const };
+        redirect(`/${locale}/login?mode=forgot&error=rate-limited`);
     }
-    return { success: true };
+    redirect(`/${locale}/login?mode=forgot&reset=sent`);
+}
+
+export async function updatePassword(formData: FormData) {
+    const locale = await resolveLocale();
+    const supabase = await createClient();
+
+    const data = {
+        password: String(formData.get("password") || ""),
+        confirmPassword: String(formData.get("confirmPassword") || ""),
+    };
+
+    const parsed = updatePasswordSchema.safeParse(data);
+    if (!parsed.success) {
+        const code = parsed.error.errors[0]?.message ?? "password-update-failed";
+        redirect(`/${locale}/reset-password?error=${encodeURIComponent(code)}`);
+    }
+
+    const { error } = await supabase.auth.updateUser({
+        password: data.password,
+    });
+
+    if (error) {
+        redirect(`/${locale}/reset-password?error=password-update-failed`);
+    }
+
+    revalidatePath(`/${locale}`, "layout");
+    redirect(`/${locale}/dashboard`);
 }
 
 export async function logout() {

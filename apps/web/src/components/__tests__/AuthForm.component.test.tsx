@@ -72,6 +72,12 @@ describe("<AuthForm />", () => {
         // Under-text link that switches to signup
         expect(screen.getByText(t.noAccount)).toBeInTheDocument();
         expect(screen.getByRole("button", { name: t.goToRegister })).toBeInTheDocument();
+
+        // Forgot password prompt under password field
+        expect(screen.getByText(t.forgotPasswordInlinePrefix)).toBeInTheDocument();
+        expect(
+            screen.getByRole("button", { name: t.forgotPasswordInlineLink })
+        ).toBeInTheDocument();
     });
 
     it("shows signup fields and submit when mode=signup", async () => {
@@ -90,6 +96,23 @@ describe("<AuthForm />", () => {
 
         fireEvent.click(screen.getByRole("button", { name: t.goToRegister }));
         expect(replaceMock).toHaveBeenCalledWith("/no/login?mode=signup");
+    });
+
+    it("switches to forgot mode when forgot-password link clicked", async () => {
+        const t = await renderAuthForm();
+
+        fireEvent.click(screen.getByRole("button", { name: t.forgotPasswordInlineLink }));
+        expect(replaceMock).toHaveBeenCalledWith("/no/login?mode=forgot");
+    });
+
+    it("shows forgot-password mode and hides OAuth section", async () => {
+        const t = await renderAuthForm({ searchParams: "mode=forgot" });
+
+        expect(screen.getByRole("heading", { name: t.forgotPassword })).toBeInTheDocument();
+        expect(screen.getByLabelText(t.email)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: t.sendResetLink })).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: t.github })).toBeNull();
+        expect(screen.getByRole("button", { name: t.backToLogin })).toBeInTheDocument();
     });
 
     it("does not show an error when there is no ?error param", async () => {
