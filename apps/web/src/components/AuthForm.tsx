@@ -119,7 +119,7 @@ export default function AuthForm(): ReactElement {
                 <Script
                     src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
                     strategy="afterInteractive"
-                    onLoad={() => setIsScriptReady(true)}
+                    onReady={() => setIsScriptReady(true)}
                 />
             )}
 
