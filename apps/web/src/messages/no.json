@@ -28,6 +28,9 @@
         "errors": {
             "generic": "Noe gikk galt.",
             "invalidCredentials": "Feil e-post eller passord.",
+            "verificationRequired": "Fullfør verifiseringen og prøv igjen.",
+            "verificationExpired": "Verifiseringen utløp. Fullfør utfordringen på nytt.",
+            "verificationFailed": "Verifisering mislyktes. Prøv igjen.",
             "signupFailed": "Kunne ikke opprette konto.",
             "signupInvalid": "Noen felter er ugyldige — sjekk skjemaet.",
             "nameRequired": "Navn er påkrevd.",

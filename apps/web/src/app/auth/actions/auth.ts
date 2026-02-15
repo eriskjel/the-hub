@@ -8,6 +8,76 @@ import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRole";
 import { z } from "zod";
 import { mapSupabaseSignUpError } from "@/utils/auth/mapErrors";
 
+type TurnstileVerifyResult = {
+    success: boolean;
+    action?: string;
+    "error-codes"?: string[];
+};
+
+function getTurnstileRedirectCode(result: TurnstileVerifyResult): string {
+    if (result["error-codes"]?.includes("missing-input-response")) {
+        return "verification-required";
+    }
+    if (result["error-codes"]?.includes("timeout-or-duplicate")) {
+        return "verification-expired";
+    }
+    return "verification-failed";
+}
+
+async function verifyTurnstileToken(
+    token: string,
+    expectedAction: "login" | "signup"
+): Promise<TurnstileVerifyResult> {
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+    const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
+    const isProduction = process.env.NODE_ENV === "production";
+    const turnstileConfigured = Boolean(siteKey && secret);
+
+    if (!turnstileConfigured) {
+        if (isProduction) {
+            return { success: false, "error-codes": ["missing-input-secret"] };
+        }
+        return { success: true };
+    }
+
+    if (!token) {
+        return { success: false, "error-codes": ["missing-input-response"] };
+    }
+
+    const body = new URLSearchParams({
+        secret: secret as string,
+        response: token,
+    });
+
+    try {
+        const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body,
+            cache: "no-store",
+        });
+        if (!response.ok) {
+            console.error("Turnstile verification HTTP error", {
+                status: response.status,
+                expectedAction,
+            });
+            return { success: false, "error-codes": ["internal-error"] };
+        }
+
+        const result = (await response.json()) as TurnstileVerifyResult;
+        if (result.success && result.action && result.action !== expectedAction) {
+            return { success: false, "error-codes": ["invalid-input-response"] };
+        }
+        return result;
+    } catch (error) {
+        console.error("Turnstile token verification failed", {
+            error,
+            expectedAction,
+        });
+        return { success: false, "error-codes": ["internal-error"] };
+    }
+}
+
 export async function login(formData: FormData) {
     const locale = await resolveLocale();
 
@@ -15,8 +85,14 @@ export async function login(formData: FormData) {
 
     const email = String(formData.get("email") || "");
     const password = String(formData.get("password") || "");
+    const turnstileToken = String(formData.get("cf-turnstile-response") || "");
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, "login");
 
-    // TODO: add real validation (zod/yup) & friendly error display
+    if (!turnstileResult.success) {
+        const code = getTurnstileRedirectCode(turnstileResult);
+        redirect(`/${locale}/login?error=${code}`);
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
@@ -43,6 +119,13 @@ const signupSchema = z
 export async function signup(formData: FormData) {
     const locale = await resolveLocale();
     const supabase = await createClient();
+    const turnstileToken = String(formData.get("cf-turnstile-response") || "");
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, "signup");
+
+    if (!turnstileResult.success) {
+        const code = getTurnstileRedirectCode(turnstileResult);
+        return redirect(`/${locale}/login?mode=signup&error=${code}`);
+    }
 
     const data = {
         name: String(formData.get("name") || ""),
