@@ -8,12 +8,14 @@ import { useLocale, useTranslations } from "next-intl";
 import { startGithubOAuth } from "@/utils/auth/startGithubOAuth";
 import { useAuthMode } from "@/hooks/useAuthMode";
 import Image from "next/image";
+import Script from "next/script";
 import { Divider } from "@/components/ui/Divider";
 import { type AuthErrorCode, getAuthErrorMessage } from "@/utils/auth/errorCodes";
 
 export default function AuthForm(): ReactElement {
     const locale = useLocale();
     const t = useTranslations("login");
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
     const searchParams = useSearchParams();
     const errorCode = searchParams.get("error") as AuthErrorCode | null;
@@ -44,6 +46,10 @@ export default function AuthForm(): ReactElement {
             </p>
 
             <ErrorAlert message={errorMessage} />
+
+            {turnstileSiteKey && (
+                <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+            )}
 
             <form action={formAction} className="space-y-4" autoComplete="on">
                 {!isLogin && (
@@ -83,6 +89,16 @@ export default function AuthForm(): ReactElement {
                         type="password"
                         required
                         autoComplete="new-password"
+                    />
+                )}
+
+                {turnstileSiteKey && (
+                    <div
+                        className="cf-turnstile"
+                        data-sitekey={turnstileSiteKey}
+                        data-theme="auto"
+                        data-action={isLogin ? "login" : "signup"}
+                        data-size="flexible"
                     />
                 )}
 
