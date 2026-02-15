@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { resolveLocale } from "@/i18n/resolve-locale";
 import { ensureDefaultRole } from "@/app/auth/actions/ensureDefaultRole";
 import { z } from "zod";
-import { mapSupabaseSignUpError } from "@/utils/auth/mapErrors";
+import { mapSupabasePasswordResetError, mapSupabaseSignUpError } from "@/utils/auth/mapErrors";
+import { getSafeOrigin } from "@/utils/auth/getSafeOrigin";
 
 type TurnstileVerifyResult = {
     success: boolean;
@@ -26,7 +28,7 @@ function getTurnstileRedirectCode(result: TurnstileVerifyResult): string {
 
 async function verifyTurnstileToken(
     token: string,
-    expectedAction: "login" | "signup"
+    expectedAction: "login" | "signup" | "forgot"
 ): Promise<TurnstileVerifyResult> {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
     const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
@@ -116,6 +118,17 @@ const signupSchema = z
         message: "password-mismatch",
         path: ["confirmPassword"],
     });
+
+const updatePasswordSchema = z
+    .object({
+        password: z.string().min(6, "password-too-short"),
+        confirmPassword: z.string(),
+    })
+    .refine((v) => v.password === v.confirmPassword, {
+        message: "password-mismatch",
+        path: ["confirmPassword"],
+    });
+
 export async function signup(formData: FormData) {
     const locale = await resolveLocale();
     const supabase = await createClient();
@@ -152,6 +165,68 @@ export async function signup(formData: FormData) {
     }
 
     await ensureDefaultRole();
+    revalidatePath(`/${locale}`, "layout");
+    redirect(`/${locale}/dashboard`);
+}
+
+export async function requestPasswordReset(formData: FormData) {
+    const locale = await resolveLocale();
+    const supabase = await createClient();
+    const email = String(formData.get("email") || "").trim();
+    const parsedEmail = z.string().email("invalid-email").safeParse(email);
+    if (!parsedEmail.success) {
+        redirect(`/${locale}/login?mode=forgot&error=invalid-email`);
+    }
+
+    const turnstileToken = String(formData.get("cf-turnstile-response") || "");
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, "forgot");
+    if (!turnstileResult.success) {
+        const code = getTurnstileRedirectCode(turnstileResult);
+        redirect(`/${locale}/login?mode=forgot&error=${code}`);
+    }
+
+    const headersList = await headers();
+    const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "localhost:3000";
+    const proto = headersList.get("x-forwarded-proto") ?? "https";
+    let origin: string;
+    try {
+        origin = getSafeOrigin(new URL(`${proto}://${host}`), host);
+    } catch {
+        redirect(`/${locale}/login?mode=forgot&error=password-reset-failed`);
+    }
+
+    const redirectTo = `${origin}/auth/callback?locale=${locale}&next=/${locale}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) {
+        const code = mapSupabasePasswordResetError(error);
+        redirect(`/${locale}/login?mode=forgot&error=${encodeURIComponent(code)}`);
+    }
+    redirect(`/${locale}/login?mode=forgot&reset=sent`);
+}
+
+export async function updatePassword(formData: FormData) {
+    const locale = await resolveLocale();
+    const supabase = await createClient();
+
+    const data = {
+        password: String(formData.get("password") || ""),
+        confirmPassword: String(formData.get("confirmPassword") || ""),
+    };
+
+    const parsed = updatePasswordSchema.safeParse(data);
+    if (!parsed.success) {
+        const code = parsed.error.errors[0]?.message ?? "password-update-failed";
+        redirect(`/${locale}/reset-password?error=${encodeURIComponent(code)}`);
+    }
+
+    const { error } = await supabase.auth.updateUser({
+        password: data.password,
+    });
+
+    if (error) {
+        redirect(`/${locale}/reset-password?error=password-update-failed`);
+    }
+
     revalidatePath(`/${locale}`, "layout");
     redirect(`/${locale}/dashboard`);
 }

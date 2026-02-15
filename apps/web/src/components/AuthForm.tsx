@@ -1,6 +1,6 @@
 "use client";
 
-import { login, signup } from "@/app/auth/actions/auth";
+import { login, requestPasswordReset, signup } from "@/app/auth/actions/auth";
 import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -44,19 +44,23 @@ export default function AuthForm(): ReactElement {
     const searchParams = useSearchParams();
     const errorCode = searchParams.get("error") as AuthErrorCode | null;
     const errorMessage = getAuthErrorMessage(t, errorCode);
+    const resetSent = searchParams.get("reset") === "sent";
 
-    const { mode, isLogin, switchTo } = useAuthMode();
+    const { mode, isLogin, isSignup, isForgot, switchTo } = useAuthMode();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const widgetIdRef = useRef<string | null>(null);
     const [isScriptReady, setIsScriptReady] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState("");
 
+    const oauthMode = isSignup ? "signup" : "login";
     const handleGithub = useCallback(
-        () => startGithubOAuth(locale, "/dashboard", mode),
-        [locale, mode]
+        () => startGithubOAuth(locale, "/dashboard", oauthMode),
+        [locale, oauthMode]
     );
 
-    const formAction = useMemo(() => (isLogin ? login : signup), [isLogin]);
+    const authFormAction = useMemo(() => (isLogin ? login : signup), [isLogin]);
+    const shouldRenderTurnstile = turnstileEnabled;
+    const turnstileAction = isLogin ? "login" : isSignup ? "signup" : "forgot";
 
     useEffect(() => {
         if (!turnstileEnabled) return;
@@ -64,7 +68,7 @@ export default function AuthForm(): ReactElement {
     }, [turnstileEnabled]);
 
     useEffect(() => {
-        if (!turnstileEnabled || !isScriptReady || !containerRef.current || !turnstileSiteKey)
+        if (!shouldRenderTurnstile || !isScriptReady || !containerRef.current || !turnstileSiteKey)
             return;
 
         const turnstile = getTurnstile();
@@ -81,7 +85,7 @@ export default function AuthForm(): ReactElement {
             sitekey: turnstileSiteKey,
             theme: "auto",
             size: "flexible",
-            action: isLogin ? "login" : "signup",
+            action: turnstileAction,
             callback: (token) => setTurnstileToken(token),
             "error-callback": () => setTurnstileToken(""),
             "expired-callback": () => {
@@ -96,7 +100,7 @@ export default function AuthForm(): ReactElement {
                 widgetIdRef.current = null;
             }
         };
-    }, [isLogin, isScriptReady, turnstileEnabled, turnstileSiteKey]);
+    }, [isScriptReady, shouldRenderTurnstile, turnstileAction, turnstileSiteKey]);
 
     return (
         <div className="w-full max-w-sm text-center">
@@ -108,14 +112,21 @@ export default function AuthForm(): ReactElement {
                 className="mx-auto mb-3 h-12 w-12"
                 priority
             />
-            <h1 className="mb-2 text-4xl font-bold">{isLogin ? t("title") : t("registerTitle")}</h1>
+            <h1 className="mb-2 text-4xl font-bold">
+                {isLogin ? t("title") : isSignup ? t("registerTitle") : t("forgotPassword")}
+            </h1>
             <p className="mb-4 text-sm text-gray-500">
-                {isLogin ? t("subtitleLogin") : t("subtitleSignup")}
+                {isLogin
+                    ? t("subtitleLogin")
+                    : isSignup
+                      ? t("subtitleSignup")
+                      : t("forgotPasswordSupport")}
             </p>
 
             <ErrorAlert message={errorMessage} />
+            <SuccessAlert message={isForgot && resetSent ? t("checkYourEmail") : null} />
 
-            {turnstileEnabled && (
+            {shouldRenderTurnstile && (
                 <Script
                     src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
                     strategy="afterInteractive"
@@ -123,92 +134,150 @@ export default function AuthForm(): ReactElement {
                 />
             )}
 
-            <form action={formAction} className="space-y-4" autoComplete="on">
-                {!isLogin && (
+            {isForgot ? (
+                <form action={requestPasswordReset} className="space-y-4" autoComplete="on">
                     <Field
-                        id="name"
-                        label={t("name")}
-                        name="name"
-                        type="text"
-                        autoComplete="name"
+                        id="email"
+                        label={t("email")}
+                        name="email"
+                        type="email"
+                        autoComplete="email"
                         required
                     />
-                )}
+                    {shouldRenderTurnstile && (
+                        <>
+                            <input
+                                type="hidden"
+                                name="cf-turnstile-response"
+                                value={turnstileToken}
+                                readOnly
+                            />
+                            <div ref={containerRef} className="min-h-[65px]" />
+                        </>
+                    )}
+                    <SubmitButton
+                        t={t}
+                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
+                    >
+                        {t("sendResetLink")}
+                    </SubmitButton>
+                </form>
+            ) : (
+                <form action={authFormAction} className="space-y-4" autoComplete="on">
+                    {!isLogin && (
+                        <Field
+                            id="name"
+                            label={t("name")}
+                            name="name"
+                            type="text"
+                            autoComplete="name"
+                            required
+                        />
+                    )}
 
-                <Field
-                    id="email"
-                    label={t("email")}
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                />
-
-                <Field
-                    id="password"
-                    label={t("password")}
-                    name="password"
-                    type="password"
-                    required
-                    autoComplete={isLogin ? "current-password" : "new-password"}
-                />
-
-                {!isLogin && (
                     <Field
-                        id="confirmPassword"
-                        label={t("confirmPassword")}
-                        name="confirmPassword"
+                        id="email"
+                        label={t("email")}
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        required
+                    />
+
+                    <Field
+                        id="password"
+                        label={t("password")}
+                        name="password"
                         type="password"
                         required
-                        autoComplete="new-password"
+                        autoComplete={isLogin ? "current-password" : "new-password"}
                     />
-                )}
 
-                {turnstileEnabled && (
-                    <>
-                        <input
-                            type="hidden"
-                            name="cf-turnstile-response"
-                            value={turnstileToken}
-                            readOnly
+                    {isLogin && (
+                        <p className="text-left text-sm text-gray-600">
+                            {t("forgotPasswordInlinePrefix")}{" "}
+                            <button
+                                type="button"
+                                onClick={() => switchTo("forgot")}
+                                className="cursor-pointer text-blue-600 hover:underline"
+                            >
+                                {t("forgotPasswordInlineLink")}
+                            </button>
+                        </p>
+                    )}
+
+                    {!isLogin && (
+                        <Field
+                            id="confirmPassword"
+                            label={t("confirmPassword")}
+                            name="confirmPassword"
+                            type="password"
+                            required
+                            autoComplete="new-password"
                         />
-                        <div ref={containerRef} className="min-h-[65px]" />
-                    </>
-                )}
+                    )}
 
-                <SubmitButton t={t} disabledByTurnstile={turnstileEnabled && !turnstileToken}>
-                    {isLogin ? t("login") : t("register")}
-                </SubmitButton>
-            </form>
+                    {shouldRenderTurnstile && (
+                        <>
+                            <input
+                                type="hidden"
+                                name="cf-turnstile-response"
+                                value={turnstileToken}
+                                readOnly
+                            />
+                            <div ref={containerRef} className="min-h-[65px]" />
+                        </>
+                    )}
 
-            <Divider label={t("or")} />
+                    <SubmitButton
+                        t={t}
+                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
+                    >
+                        {isLogin ? t("login") : t("register")}
+                    </SubmitButton>
+                </form>
+            )}
 
-            <button
-                onClick={handleGithub}
-                type="button"
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
-            >
-                <Image
-                    src="/icons/github-mark-white.svg"
-                    alt=""
-                    aria-hidden="true"
-                    width={20}
-                    height={20}
-                    className="h-5 w-5"
-                />
-                {t("github")}
-            </button>
+            {!isForgot && <Divider label={t("or")} />}
 
-            <p className="mt-3 text-sm text-gray-600">
-                {isLogin ? t("noAccount") : t("haveAccount")}{" "}
+            {!isForgot && (
+                <button
+                    onClick={handleGithub}
+                    type="button"
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
+                >
+                    <Image
+                        src="/icons/github-mark-white.svg"
+                        alt=""
+                        aria-hidden="true"
+                        width={20}
+                        height={20}
+                        className="h-5 w-5"
+                    />
+                    {t("github")}
+                </button>
+            )}
+
+            {isForgot ? (
                 <button
                     type="button"
-                    onClick={() => switchTo(isLogin ? "signup" : "login")}
-                    className="cursor-pointer text-blue-600 hover:underline"
+                    onClick={() => switchTo("login")}
+                    className="mt-3 w-full cursor-pointer rounded bg-slate-100 py-2 text-slate-900 hover:bg-slate-200"
                 >
-                    {isLogin ? t("goToRegister") : t("goToLogin")}
+                    {t("backToLogin")}
                 </button>
-            </p>
+            ) : (
+                <p className="mt-3 text-sm text-gray-600">
+                    {isLogin ? t("noAccount") : t("haveAccount")}{" "}
+                    <button
+                        type="button"
+                        onClick={() => switchTo(isLogin ? "signup" : "login")}
+                        className="cursor-pointer text-blue-600 hover:underline"
+                    >
+                        {isLogin ? t("goToRegister") : t("goToLogin")}
+                    </button>
+                </p>
+            )}
         </div>
     );
 }
@@ -265,4 +334,9 @@ function SubmitButton({
 function ErrorAlert({ message }: { message?: string | null }): ReactElement | null {
     if (!message) return null;
     return <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">{message}</p>;
+}
+
+function SuccessAlert({ message }: { message?: string | null }): ReactElement | null {
+    if (!message) return null;
+    return <p className="mb-4 rounded bg-green-50 p-2 text-sm text-green-700">{message}</p>;
 }
