@@ -32,6 +32,9 @@
         "errors": {
             "generic": "Something went wrong.",
             "invalidCredentials": "Invalid email or password.",
+            "verificationRequired": "Please complete the verification challenge and try again.",
+            "verificationExpired": "Verification expired. Please complete the challenge again.",
+            "verificationFailed": "Verification failed. Please try again.",
             "signupFailed": "We couldn't create your account.",
             "signupInvalid": "Some fields are invalid — please check the form.",
             "nameRequired": "Name is required.",

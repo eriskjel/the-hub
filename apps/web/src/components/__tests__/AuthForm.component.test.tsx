@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
     getRedirectMock,
@@ -10,7 +10,7 @@ import {
     supabase,
 } from "@/tests/testUtils";
 import noMessages from "@/messages/no.json";
-import { signup } from "@/app/auth/actions/auth";
+import { login, signup } from "@/app/auth/actions/auth";
 
 const replaceMock = getReplaceMock();
 
@@ -27,6 +27,9 @@ afterEach(() => {
     setIntl({ locale: "no", messages: {} });
     setSearch("");
     setPathname("/");
+    delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    delete process.env.TURNSTILE_SECRET_KEY;
+    delete (window as Window & { turnstile?: unknown }).turnstile;
 });
 
 async function renderAuthForm({ searchParams = "", pathname = "/no/login" } = {}) {
@@ -112,6 +115,14 @@ describe("<AuthForm />", () => {
         expect(screen.getByText(t.errors.invalidCredentials)).toBeInTheDocument();
     });
 
+    it("shows translated error when ?error=verification-expired", async () => {
+        const t = await renderAuthForm({
+            searchParams: "error=verification-expired",
+        });
+
+        expect(screen.getByText(t.errors.verificationExpired)).toBeInTheDocument();
+    });
+
     it("calls startGithubOAuth('no') when GitHub clicked", async () => {
         const t = await renderAuthForm();
 
@@ -145,6 +156,48 @@ describe("<AuthForm />", () => {
         expect(pw).toHaveAttribute("autocomplete", "new-password");
         const confirm = screen.getByLabelText(t.confirmPassword);
         expect(confirm).toHaveAttribute("autocomplete", "new-password");
+    });
+
+    it("renders Turnstile and keeps submit disabled before token", async () => {
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "test-sitekey";
+        const renderWidget = vi.fn().mockReturnValue("widget-id");
+        (window as Window & { turnstile?: unknown }).turnstile = {
+            render: renderWidget,
+            reset: vi.fn(),
+            remove: vi.fn(),
+        };
+
+        const t = await renderAuthForm();
+
+        await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
+        const submit = screen.getByRole("button", { name: t.login }) as HTMLButtonElement;
+        expect(submit.disabled).toBe(true);
+
+        const tokenInput = document.querySelector(
+            'input[name="cf-turnstile-response"]'
+        ) as HTMLInputElement | null;
+        expect(tokenInput).not.toBeNull();
+        expect(tokenInput?.value).toBe("");
+
+        const renderCall = renderWidget.mock.calls[0][1] as { action?: string };
+        expect(renderCall.action).toBe("login");
+    });
+
+    it("enables submit when Turnstile callback returns a token", async () => {
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "test-sitekey";
+        const renderWidget = vi.fn().mockImplementation((_container, opts) => {
+            (opts as { callback?: (token: string) => void }).callback?.("token-123");
+            return "widget-id";
+        });
+        (window as Window & { turnstile?: unknown }).turnstile = {
+            render: renderWidget,
+            reset: vi.fn(),
+            remove: vi.fn(),
+        };
+
+        const t = await renderAuthForm();
+        const submit = screen.getByRole("button", { name: t.login }) as HTMLButtonElement;
+        await waitFor(() => expect(submit.disabled).toBe(false));
     });
 });
 
@@ -217,5 +270,101 @@ describe("signup action", () => {
         const t = await renderAuthForm({ searchParams: "mode=signup" });
         expect(screen.getByLabelText(t.name)).toBeRequired();
         expect(screen.getByLabelText(t.confirmPassword)).toBeRequired();
+    });
+});
+
+describe("turnstile verification in auth actions", () => {
+    type RedirectErr = Error & { __isRedirect?: boolean };
+    const originalEnv = { ...process.env };
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        process.env = { ...originalEnv };
+    });
+
+    it("maps timeout-or-duplicate to verification-expired", async () => {
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "key";
+        process.env.TURNSTILE_SECRET_KEY = "secret";
+        vi.spyOn(globalThis, "fetch").mockResolvedValue(
+            new Response(
+                JSON.stringify({ success: false, "error-codes": ["timeout-or-duplicate"] }),
+                {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                }
+            )
+        );
+
+        const form = new FormData();
+        form.set("email", "alice@example.com");
+        form.set("password", "secret123");
+        form.set("cf-turnstile-response", "dummy");
+
+        try {
+            await login(form);
+            throw new Error("expected redirect");
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("error=verification-expired");
+        }
+    });
+
+    it("handles non-200 Siteverify responses and logs error", async () => {
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "key";
+        process.env.TURNSTILE_SECRET_KEY = "secret";
+        const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+            new Response("upstream error", {
+                status: 503,
+                headers: { "Content-Type": "text/plain" },
+            })
+        );
+        const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        const form = new FormData();
+        form.set("email", "alice@example.com");
+        form.set("password", "secret123");
+        form.set("cf-turnstile-response", "dummy");
+
+        try {
+            await login(form);
+            throw new Error("expected redirect");
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("error=verification-failed");
+        }
+
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(errorSpy).toHaveBeenCalledWith(
+            "Turnstile verification HTTP error",
+            expect.objectContaining({ status: 503, expectedAction: "login" })
+        );
+    });
+
+    it("logs fetch failures and redirects with verification-failed", async () => {
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "key";
+        process.env.TURNSTILE_SECRET_KEY = "secret";
+        vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
+        const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+        const form = new FormData();
+        form.set("email", "alice@example.com");
+        form.set("password", "secret123");
+        form.set("cf-turnstile-response", "dummy");
+
+        try {
+            await login(form);
+            throw new Error("expected redirect");
+        } catch (e: unknown) {
+            const err = e as RedirectErr;
+            expect(err.__isRedirect).toBe(true);
+            expect(err.message).toContain("error=verification-failed");
+        }
+
+        expect(errorSpy).toHaveBeenCalledWith(
+            "Turnstile token verification failed",
+            expect.objectContaining({ expectedAction: "login" })
+        );
     });
 });
