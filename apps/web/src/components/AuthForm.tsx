@@ -13,7 +13,6 @@ import { Divider } from "@/components/ui/Divider";
 import { type AuthErrorCode, getAuthErrorMessage } from "@/utils/auth/errorCodes";
 
 type TurnstileApi = {
-    ready: (cb: () => void) => void;
     render: (
         container: string | HTMLElement,
         options: {
@@ -65,7 +64,8 @@ export default function AuthForm(): ReactElement {
     }, [turnstileEnabled]);
 
     useEffect(() => {
-        if (!turnstileEnabled || !isScriptReady || !containerRef.current || !turnstileSiteKey) return;
+        if (!turnstileEnabled || !isScriptReady || !containerRef.current || !turnstileSiteKey)
+            return;
 
         const turnstile = getTurnstile();
         if (!turnstile) return;
@@ -166,18 +166,23 @@ export default function AuthForm(): ReactElement {
 
                 {turnstileEnabled && (
                     <>
-                        <input type="hidden" name="cf-turnstile-response" value={turnstileToken} readOnly />
+                        <input
+                            type="hidden"
+                            name="cf-turnstile-response"
+                            value={turnstileToken}
+                            readOnly
+                        />
                         <div ref={containerRef} className="min-h-[65px]" />
                     </>
                 )}
 
-                {/* Single submit, full width */}
-                <SubmitButton t={t}>{isLogin ? t("login") : t("register")}</SubmitButton>
+                <SubmitButton t={t} disabledByTurnstile={turnstileEnabled && !turnstileToken}>
+                    {isLogin ? t("login") : t("register")}
+                </SubmitButton>
             </form>
 
             <Divider label={t("or")} />
 
-            {/* GitHub (separate action) */}
             <button
                 onClick={handleGithub}
                 type="button"
@@ -194,7 +199,6 @@ export default function AuthForm(): ReactElement {
                 {t("github")}
             </button>
 
-            {/* Under-text switch */}
             <p className="mt-3 text-sm text-gray-600">
                 {isLogin ? t("noAccount") : t("haveAccount")}{" "}
                 <button
@@ -238,15 +242,18 @@ function Field(props: {
 function SubmitButton({
     children,
     t,
+    disabledByTurnstile,
 }: {
     children: ReactNode;
     t: (k: string) => string;
+    disabledByTurnstile: boolean;
 }): ReactElement {
     const { pending } = useFormStatus();
+    const disabled = pending || disabledByTurnstile;
     return (
         <button
             type="submit"
-            disabled={pending}
+            disabled={disabled}
             className="w-full cursor-pointer rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
             aria-busy={pending}
         >
