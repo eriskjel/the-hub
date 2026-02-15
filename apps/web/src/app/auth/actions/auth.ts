@@ -15,10 +15,13 @@ type TurnstileVerifyResult = {
 };
 
 function getTurnstileRedirectCode(result: TurnstileVerifyResult): string {
-    return result["error-codes"]?.includes("missing-input-response") ||
-        result["error-codes"]?.includes("timeout-or-duplicate")
-        ? "verification-required"
-        : "verification-failed";
+    if (result["error-codes"]?.includes("missing-input-response")) {
+        return "verification-required";
+    }
+    if (result["error-codes"]?.includes("timeout-or-duplicate")) {
+        return "verification-expired";
+    }
+    return "verification-failed";
 }
 
 async function verifyTurnstileToken(
@@ -53,13 +56,24 @@ async function verifyTurnstileToken(
             body,
             cache: "no-store",
         });
+        if (!response.ok) {
+            console.error("Turnstile verification HTTP error", {
+                status: response.status,
+                expectedAction,
+            });
+            return { success: false, "error-codes": ["internal-error"] };
+        }
 
         const result = (await response.json()) as TurnstileVerifyResult;
         if (result.success && result.action && result.action !== expectedAction) {
             return { success: false, "error-codes": ["invalid-input-response"] };
         }
         return result;
-    } catch {
+    } catch (error) {
+        console.error("Turnstile token verification failed", {
+            error,
+            expectedAction,
+        });
         return { success: false, "error-codes": ["internal-error"] };
     }
 }

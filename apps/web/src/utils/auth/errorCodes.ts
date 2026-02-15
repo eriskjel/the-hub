@@ -1,6 +1,7 @@
 export const AUTH_ERROR_CODES = [
     "invalid-credentials",
     "verification-required",
+    "verification-expired",
     "verification-failed",
     "signup-failed",
     "signup-invalid",
@@ -19,6 +20,7 @@ export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
 export const ERROR_KEY_BY_CODE: Record<AuthErrorCode, string> = {
     "invalid-credentials": "invalidCredentials",
     "verification-required": "verificationRequired",
+    "verification-expired": "verificationExpired",
     "verification-failed": "verificationFailed",
     "signup-failed": "signupFailed",
     "signup-invalid": "signupInvalid",
