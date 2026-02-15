@@ -59,7 +59,8 @@ export default function AuthForm(): ReactElement {
     );
 
     const authFormAction = useMemo(() => (isLogin ? login : signup), [isLogin]);
-    const shouldRenderTurnstile = turnstileEnabled && !isForgot;
+    const shouldRenderTurnstile = turnstileEnabled;
+    const turnstileAction = isLogin ? "login" : isSignup ? "signup" : "forgot";
 
     useEffect(() => {
         if (!turnstileEnabled) return;
@@ -84,7 +85,7 @@ export default function AuthForm(): ReactElement {
             sitekey: turnstileSiteKey,
             theme: "auto",
             size: "flexible",
-            action: isLogin ? "login" : "signup",
+            action: turnstileAction,
             callback: (token) => setTurnstileToken(token),
             "error-callback": () => setTurnstileToken(""),
             "expired-callback": () => {
@@ -99,7 +100,7 @@ export default function AuthForm(): ReactElement {
                 widgetIdRef.current = null;
             }
         };
-    }, [isLogin, isScriptReady, shouldRenderTurnstile, turnstileSiteKey]);
+    }, [isScriptReady, shouldRenderTurnstile, turnstileAction, turnstileSiteKey]);
 
     return (
         <div className="w-full max-w-sm text-center">
@@ -143,7 +144,21 @@ export default function AuthForm(): ReactElement {
                         autoComplete="email"
                         required
                     />
-                    <SubmitButton t={t} disabledByTurnstile={false}>
+                    {shouldRenderTurnstile && (
+                        <>
+                            <input
+                                type="hidden"
+                                name="cf-turnstile-response"
+                                value={turnstileToken}
+                                readOnly
+                            />
+                            <div ref={containerRef} className="min-h-[65px]" />
+                        </>
+                    )}
+                    <SubmitButton
+                        t={t}
+                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
+                    >
                         {t("sendResetLink")}
                     </SubmitButton>
                 </form>

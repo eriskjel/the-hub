@@ -48,6 +48,7 @@
             "passwordTooShort": "Password must be at least 6 characters.",
             "passwordMismatch": "Passwords do not match.",
             "passwordUpdateFailed": "We couldn't update your password.",
+            "passwordResetFailed": "We couldn't send the reset link.",
             "emailAlreadyRegistered": "This email is already registered. Sign in or continue with GitHub.",
             "rateLimited": "Too many attempts. Please try again later.",
             "signupDisabled": "Signups are disabled.",

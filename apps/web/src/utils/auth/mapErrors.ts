@@ -20,3 +20,18 @@ export function mapSupabaseSignUpError(err: AuthError): string {
 
     return "signup-failed";
 }
+
+export function mapSupabasePasswordResetError(err: AuthError): string {
+    const code = (err.code || "").toLowerCase();
+    const msg = (err.message || "").toLowerCase();
+
+    if (code.includes("rate") || msg.includes("too many") || msg.includes("rate limit")) {
+        return "rate-limited";
+    }
+
+    if (msg.includes("invalid") && msg.includes("email")) {
+        return "invalid-email";
+    }
+
+    return "password-reset-failed";
+}
