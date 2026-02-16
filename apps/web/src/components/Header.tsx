@@ -33,7 +33,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
 
                 {/* Right: theme (wide) + user menu; theme also in dropdown on narrow */}
                 <div className="absolute right-8 flex items-center gap-1">
-                    <div className="hidden sm:block">
+                    <div className="max-sm:hidden">
                         <ThemeToggle />
                     </div>
                     <UserMenu

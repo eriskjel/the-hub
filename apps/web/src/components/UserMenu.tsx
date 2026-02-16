@@ -61,7 +61,17 @@ export default function UserMenu({
         return () => document.removeEventListener("keydown", handleEscape);
     }, [open]);
 
-    if (!mounted) return null;
+    // Reserve layout slot with skeleton to prevent layout shift and popping
+    if (!mounted) {
+        return (
+            <div className="relative">
+                <span
+                    className="inline-block h-8 w-8 animate-pulse rounded-md bg-white/10"
+                    aria-hidden
+                />
+            </div>
+        );
+    }
 
     const localeHref = `${pathname || "/"}${qs ? `?${qs}` : ""}`;
     const switchLabel = nextLocale === "en" ? "Switch to English" : "Bytt til norsk";
