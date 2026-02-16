@@ -57,7 +57,23 @@ export default function ThemeToggle({
         setThemeState(next);
     };
 
-    if (!mounted) return null;
+    // Reserve layout slot with skeleton to prevent layout shift and popping
+    if (!mounted) {
+        if (variant === "dropdownItem") {
+            return (
+                <div className="flex w-full items-center gap-3 px-4 py-2.5" aria-hidden>
+                    <span className="h-4 w-4 flex-shrink-0 animate-pulse rounded bg-white/10" />
+                    <span className="h-4 w-24 flex-1 animate-pulse rounded bg-white/10" />
+                </div>
+            );
+        }
+        return (
+            <span
+                className="inline-block h-8 w-8 animate-pulse rounded-md bg-white/10"
+                aria-hidden
+            />
+        );
+    }
 
     const isDark = theme === "dark";
     const displayLabel = isDark ? themeLightLabel : themeDarkLabel;
