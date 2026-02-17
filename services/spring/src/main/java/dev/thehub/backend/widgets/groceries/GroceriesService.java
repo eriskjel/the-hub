@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -268,8 +271,28 @@ public class GroceriesService {
                         .thenComparing(byMetric)
                 : byMetric;
 
-        List<DealDto> sorted = data.stream().map(this::toDeal).filter(Objects::nonNull)
-                .filter(d -> !excluded.contains(canonicalizeVendor(d.store()))).sorted(cmp).toList();
+        LocalDate todayOslo = LocalDate.now(ZoneId.of("Europe/Oslo"));
+        List<DealDto> mappedDeals = new ArrayList<>(data.size());
+
+        for (Map<String, Object> rawDeal : data) {
+            DealDto d = toDeal(rawDeal);
+            if (d == null)
+                continue;
+            mappedDeals.add(d);
+        }
+
+        List<DealDto> eligibleDeals = new ArrayList<>(mappedDeals.size());
+        for (DealDto d : mappedDeals) {
+            if (excluded.contains(canonicalizeVendor(d.store()))) {
+                continue;
+            }
+            if (isExpiredByValidUntil(d.validUntil(), todayOslo)) {
+                continue;
+            }
+            eligibleDeals.add(d);
+        }
+
+        List<DealDto> sorted = eligibleDeals.stream().sorted(cmp).toList();
 
         List<DealDto> capped = sorted.stream().limit(desiredReturn).toList();
         boolean isEnriched = true;
@@ -278,13 +301,10 @@ public class GroceriesService {
         // async Gemini
         if (geminiEnricher != null && geminiEnricher.isEnabled() && !capped.isEmpty()) {
             var city = cityOrDefault(s);
-            Optional<List<DealDto>> cached = geminiEnricher.getCachedEnrichment(term, city);
+            Optional<List<DealDto>> cached = geminiEnricher.getCachedEnrichment(term, city, capped);
             if (cached.isPresent()) {
                 capped = cached.get();
                 isEnriched = true;
-                if (log.isDebugEnabled())
-                    log.debug("Groceries Gemini cache hit term={} city={} size={}", norm(term), norm(city),
-                            capped.size());
             } else {
                 geminiEnricher.triggerAsyncEnrichment(term, city, capped);
                 isEnriched = false;
@@ -710,6 +730,33 @@ public class GroceriesService {
      */
     private static boolean sample(double p) {
         return java.util.concurrent.ThreadLocalRandom.current().nextDouble() < p;
+    }
+
+    /**
+     * Parses the first 10 chars of an ISO-like datetime/date string as LocalDate.
+     * Returns null on parse errors.
+     */
+    private static LocalDate parseIsoDatePrefix(String dateLike) {
+        if (dateLike == null || dateLike.isBlank())
+            return null;
+        String trimmed = dateLike.trim();
+        if (trimmed.length() < 10)
+            return null;
+        String prefix = trimmed.substring(0, 10);
+        try {
+            return LocalDate.parse(prefix);
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns true when validUntil is an ISO-like timestamp/date before "today" in
+     * Oslo timezone.
+     */
+    private static boolean isExpiredByValidUntil(String validUntil, LocalDate todayOslo) {
+        LocalDate d = parseIsoDatePrefix(validUntil);
+        return d != null && d.isBefore(todayOslo);
     }
 
     /**

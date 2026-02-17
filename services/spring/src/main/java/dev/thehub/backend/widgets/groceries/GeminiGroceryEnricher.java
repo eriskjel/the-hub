@@ -3,6 +3,8 @@ package dev.thehub.backend.widgets.groceries;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.thehub.backend.widgets.groceries.dto.DealDto;
 import dev.thehub.backend.widgets.groceries.dto.GeminiDealDecision;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -33,7 +35,10 @@ public class GeminiGroceryEnricher {
     private final ObjectMapper mapper = new ObjectMapper();
     private final Executor executor;
 
-    private final ConcurrentHashMap<String, List<DealDto>> cache = new ConcurrentHashMap<>();
+    private record CachedEnrichment(List<DealDto> deals, String baseSignature, long cachedAtMs) {
+    }
+
+    private final ConcurrentHashMap<String, CachedEnrichment> cache = new ConcurrentHashMap<>();
     private final Set<String> inFlightRequests = ConcurrentHashMap.newKeySet();
 
     @Value("${groceries.gemini.enabled:true}")
@@ -41,6 +46,9 @@ public class GeminiGroceryEnricher {
 
     @Value("${groceries.gemini.api-key:}")
     private String apiKey;
+
+    @Value("${groceries.gemini.cache-ttl-seconds:1800}")
+    private long cacheTtlSeconds;
 
     public GeminiGroceryEnricher(@Qualifier("geminiRestTemplate") RestTemplate http,
             @Qualifier("groceryEnrichmentExecutor") Executor executor) {
@@ -67,10 +75,26 @@ public class GeminiGroceryEnricher {
      * first, refetch later": first request returns raw and triggers async; refetch
      * gets cache hit.
      */
-    public Optional<List<DealDto>> getCachedEnrichment(String query, String city) {
+    public Optional<List<DealDto>> getCachedEnrichment(String query, String city, List<DealDto> currentBaseDeals) {
         String key = buildCacheKey(query, city);
-        List<DealDto> cached = cache.get(key);
-        return cached != null && !cached.isEmpty() ? Optional.of(cached) : Optional.empty();
+        CachedEnrichment cached = cache.get(key);
+        if (cached != null && !cached.deals().isEmpty()) {
+            long ageMs = Math.max(0, System.currentTimeMillis() - cached.cachedAtMs());
+            long ttlMs = Math.max(1, cacheTtlSeconds) * 1000L;
+            if (ageMs > ttlMs) {
+                cache.remove(key);
+                return Optional.empty();
+            }
+
+            String currentSignature = signatureOf(currentBaseDeals);
+            if (!Objects.equals(cached.baseSignature(), currentSignature)) {
+                cache.remove(key);
+                return Optional.empty();
+            }
+
+            return Optional.of(cached.deals());
+        }
+        return Optional.empty();
     }
 
     /**
@@ -92,12 +116,15 @@ public class GeminiGroceryEnricher {
         executor.execute(() -> {
             try {
                 List<GeminiDealDecision> decisions = filterAndEnrich(query, dealSnapshot);
-                if (decisions.isEmpty())
+                if (decisions.isEmpty()) {
                     return;
+                }
                 List<DealDto> merged = merge(dealSnapshot, decisions);
                 if (!merged.isEmpty()) {
-                    cache.put(key, merged);
-                    log.info("Gemini groceries cached key={} size={}", key, merged.size());
+                    cache.put(key, new CachedEnrichment(merged, signatureOf(dealSnapshot), System.currentTimeMillis()));
+                    int dropped = Math.max(0, dealSnapshot.size() - merged.size());
+                    log.info("Gemini groceries cached key={} inputSize={} outputSize={} dropped={}", key,
+                            dealSnapshot.size(), merged.size(), dropped);
                 }
             } catch (Exception e) {
                 if (e instanceof HttpClientErrorException.TooManyRequests) {
@@ -234,18 +261,22 @@ public class GeminiGroceryEnricher {
                     mapper.getTypeFactory().constructCollectionType(List.class, Map.class));
             List<GeminiDealDecision> decisions = new ArrayList<>();
             int relevantCount = 0;
+            int irrelevantCount = 0;
             for (Map<String, Object> o : rawList) {
                 int index = number(o.get("index"), 0).intValue();
                 boolean isRelevant = Boolean.TRUE.equals(o.get("is_relevant"))
                         || Boolean.TRUE.equals(o.get("isRelevant"));
                 if (isRelevant)
                     relevantCount++;
+                else
+                    irrelevantCount++;
                 String cleanName = string(o.get("clean_name"), o.get("cleanName"));
                 String displayUnit = string(o.get("display_unit"), o.get("displayUnit"));
                 Double displayPrice = toDouble(o.get("display_price_per_unit"), o.get("displayPricePerUnit"));
                 decisions.add(new GeminiDealDecision(index, isRelevant, cleanName, displayUnit, displayPrice));
             }
-            log.info("Gemini groceries ok decisions={} relevant={}", decisions.size(), relevantCount);
+            log.info("Gemini groceries ok decisions={} relevant={} irrelevant={}", decisions.size(), relevantCount,
+                    irrelevantCount);
             return decisions;
         } catch (Exception e) {
             log.warn("Gemini groceries call failed, using unfiltered list: {}", e.getMessage());
@@ -350,5 +381,38 @@ public class GeminiGroceryEnricher {
             }
         }
         return null;
+    }
+
+    private static String signatureOf(List<DealDto> deals) {
+        if (deals == null || deals.isEmpty())
+            return "empty";
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            for (DealDto d : deals) {
+                updateDigest(md, d.name());
+                updateDigest(md, d.store());
+                updateDigest(md, d.validUntil());
+                updateDigest(md, Double.toString(d.price()));
+                updateDigest(md, d.unitSymbol());
+                updateDigest(md, d.baseUnit());
+                md.update((byte) '\n');
+            }
+            byte[] bytes = md.digest();
+            StringBuilder sb = new StringBuilder(bytes.length * 2);
+            for (byte b : bytes) {
+                sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+                sb.append(Character.forDigit(b & 0xF, 16));
+            }
+            return sb.toString();
+        } catch (Exception ex) {
+            // Extremely unlikely; degrade gracefully to size marker.
+            return "fallback:" + deals.size();
+        }
+    }
+
+    private static void updateDigest(MessageDigest md, String value) {
+        String safe = (value == null) ? "<null>" : value;
+        md.update(safe.getBytes(StandardCharsets.UTF_8));
+        md.update((byte) '|');
     }
 }
