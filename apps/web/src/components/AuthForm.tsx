@@ -11,6 +11,7 @@ import Image from "next/image";
 import Script from "next/script";
 import { Divider } from "@/components/ui/Divider";
 import { type AuthErrorCode, getAuthErrorMessage } from "@/utils/auth/errorCodes";
+import { useResolvedTheme } from "@/hooks/useResolvedTheme";
 
 type TurnstileApi = {
     render: (
@@ -18,6 +19,7 @@ type TurnstileApi = {
         options: {
             sitekey: string;
             theme?: "light" | "dark" | "auto";
+            language?: string;
             size?: "normal" | "compact" | "flexible";
             action?: string;
             callback?: (token: string) => void;
@@ -33,6 +35,13 @@ function getTurnstile(): TurnstileApi | null {
     if (typeof window === "undefined") return null;
     const api = (window as Window & { turnstile?: TurnstileApi }).turnstile;
     return api ?? null;
+}
+
+function getTurnstileLanguage(locale: string): string {
+    const normalized = locale.toLowerCase();
+    if (normalized === "no" || normalized.startsWith("no-") || normalized === "nb") return "nb";
+    if (normalized === "en" || normalized.startsWith("en-")) return "en";
+    return "auto";
 }
 
 export default function AuthForm(): ReactElement {
@@ -51,6 +60,7 @@ export default function AuthForm(): ReactElement {
     const widgetIdRef = useRef<string | null>(null);
     const [isScriptReady, setIsScriptReady] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState("");
+    const { theme, isThemeResolved } = useResolvedTheme();
 
     const oauthMode = isSignup ? "signup" : "login";
     const handleGithub = useCallback(
@@ -59,6 +69,7 @@ export default function AuthForm(): ReactElement {
     );
 
     const authFormAction = useMemo(() => (isLogin ? login : signup), [isLogin]);
+    const turnstileLanguage = useMemo(() => getTurnstileLanguage(locale), [locale]);
     const shouldRenderTurnstile = turnstileEnabled;
     const turnstileAction = isLogin ? "login" : isSignup ? "signup" : "forgot";
 
@@ -68,8 +79,15 @@ export default function AuthForm(): ReactElement {
     }, [turnstileEnabled]);
 
     useEffect(() => {
-        if (!shouldRenderTurnstile || !isScriptReady || !containerRef.current || !turnstileSiteKey)
+        if (
+            !shouldRenderTurnstile ||
+            !isScriptReady ||
+            !isThemeResolved ||
+            !containerRef.current ||
+            !turnstileSiteKey
+        ) {
             return;
+        }
 
         const turnstile = getTurnstile();
         if (!turnstile) return;
@@ -83,7 +101,8 @@ export default function AuthForm(): ReactElement {
 
         widgetIdRef.current = turnstile.render(containerRef.current, {
             sitekey: turnstileSiteKey,
-            theme: "auto",
+            theme,
+            language: turnstileLanguage,
             size: "flexible",
             action: turnstileAction,
             callback: (token) => setTurnstileToken(token),
@@ -100,7 +119,15 @@ export default function AuthForm(): ReactElement {
                 widgetIdRef.current = null;
             }
         };
-    }, [isScriptReady, shouldRenderTurnstile, turnstileAction, turnstileSiteKey]);
+    }, [
+        isScriptReady,
+        shouldRenderTurnstile,
+        isThemeResolved,
+        turnstileAction,
+        turnstileSiteKey,
+        theme,
+        turnstileLanguage,
+    ]);
 
     return (
         <div className="w-full max-w-sm text-center">
@@ -115,7 +142,7 @@ export default function AuthForm(): ReactElement {
             <h1 className="mb-2 text-4xl font-bold">
                 {isLogin ? t("title") : isSignup ? t("registerTitle") : t("forgotPassword")}
             </h1>
-            <p className="mb-4 text-sm text-gray-500">
+            <p className="text-muted mb-4 text-sm">
                 {isLogin
                     ? t("subtitleLogin")
                     : isSignup
@@ -194,12 +221,12 @@ export default function AuthForm(): ReactElement {
                     />
 
                     {isLogin && (
-                        <p className="text-left text-sm text-gray-600">
+                        <p className="text-muted text-left text-sm">
                             {t("forgotPasswordInlinePrefix")}{" "}
                             <button
                                 type="button"
                                 onClick={() => switchTo("forgot")}
-                                className="cursor-pointer text-blue-600 hover:underline"
+                                className="text-primary hover:text-primary-muted cursor-pointer hover:underline"
                             >
                                 {t("forgotPasswordInlineLink")}
                             </button>
@@ -244,10 +271,14 @@ export default function AuthForm(): ReactElement {
                 <button
                     onClick={handleGithub}
                     type="button"
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded bg-gray-900 py-2 text-white hover:bg-gray-800"
+                    className="bg-foreground text-background inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded py-2 hover:opacity-90"
                 >
                     <Image
-                        src="/icons/github-mark-white.svg"
+                        src={
+                            theme === "dark"
+                                ? "/icons/github-mark.svg"
+                                : "/icons/github-mark-white.svg"
+                        }
                         alt=""
                         aria-hidden="true"
                         width={20}
@@ -262,17 +293,17 @@ export default function AuthForm(): ReactElement {
                 <button
                     type="button"
                     onClick={() => switchTo("login")}
-                    className="mt-3 w-full cursor-pointer rounded bg-slate-100 py-2 text-slate-900 hover:bg-slate-200"
+                    className="bg-surface-subtle text-foreground border-border mt-3 w-full cursor-pointer rounded border py-2 hover:opacity-90"
                 >
                     {t("backToLogin")}
                 </button>
             ) : (
-                <p className="mt-3 text-sm text-gray-600">
+                <p className="text-muted mt-3 text-sm">
                     {isLogin ? t("noAccount") : t("haveAccount")}{" "}
                     <button
                         type="button"
                         onClick={() => switchTo(isLogin ? "signup" : "login")}
-                        className="cursor-pointer text-blue-600 hover:underline"
+                        className="text-primary hover:text-primary-muted cursor-pointer hover:underline"
                     >
                         {isLogin ? t("goToRegister") : t("goToLogin")}
                     </button>
@@ -302,7 +333,7 @@ function Field(props: {
                 type={type}
                 required={required}
                 autoComplete={autoComplete}
-                className="w-full rounded border border-gray-300 px-3 py-2"
+                className="bg-background border-border text-foreground focus:border-primary w-full rounded border px-3 py-2 outline-none"
             />
         </div>
     );
@@ -323,7 +354,7 @@ function SubmitButton({
         <button
             type="submit"
             disabled={disabled}
-            className="w-full cursor-pointer rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+            className="bg-cta hover:bg-cta-muted w-full cursor-pointer rounded py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
             aria-busy={pending}
         >
             {pending ? t("working") : children}
@@ -333,10 +364,10 @@ function SubmitButton({
 
 function ErrorAlert({ message }: { message?: string | null }): ReactElement | null {
     if (!message) return null;
-    return <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">{message}</p>;
+    return <p className="bg-error-subtle text-error mb-4 rounded p-2 text-sm">{message}</p>;
 }
 
 function SuccessAlert({ message }: { message?: string | null }): ReactElement | null {
     if (!message) return null;
-    return <p className="mb-4 rounded bg-green-50 p-2 text-sm text-green-700">{message}</p>;
+    return <p className="bg-success-subtle text-success mb-4 rounded p-2 text-sm">{message}</p>;
 }

@@ -16,10 +16,7 @@ export default function PageWrapper({
     headerVariant = "solid",
     headerMode = "fixed",
 }: Props) {
-    const minH =
-        headerMode === "fixed"
-            ? "min-h-dvh" // full viewport; header overlays
-            : "min-h-[calc(100dvh-4rem)]"; // subtract sticky header height (h-16)
+    const minH = "min-h-dvh";
 
     return (
         <section className={`flex w-full flex-col ${minH} ${className}`}>

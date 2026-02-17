@@ -17,7 +17,7 @@ export default async function PublicLayout({
         <PageWrapper
             headerVariant="solid"
             headerMode="sticky"
-            className="bg-white text-black"
+            className="dashboard-gradient bg-background text-foreground relative overflow-hidden"
             contentClassName="flex justify-center"
         >
             {children}

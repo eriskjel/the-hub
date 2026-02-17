@@ -30,6 +30,7 @@ afterEach(() => {
     delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     delete process.env.TURNSTILE_SECRET_KEY;
     delete (window as Window & { turnstile?: unknown }).turnstile;
+    delete document.documentElement.dataset.theme;
 });
 
 async function renderAuthForm({ searchParams = "", pathname = "/no/login" } = {}) {
@@ -183,6 +184,7 @@ describe("<AuthForm />", () => {
 
     it("renders Turnstile and keeps submit disabled before token", async () => {
         process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "test-sitekey";
+        document.documentElement.dataset.theme = "dark";
         const renderWidget = vi.fn().mockReturnValue("widget-id");
         (window as Window & { turnstile?: unknown }).turnstile = {
             render: renderWidget,
@@ -202,8 +204,12 @@ describe("<AuthForm />", () => {
         expect(tokenInput).not.toBeNull();
         expect(tokenInput?.value).toBe("");
 
-        const renderCall = renderWidget.mock.calls[0][1] as { action?: string };
+        const renderCall = renderWidget.mock.calls[0][1] as {
+            action?: string;
+            theme?: string;
+        };
         expect(renderCall.action).toBe("login");
+        expect(renderCall.theme).toBe("dark");
     });
 
     it("enables submit when Turnstile callback returns a token", async () => {
