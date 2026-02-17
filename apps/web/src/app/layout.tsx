@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { ReactNode } from "react";
 import { Toaster } from "@/components/Toaster";
+import ThemeInitializer from "@/components/ThemeInitializer";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
@@ -36,18 +37,6 @@ export const metadata: Metadata = {
     },
 };
 
-const themeScript = `
-(function() {
-  try {
-    var t = localStorage.getItem('theme');
-    if (t !== 'light' && t !== 'dark') {
-      t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    document.documentElement.dataset.theme = t;
-  } catch (e) {}
-})();
-`;
-
 const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -64,7 +53,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
                 />
-                <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+                <ThemeInitializer />
             </head>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground min-h-dvh overflow-x-hidden antialiased`}
