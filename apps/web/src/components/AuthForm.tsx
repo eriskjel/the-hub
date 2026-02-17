@@ -11,6 +11,7 @@ import Image from "next/image";
 import Script from "next/script";
 import { Divider } from "@/components/ui/Divider";
 import { type AuthErrorCode, getAuthErrorMessage } from "@/utils/auth/errorCodes";
+import { useResolvedTheme } from "@/hooks/useResolvedTheme";
 
 type TurnstileApi = {
     render: (
@@ -30,20 +31,10 @@ type TurnstileApi = {
     remove: (widgetId: string) => void;
 };
 
-type ThemeMode = "light" | "dark";
-
 function getTurnstile(): TurnstileApi | null {
     if (typeof window === "undefined") return null;
     const api = (window as Window & { turnstile?: TurnstileApi }).turnstile;
     return api ?? null;
-}
-
-function getCurrentTheme(): ThemeMode {
-    if (typeof document === "undefined") return "light";
-    const explicit = document.documentElement.dataset.theme;
-    if (explicit === "dark" || explicit === "light") return explicit;
-    if (typeof window.matchMedia !== "function") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function getTurnstileLanguage(locale: string): string {
@@ -69,7 +60,7 @@ export default function AuthForm(): ReactElement {
     const widgetIdRef = useRef<string | null>(null);
     const [isScriptReady, setIsScriptReady] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState("");
-    const [theme, setTheme] = useState<ThemeMode>("light");
+    const { theme, isThemeResolved } = useResolvedTheme();
 
     const oauthMode = isSignup ? "signup" : "login";
     const handleGithub = useCallback(
@@ -88,22 +79,15 @@ export default function AuthForm(): ReactElement {
     }, [turnstileEnabled]);
 
     useEffect(() => {
-        setTheme(getCurrentTheme());
-        const observer = new MutationObserver(() => {
-            setTheme(getCurrentTheme());
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["data-theme"],
-        });
-
-        return () => observer.disconnect();
-    }, []);
-
-    useEffect(() => {
-        if (!shouldRenderTurnstile || !isScriptReady || !containerRef.current || !turnstileSiteKey)
+        if (
+            !shouldRenderTurnstile ||
+            !isScriptReady ||
+            !isThemeResolved ||
+            !containerRef.current ||
+            !turnstileSiteKey
+        ) {
             return;
+        }
 
         const turnstile = getTurnstile();
         if (!turnstile) return;
@@ -138,6 +122,7 @@ export default function AuthForm(): ReactElement {
     }, [
         isScriptReady,
         shouldRenderTurnstile,
+        isThemeResolved,
         turnstileAction,
         turnstileSiteKey,
         theme,

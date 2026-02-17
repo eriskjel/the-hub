@@ -1,17 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { Theme, useResolvedTheme } from "@/hooks/useResolvedTheme";
 
 const THEME_KEY = "theme";
-type Theme = "light" | "dark";
-
-function getTheme(): Theme {
-    if (typeof document === "undefined") return "light";
-    const stored = document.documentElement.dataset.theme as Theme | undefined;
-    if (stored === "dark" || stored === "light") return stored;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
 
 function setTheme(next: Theme) {
     try {
@@ -33,32 +25,15 @@ export default function ThemeToggle({
     themeLightLabel = "Light mode",
     themeDarkLabel = "Dark mode",
 }: ThemeToggleProps) {
-    const [theme, setThemeState] = useState<Theme>("light");
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setThemeState(getTheme());
-        setMounted(true);
-    }, []);
-
-    useEffect(() => {
-        if (!mounted) return;
-        const observer = new MutationObserver(() => setThemeState(getTheme()));
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["data-theme"],
-        });
-        return () => observer.disconnect();
-    }, [mounted]);
+    const { theme, isThemeResolved } = useResolvedTheme();
 
     const toggle = () => {
         const next: Theme = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        setThemeState(next);
     };
 
     // Reserve layout slot with skeleton to prevent layout shift and popping
-    if (!mounted) {
+    if (!isThemeResolved) {
         if (variant === "dropdownItem") {
             return (
                 <div className="flex w-full items-center gap-3 px-4 py-2.5" aria-hidden>
