@@ -16,7 +16,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
 
     return (
         <div className="mt-12 w-full max-w-md">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
+            <div className="bg-surface/90 border-border rounded-2xl border p-6 shadow-lg backdrop-blur-sm sm:p-8">
                 <AuthForm />
             </div>
         </div>
