@@ -313,8 +313,8 @@ public class GroceriesService {
                 if (staleCached.isPresent()) {
                     List<DealDto> validatedStale = staleCached.get().stream()
                             .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
-                            .filter(d -> !isExpiredByValidUntil(d.validUntil(), todayOslo))
-                            .limit(desiredReturn).toList();
+                            .filter(d -> !isExpiredByValidUntil(d.validUntil(), todayOslo)).limit(desiredReturn)
+                            .toList();
                     if (!validatedStale.isEmpty()) {
                         capped = validatedStale;
                         isEnriched = true;
