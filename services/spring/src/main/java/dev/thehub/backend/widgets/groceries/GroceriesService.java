@@ -311,8 +311,16 @@ public class GroceriesService {
             } else {
                 Optional<List<DealDto>> staleCached = geminiEnricher.getStaleCachedEnrichment(term, city);
                 if (staleCached.isPresent()) {
-                    capped = staleCached.get();
-                    isEnriched = true;
+                    List<DealDto> validatedStale = staleCached.get().stream()
+                            .filter(d -> !excluded.contains(canonicalizeVendor(d.store())))
+                            .filter(d -> !isExpiredByValidUntil(d.validUntil(), todayOslo))
+                            .limit(desiredReturn).toList();
+                    if (!validatedStale.isEmpty()) {
+                        capped = validatedStale;
+                        isEnriched = true;
+                    } else {
+                        isEnriched = false;
+                    }
                 } else {
                     isEnriched = false;
                 }
