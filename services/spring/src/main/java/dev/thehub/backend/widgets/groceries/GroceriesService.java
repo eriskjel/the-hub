@@ -297,17 +297,26 @@ public class GroceriesService {
         List<DealDto> capped = sorted.stream().limit(desiredReturn).toList();
         boolean isEnriched = true;
 
-        // Fast-first, refetch-later: use cache if hit; else return raw and trigger
-        // async Gemini
+        // Stale-while-revalidate:
+        // - Prefer fresh cache hit
+        // - Else serve stale cached enrichment when available
+        // - Always trigger async refresh on cache miss/stale
         if (geminiEnricher != null && geminiEnricher.isEnabled() && !capped.isEmpty()) {
             var city = cityOrDefault(s);
-            Optional<List<DealDto>> cached = geminiEnricher.getCachedEnrichment(term, city, capped);
-            if (cached.isPresent()) {
-                capped = cached.get();
+            List<DealDto> baseForRefresh = capped;
+            Optional<List<DealDto>> freshCached = geminiEnricher.getCachedEnrichment(term, city, baseForRefresh);
+            if (freshCached.isPresent()) {
+                capped = freshCached.get();
                 isEnriched = true;
             } else {
-                geminiEnricher.triggerAsyncEnrichment(term, city, capped);
-                isEnriched = false;
+                Optional<List<DealDto>> staleCached = geminiEnricher.getStaleCachedEnrichment(term, city);
+                if (staleCached.isPresent()) {
+                    capped = staleCached.get();
+                    isEnriched = true;
+                } else {
+                    isEnriched = false;
+                }
+                geminiEnricher.triggerAsyncEnrichment(term, city, baseForRefresh);
             }
         }
 

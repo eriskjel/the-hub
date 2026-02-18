@@ -50,6 +50,9 @@ public class GeminiGroceryEnricher {
     @Value("${groceries.gemini.cache-ttl-seconds:1800}")
     private long cacheTtlSeconds;
 
+    @Value("${groceries.gemini.cache-stale-max-seconds:86400}")
+    private long cacheStaleMaxSeconds;
+
     public GeminiGroceryEnricher(@Qualifier("geminiRestTemplate") RestTemplate http,
             @Qualifier("groceryEnrichmentExecutor") Executor executor) {
         this.http = http;
@@ -79,22 +82,38 @@ public class GeminiGroceryEnricher {
         String key = buildCacheKey(query, city);
         CachedEnrichment cached = cache.get(key);
         if (cached != null && !cached.deals().isEmpty()) {
-            long ageMs = Math.max(0, System.currentTimeMillis() - cached.cachedAtMs());
-            long ttlMs = Math.max(1, cacheTtlSeconds) * 1000L;
-            if (ageMs > ttlMs) {
-                cache.remove(key);
+            long ageMs = cacheAgeMs(cached);
+            if (ageMs > ttlMs(cacheTtlSeconds)) {
                 return Optional.empty();
             }
 
             String currentSignature = signatureOf(currentBaseDeals);
             if (!Objects.equals(cached.baseSignature(), currentSignature)) {
-                cache.remove(key);
                 return Optional.empty();
             }
 
             return Optional.of(cached.deals());
         }
         return Optional.empty();
+    }
+
+    /**
+     * Returns stale cached enrichment (if not too old) for stale-while-revalidate.
+     * This does not enforce signature freshness and should be paired with an async
+     * refresh.
+     */
+    public Optional<List<DealDto>> getStaleCachedEnrichment(String query, String city) {
+        String key = buildCacheKey(query, city);
+        CachedEnrichment cached = cache.get(key);
+        if (cached == null || cached.deals().isEmpty())
+            return Optional.empty();
+
+        long ageMs = cacheAgeMs(cached);
+        if (ageMs > ttlMs(cacheStaleMaxSeconds)) {
+            cache.remove(key);
+            return Optional.empty();
+        }
+        return Optional.of(cached.deals());
     }
 
     /**
@@ -106,8 +125,6 @@ public class GeminiGroceryEnricher {
         if (!isEnabled() || deals == null || deals.isEmpty())
             return;
         String key = buildCacheKey(query, city);
-        if (cache.containsKey(key))
-            return;
         if (!inFlightRequests.add(key))
             return;
         if (cache.size() > 1000)
@@ -414,5 +431,13 @@ public class GeminiGroceryEnricher {
         String safe = (value == null) ? "<null>" : value;
         md.update(safe.getBytes(StandardCharsets.UTF_8));
         md.update((byte) '|');
+    }
+
+    private static long cacheAgeMs(CachedEnrichment cached) {
+        return Math.max(0, System.currentTimeMillis() - cached.cachedAtMs());
+    }
+
+    private static long ttlMs(long ttlSeconds) {
+        return Math.max(1, ttlSeconds) * 1000L;
     }
 }
