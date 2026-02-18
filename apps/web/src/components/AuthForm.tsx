@@ -182,7 +182,10 @@ export default function AuthForm(): ReactElement {
                             <div ref={containerRef} className="min-h-[65px]" />
                         </>
                     )}
-                    <SubmitButton disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}>
+                    <SubmitButton
+                        t={t}
+                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
+                    >
                         {t("sendResetLink")}
                     </SubmitButton>
                 </form>
@@ -253,7 +256,10 @@ export default function AuthForm(): ReactElement {
                         </>
                     )}
 
-                    <SubmitButton disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}>
+                    <SubmitButton
+                        t={t}
+                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
+                    >
                         {isLogin ? t("login") : t("register")}
                     </SubmitButton>
                 </form>
@@ -335,9 +341,11 @@ function Field(props: {
 
 function SubmitButton({
     children,
+    t,
     disabledByTurnstile,
 }: {
     children: ReactNode;
+    t: (k: string) => string;
     disabledByTurnstile: boolean;
 }): ReactElement {
     const { pending } = useFormStatus();
@@ -357,6 +365,9 @@ function SubmitButton({
                     />
                 )}
                 <span>{children}</span>
+            </span>
+            <span className="sr-only" aria-live="polite">
+                {pending ? t("working") : ""}
             </span>
         </button>
     );
