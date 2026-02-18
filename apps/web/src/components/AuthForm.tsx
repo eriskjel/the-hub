@@ -182,10 +182,7 @@ export default function AuthForm(): ReactElement {
                             <div ref={containerRef} className="min-h-[65px]" />
                         </>
                     )}
-                    <SubmitButton
-                        t={t}
-                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
-                    >
+                    <SubmitButton disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}>
                         {t("sendResetLink")}
                     </SubmitButton>
                 </form>
@@ -256,10 +253,7 @@ export default function AuthForm(): ReactElement {
                         </>
                     )}
 
-                    <SubmitButton
-                        t={t}
-                        disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}
-                    >
+                    <SubmitButton disabledByTurnstile={shouldRenderTurnstile && !turnstileToken}>
                         {isLogin ? t("login") : t("register")}
                     </SubmitButton>
                 </form>
@@ -341,11 +335,9 @@ function Field(props: {
 
 function SubmitButton({
     children,
-    t,
     disabledByTurnstile,
 }: {
     children: ReactNode;
-    t: (k: string) => string;
     disabledByTurnstile: boolean;
 }): ReactElement {
     const { pending } = useFormStatus();
@@ -357,7 +349,15 @@ function SubmitButton({
             className="bg-cta hover:bg-cta-muted w-full cursor-pointer rounded py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
             aria-busy={pending}
         >
-            {pending ? t("working") : children}
+            <span className="inline-flex items-center justify-center gap-2">
+                {pending && (
+                    <span
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                    />
+                )}
+                <span>{children}</span>
+            </span>
         </button>
     );
 }
