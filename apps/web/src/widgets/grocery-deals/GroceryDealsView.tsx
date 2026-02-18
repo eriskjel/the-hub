@@ -3,6 +3,8 @@
 import type { GroceryDealsWidget } from "@/widgets/schema";
 import { Deal, GroceryDealsResponse } from "@/widgets/grocery-deals/types";
 import React, { ReactElement, useEffect, useId, useRef, useState } from "react";
+import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
+import { useMobileExpandScrollAdjust } from "@/hooks/useMobileExpandScrollAdjust";
 
 /** Refetch when backend returned raw list (Gemini still running). Delay 20s so first refetch runs after typical Gemini (e.g. 6–17s); then repeat to catch very slow runs (20–45s). */
 const REFETCH_DELAY_MS = 20_000;
@@ -89,9 +91,19 @@ export default function GroceryDealsView({
     const [expanded, setExpanded] = useState(false);
     const listId = useId();
     const listRef = React.useRef<HTMLUListElement>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const toggleButtonRef = React.useRef<HTMLButtonElement>(null);
     const { deals: rawDeals, isEnriched } = normalizeData(data);
     const refetchScheduledRef = useRef(false);
     const refetchCountRef = useRef(0);
+    const isMobileViewport = useIsMobileViewport();
+
+    useMobileExpandScrollAdjust({
+        expanded,
+        isMobileViewport,
+        containerRef,
+        toggleButtonRef,
+    });
 
     // Fast-first, refetch-later: when data is not enriched, schedule refetches every REFETCH_DELAY_MS (up to MAX_REFETCH_ATTEMPTS)
     useEffect(() => {
@@ -121,7 +133,7 @@ export default function GroceryDealsView({
     const hasMore = deals.length > collapsedCount;
 
     return (
-        <>
+        <div ref={containerRef}>
             <ul
                 ref={listRef}
                 id={listId}
@@ -135,6 +147,7 @@ export default function GroceryDealsView({
 
             {hasMore && (
                 <button
+                    ref={toggleButtonRef}
                     type="button"
                     aria-controls={listId}
                     aria-expanded={expanded}
@@ -156,7 +169,7 @@ export default function GroceryDealsView({
                     />
                 </button>
             )}
-        </>
+        </div>
     );
 }
 
