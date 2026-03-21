@@ -5,8 +5,8 @@ import { RefObject, useEffect } from "react";
 type Options = {
     expanded: boolean;
     isMobileViewport: boolean;
-    containerRef: RefObject<HTMLDivElement | null>;
-    toggleButtonRef: RefObject<HTMLButtonElement | null>;
+    containerRef: RefObject<HTMLDivElement>;
+    toggleButtonRef: RefObject<HTMLButtonElement>;
 };
 
 export function useMobileExpandScrollAdjust({
