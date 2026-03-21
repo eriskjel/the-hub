@@ -357,7 +357,18 @@ function SubmitButton({
             className="bg-cta hover:bg-cta-muted w-full cursor-pointer rounded py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
             aria-busy={pending}
         >
-            {pending ? t("working") : children}
+            <span className="inline-flex items-center justify-center gap-2">
+                {pending && (
+                    <span
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                    />
+                )}
+                <span>{children}</span>
+            </span>
+            <span className="sr-only" aria-live="polite">
+                {pending ? t("working") : ""}
+            </span>
         </button>
     );
 }
