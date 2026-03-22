@@ -1,7 +1,7 @@
 "use client";
 
-import { Component, type ErrorInfo, type ReactElement, type ReactNode } from "react";
-import { HttpError } from "@/lib/widgets/fetchJson";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { WidgetErrorBox } from "@/components/widgets/WidgetErrorBox";
 
 interface Props {
     children: ReactNode;
@@ -11,7 +11,7 @@ interface State {
     error: Error | null;
 }
 
-/** Per-widget error boundary. Catches useSuspenseQuery initial load failures
+/** Per-widget error boundary. Catches render-time errors thrown by widget components
  *  and renders an inline error message inside the card content area. */
 export default class WidgetErrorBoundary extends Component<Props, State> {
     constructor(props: Props) {
@@ -32,14 +32,4 @@ export default class WidgetErrorBoundary extends Component<Props, State> {
         if (error) return <WidgetErrorBox error={error} />;
         return this.props.children;
     }
-}
-
-function WidgetErrorBox({ error }: { error: Error }): ReactElement {
-    const is404 = error instanceof HttpError && error.status === 404;
-    const msg = is404 ? "Widget not found" : "Failed to load widget";
-    return (
-        <div className="border-error-muted bg-error-subtle text-error rounded-lg border p-3 text-sm">
-            {msg}
-        </div>
-    );
 }

@@ -23,9 +23,11 @@ export function DeleteWidgetModal({
     const t = useTranslations("widgets.delete");
 
     const { mutate, isPending, error } = useMutation({
-        mutationFn: () => deleteWidget(widgetId),
-        onSuccess: (res) => {
+        mutationFn: async () => {
+            const res = await deleteWidget(widgetId);
             if (!res.ok) throw new Error(res.error ?? t("genericError"));
+        },
+        onSuccess: () => {
             onClose();
             onDeleted();
         },

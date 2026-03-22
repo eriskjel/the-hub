@@ -6,7 +6,7 @@ import { registry } from "@/widgets";
 import { useWidgetData } from "@/hooks/useWidgetData";
 import WidgetContentSkeleton from "@/components/widgets/WidgetContentSkeleton";
 import WidgetErrorBoundary from "@/components/widgets/WidgetErrorBoundary";
-import { HttpError } from "@/lib/widgets/fetchJson";
+import { WidgetErrorBox } from "@/components/widgets/WidgetErrorBox";
 
 function cacheKeyFor(userId: string | null, kind: string, instanceId: string): string {
     return `hub:u:${userId ?? "anon"}:widget:${kind}:${instanceId}`;
@@ -56,16 +56,6 @@ function WidgetStatic({
     return <Component data={hydrated ? cached : null} widget={widget} />;
 }
 
-function WidgetErrorBox({ error }: { error: Error }): ReactElement {
-    const is404 = error instanceof HttpError && error.status === 404;
-    const msg = is404 ? "Widget not found" : "Failed to load widget";
-    return (
-        <div className="border-error-muted bg-error-subtle text-error rounded-lg border p-3 text-sm">
-            {msg}
-        </div>
-    );
-}
-
 function WidgetWithData({
     widget,
     userId,
@@ -104,7 +94,7 @@ export default function WidgetCard({
     staleLayout?: boolean;
 }): ReactElement {
     const entry = registry[widget.kind];
-    if (!entry) return <WidgetContentSkeleton />;
+    if (!entry) return <WidgetErrorBox error={new Error(`Unknown widget type: ${widget.kind}`)} />;
 
     if (staleLayout) {
         return <WidgetStatic widget={widget} userId={userId} preferCache />;
