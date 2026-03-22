@@ -17,7 +17,10 @@ package dev.thehub.backend.widgets.cinemateket.dto;
  *            optional URL to film details page
  * @param organizer
  *            optional organizer/film club name (e.g., "Psykolosjen filmklubb")
+ * @param filmFormat
+ *            optional film format label (e.g., "35mm", "70mm"); null when not
+ *            specified
  */
 public record FilmShowingDto(String title, String director, Integer year, String showTime, String ticketUrl,
-        String filmUrl, String organizer) {
+        String filmUrl, String organizer, String filmFormat) {
 }

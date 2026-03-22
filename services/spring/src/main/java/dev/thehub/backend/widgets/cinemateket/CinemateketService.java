@@ -39,6 +39,8 @@ public class CinemateketService {
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d{1,2})\\.(\\d{2})");
     // Pattern to match director and year: "Director Name YYYY" or "Director Name"
     private static final Pattern DIRECTOR_YEAR_PATTERN = Pattern.compile("^(.+?)\\s+(\\d{4})$");
+    // Pattern to match film format markers like "(35mm)", "(70mm)", "(16mm)"
+    private static final Pattern FORMAT_PATTERN = Pattern.compile("\\((\\d+mm)\\)", Pattern.CASE_INSENSITIVE);
 
     private final RestTemplate http;
 
@@ -452,6 +454,13 @@ public class CinemateketService {
             if (title == null || title.isBlank())
                 continue;
 
+            // Extract film format marker (e.g., "(35mm)", "(70mm)")
+            String filmFormat = null;
+            Matcher fmtMatcher = FORMAT_PATTERN.matcher(line);
+            if (fmtMatcher.find()) {
+                filmFormat = fmtMatcher.group(1).toLowerCase(Locale.ROOT);
+            }
+
             // Extract director and year - look for pattern after the title
             String director = null;
             Integer filmYear = null;
@@ -462,6 +471,10 @@ public class CinemateketService {
             int titleIdx = afterTime.toLowerCase(Locale.ROOT).indexOf(title.toLowerCase(Locale.ROOT));
             if (titleIdx >= 0) {
                 String afterTitle = afterTime.substring(titleIdx + title.length()).trim();
+                // Strip format marker so it doesn't bleed into the director name
+                if (filmFormat != null) {
+                    afterTitle = afterTitle.replaceAll("(?i)\\(\\d+mm\\)\\s*", "").trim();
+                }
                 Matcher dirYearMatcher = DIRECTOR_YEAR_PATTERN.matcher(afterTitle);
                 if (dirYearMatcher.find()) {
                     director = dirYearMatcher.group(1).trim();
@@ -497,7 +510,8 @@ public class CinemateketService {
             }
 
             showings.add(
-                    new FilmShowingDto(title, director, filmYear, showTime.toString(), ticketUrl, filmUrl, organizer));
+                    new FilmShowingDto(title, director, filmYear, showTime.toString(), ticketUrl, filmUrl, organizer,
+                            filmFormat));
         }
     }
 

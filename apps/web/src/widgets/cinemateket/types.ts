@@ -6,4 +6,5 @@ export type FilmShowing = {
     ticketUrl: string | null;
     filmUrl: string | null;
     organizer: string | null;
+    filmFormat: string | null;
 };
