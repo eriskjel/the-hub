@@ -402,11 +402,23 @@ public class GroceriesService {
         String name = Objects.toString(m.get("name"), "");
 
         Double priceD = toDouble(m.get("price"));
-        if (priceD == null)
-            return null;
-        double price = priceD;
+        Integer discountPercent = null;
+        double price;
+        if (priceD == null) {
+            // No absolute price — check for a percentage discount (member or regular)
+            Integer relSavings = toInt(m.get("relativeSavings"));
+            Integer memberSavings = toInt(m.get("membershipRelativeSavings"));
+            discountPercent = relSavings != null ? relSavings : memberSavings;
+            if (discountPercent == null || discountPercent <= 0) {
+                log.debug("toDeal skipped (no price, no discount) name={} keys={}", m.get("name"), m.keySet());
+                return null;
+            }
+            price = 0.0; // sentinel: discount-only deal
+        } else {
+            price = priceD;
+        }
 
-        Double unitPrice = toDouble(m.get("unitPrice")); // vendor’s per base unit
+        Double unitPrice = toDouble(m.get("unitPrice")); // vendor's per base unit
         String baseUnit = (String) m.getOrDefault("baseUnit", null); // e.g., "kilogram"
         String unitSymbol = (String) m.getOrDefault("unitSymbol", null); // e.g., "g"
 
@@ -484,7 +496,7 @@ public class GroceriesService {
 
         return new DealDto(name, store, price, unitPrice, validFrom, validUntil, image, logo, unit, pieceCountFrom,
                 pieceCountTo, unitSizeFrom, unitSizeTo, unitSymbol, baseUnit, perPiecePrice, unitPriceMin, unitPriceMax,
-                multipack, null, null, null);
+                multipack, null, null, null, discountPercent);
     }
 
     /**
@@ -634,6 +646,9 @@ public class GroceriesService {
      * @return numeric metric used for ascending sorting
      */
     private static double metricForSort(DealDto d) {
+        // Discount-only deals (no absolute price) sort last
+        if (d.price() == 0.0 && d.discountPercent() != null)
+            return Double.MAX_VALUE;
         // prefer unit price (per kg) if present; else fallback to absolute price
         Double up = d.unitPrice();
         if (up != null)

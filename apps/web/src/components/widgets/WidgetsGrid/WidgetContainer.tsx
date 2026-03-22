@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { AnyWidget, GroceryDealsWidget, WidgetKind } from "@/widgets/schema";
 import WidgetCard from "@/components/widgets/WidgetCard";
 import GlassCard from "@/components/ui/GlassCard";
@@ -8,6 +9,61 @@ import { DeleteWidgetButton } from "@/components/widgets/delete/DeleteWidgetButt
 import { useTranslations } from "next-intl";
 import { EditWidgetButton } from "@/components/widgets/edit/EditWidgetButton";
 import { isEditableKind } from "@/widgets/create/registry";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
+import { registry } from "@/widgets";
+import { IconButton } from "@/components/ui/IconButton";
+import { RefreshCw } from "lucide-react";
+
+function useWidgetQueryMeta(widget: AnyWidget, userId: string | null) {
+    const queryClient = useQueryClient();
+    const settingsSig = JSON.stringify(widget.settings ?? {});
+    const qKey = useMemo(
+        () => queryKeys.widget(userId ?? "anon", widget.kind, widget.instanceId, settingsSig),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [userId, widget.kind, widget.instanceId, settingsSig]
+    );
+
+    const [queryState, setQueryState] = useState(() => queryClient.getQueryState(qKey));
+    const [, setTick] = useState(0);
+
+    const qKeyHash = JSON.stringify(qKey);
+
+    useEffect(() => {
+        setQueryState(queryClient.getQueryState(qKey));
+        return queryClient.getQueryCache().subscribe((event) => {
+            if (JSON.stringify(event.query.queryKey) !== qKeyHash) return;
+            queueMicrotask(() => setQueryState(queryClient.getQueryState(qKey)));
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [queryClient, qKeyHash]);
+
+    // Re-render every 30s so the "5m ago" label stays accurate between fetches
+    useEffect(() => {
+        const id = setInterval(() => setTick((n) => n + 1), 30_000);
+        return () => clearInterval(id);
+    }, []);
+
+    return {
+        dataUpdatedAt: queryState?.dataUpdatedAt,
+        isFetching: queryState?.fetchStatus === "fetching",
+        refetch: () => queryClient.refetchQueries({ queryKey: qKey, exact: true }),
+    };
+}
+
+function formatUpdatedAt(
+    ms: number | undefined,
+    t: ReturnType<typeof useTranslations>
+): string | undefined {
+    if (!ms) return undefined;
+    const seconds = Math.floor((Date.now() - ms) / 1000);
+    if (seconds < 30) return t("updatedJustNow");
+    if (seconds < 60) return t("updatedSecondsAgo", { count: seconds });
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return t("updatedMinutesAgo", { count: minutes });
+    const hours = Math.floor(minutes / 60);
+    return t("updatedHoursAgo", { count: hours });
+}
 
 const KIND_KEYS: Record<WidgetKind, string> = {
     "server-pings": "server-pings",
@@ -65,13 +121,29 @@ export default function WidgetContainer({
     stale?: boolean;
 }): ReactElement {
     const tKinds = useTranslations("widgets.create.kinds");
+    const tStates = useTranslations("dashboard.states");
     const kindLabel = tKinds(KIND_KEYS[widget.kind]);
-
     const title = resolveTitle(widget, kindLabel);
 
-    const header: ReactElement = <Header title={title} />;
+    const hasFetch = !!registry[widget.kind]?.fetch;
+    const { dataUpdatedAt, isFetching, refetch } = useWidgetQueryMeta(widget, userId);
+    const subtitle = hasFetch ? formatUpdatedAt(dataUpdatedAt, tStates) : undefined;
+
+    const header: ReactElement = <Header title={title} subtitle={subtitle} />;
     const actions = (
         <div className="flex items-center gap-2">
+            {hasFetch && !stale && (
+                <IconButton
+                    onClick={() => void refetch()}
+                    aria-label="Refresh widget"
+                    title="Refresh"
+                >
+                    <RefreshCw
+                        className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
+                        aria-hidden
+                    />
+                </IconButton>
+            )}
             {isEditableKind(widget.kind) && (
                 <EditWidgetButton
                     widget={widget}
@@ -105,6 +177,13 @@ export default function WidgetContainer({
     );
 }
 
-function Header({ title }: { title: string }): ReactElement {
-    return <div className="text-foreground truncate text-sm font-semibold">{title}</div>;
+function Header({ title, subtitle }: { title: string; subtitle?: string }): ReactElement {
+    return (
+        <div className="min-w-0">
+            <div className="text-foreground truncate text-sm font-semibold">{title}</div>
+            {subtitle && (
+                <div className="text-muted truncate text-[10px] leading-tight">{subtitle}</div>
+            )}
+        </div>
+    );
 }

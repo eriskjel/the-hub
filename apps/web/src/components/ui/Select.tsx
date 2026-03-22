@@ -19,7 +19,12 @@ import { cn } from "@/utils/cn";
 
 const EMPTY_SENTINEL = "__none__" as const;
 
-export type SelectOption = { value: string; label: string; disabled?: boolean };
+export type SelectOption = {
+    value: string;
+    label: string;
+    description?: string;
+    disabled?: boolean;
+};
 
 function mapOption(o: SelectOption): SelectOption {
     if (o.value === "") return { ...o, value: EMPTY_SENTINEL };
@@ -105,7 +110,14 @@ export function Select({
                                     "data-[state=checked]:bg-primary-subtle data-[state=checked]:text-foreground"
                                 )}
                             >
-                                <SelectItemText>{opt.label}</SelectItemText>
+                                <div className="min-w-0 flex-1">
+                                    <SelectItemText>{opt.label}</SelectItemText>
+                                    {opt.description && (
+                                        <div className="text-muted mt-0.5 text-xs leading-tight">
+                                            {opt.description}
+                                        </div>
+                                    )}
+                                </div>
                                 <SelectItemIndicator
                                     className={cn(
                                         "text-primary absolute right-2 flex h-4 w-4 items-center justify-center"

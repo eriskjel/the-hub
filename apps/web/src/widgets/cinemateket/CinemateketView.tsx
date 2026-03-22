@@ -54,20 +54,25 @@ export default function CinemateketView({
                             <div className="flex flex-col gap-px">
                                 {/* Title and time (organizer hidden for now) */}
                                 <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
+                                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
                                         {showing.filmUrl ? (
                                             <a
                                                 href={showing.filmUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="hover:text-primary text-foreground block truncate text-sm font-medium hover:underline"
+                                                className="hover:text-primary text-foreground min-w-0 truncate text-sm font-medium hover:underline"
                                             >
                                                 {showing.title}
                                             </a>
                                         ) : (
-                                            <div className="text-foreground truncate text-sm font-medium">
+                                            <div className="text-foreground min-w-0 truncate text-sm font-medium">
                                                 {showing.title}
                                             </div>
+                                        )}
+                                        {showing.filmFormat && (
+                                            <span className="shrink-0 rounded-full border border-emerald-500/50 bg-emerald-500/10 px-1.5 py-px text-[9px] font-bold tracking-wide text-emerald-600 uppercase">
+                                                {showing.filmFormat}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="text-muted-light shrink-0 text-right text-sm font-medium whitespace-nowrap">

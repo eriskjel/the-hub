@@ -2,6 +2,7 @@
 
 import { ReactElement, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
@@ -13,11 +14,17 @@ import type { Path } from "react-hook-form";
 
 type AllowedErrorPaths = "settings.provider" | "settings.targetIso" | "settings.query";
 
-export default function CreateWidgetModal({ onClose }: { onClose: () => void }): ReactElement {
+export default function CreateWidgetModal({
+    onClose,
+    initialKind,
+}: {
+    onClose: () => void;
+    initialKind?: CreationKind;
+}): ReactElement {
     const t = useTranslations("widgets.create");
     const router = useRouter();
     const [kind, setKind] = useState<CreationKind>(
-        Object.keys(creationRegistry)[0] as CreationKind
+        initialKind ?? (Object.keys(creationRegistry)[0] as CreationKind)
     );
 
     const { form, active } = useCreateWidgetForm(kind, t, "create");
@@ -36,6 +43,7 @@ export default function CreateWidgetModal({ onClose }: { onClose: () => void }):
                 onSubmit={form.handleSubmit((v) =>
                     onSubmitCreateWidget(v, {
                         onSuccess: () => {
+                            toast.success(t("createSuccess"));
                             onClose();
                             router.refresh();
                         },

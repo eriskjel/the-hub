@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { DegradedError, HttpError } from "@/lib/widgets/fetchJson";
@@ -11,6 +11,12 @@ import {
     MAX_RETRIES,
     MIN_POLL_INTERVAL_MS,
 } from "@/utils/timers";
+
+// Tracks when we first observed isEnriched:false per cache key.
+// Cleaned up when enrichment completes or the 2-minute cap is hit.
+const enrichmentStartTs = new Map<string, number>();
+const ENRICHMENT_FAST_POLL_MS = 5_000;
+const ENRICHMENT_MAX_WAIT_MS = 2 * 60 * 1_000;
 import { queryKeys } from "@/lib/queryKeys";
 import { warnOnce } from "@/utils/warnOnce";
 
@@ -40,6 +46,7 @@ export function useWidgetData<D = unknown>(
     intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS,
     userId: string = "anon"
 ) {
+    const queryClient = useQueryClient();
     const { kind, instanceId } = widget;
     const entry = registry[kind];
     const settingsSig = JSON.stringify(widget.settings ?? {});
@@ -91,6 +98,21 @@ export function useWidgetData<D = unknown>(
         refetchInterval: (q) => {
             const err = q.state.error;
             if (err instanceof HttpError && err.status === 404) return false;
+
+            const data = q.state.data as { isEnriched?: boolean } | unknown[] | undefined;
+            if (
+                data &&
+                !Array.isArray(data) &&
+                (data as { isEnriched?: boolean }).isEnriched === false
+            ) {
+                if (!enrichmentStartTs.has(cacheKey)) enrichmentStartTs.set(cacheKey, Date.now());
+                const elapsed = Date.now() - enrichmentStartTs.get(cacheKey)!;
+                if (elapsed < ENRICHMENT_MAX_WAIT_MS) return ENRICHMENT_FAST_POLL_MS;
+                enrichmentStartTs.delete(cacheKey); // cap hit, give up
+            } else {
+                enrichmentStartTs.delete(cacheKey); // enriched, clean up
+            }
+
             return pollInterval;
         },
 
@@ -113,6 +135,17 @@ export function useWidgetData<D = unknown>(
             } catch {}
         }
     }, [query.error, cacheKey]);
+
+    // Clean up enrichment tracker when the query is removed from the cache
+    useEffect(() => {
+        const qKey = queryKeys.widget(userId, kind, instanceId, settingsSig);
+        const hash = JSON.stringify(qKey);
+        return queryClient.getQueryCache().subscribe((event) => {
+            if (event.type === "removed" && JSON.stringify(event.query.queryKey) === hash) {
+                enrichmentStartTs.delete(cacheKey);
+            }
+        });
+    }, [queryClient, userId, kind, instanceId, settingsSig, cacheKey]);
 
     return {
         data: query.data,

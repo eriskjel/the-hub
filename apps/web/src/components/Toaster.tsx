@@ -7,7 +7,7 @@ export function Toaster(): ReactElement {
     return (
         <SonnerToaster
             richColors
-            position="top-center"
+            position="bottom-right"
             toastOptions={{
                 style: { width: "fit-content", maxWidth: "min(calc(100vw - 2rem), 420px)" },
             }}

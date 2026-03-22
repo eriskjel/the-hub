@@ -4,6 +4,7 @@ import { getDashboardWidgets, type WidgetsResult } from "@/lib/widgets/getWidget
 import WidgetsGrid from "@/components/widgets/WidgetsGrid";
 import CreateWidgetButton from "@/components/widgets/CreateWidgetButton";
 import { Header, HeaderSkeleton } from "./Header";
+import { RefreshAllButton } from "./RefreshAllButton";
 import WidgetCardSkeleton from "@/components/widgets/WidgetCardSkeleton";
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -51,7 +52,12 @@ async function ActionsBar({ widgetsPromise }: { widgetsPromise: Promise<WidgetsR
         return result.offline ? <div className="h-10" /> : null;
     }
 
-    return <CreateWidgetButton backendUnreachable={result.stale ?? false} />;
+    return (
+        <div className="flex items-center gap-1">
+            <CreateWidgetButton backendUnreachable={result.stale ?? false} />
+            {!result.stale && <RefreshAllButton />}
+        </div>
+    );
 }
 
 function DashboardSkeleton(): ReactElement {
