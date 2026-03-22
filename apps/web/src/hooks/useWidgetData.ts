@@ -99,7 +99,11 @@ export function useWidgetData<D = unknown>(
             if (err instanceof HttpError && err.status === 404) return false;
 
             const data = q.state.data as { isEnriched?: boolean } | unknown[] | undefined;
-            if (data && !Array.isArray(data) && (data as { isEnriched?: boolean }).isEnriched === false) {
+            if (
+                data &&
+                !Array.isArray(data) &&
+                (data as { isEnriched?: boolean }).isEnriched === false
+            ) {
                 if (!enrichmentStartTs.has(cacheKey)) enrichmentStartTs.set(cacheKey, Date.now());
                 const elapsed = Date.now() - enrichmentStartTs.get(cacheKey)!;
                 if (elapsed < ENRICHMENT_MAX_WAIT_MS) return ENRICHMENT_FAST_POLL_MS;

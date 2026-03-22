@@ -19,7 +19,12 @@ import { cn } from "@/utils/cn";
 
 const EMPTY_SENTINEL = "__none__" as const;
 
-export type SelectOption = { value: string; label: string; description?: string; disabled?: boolean };
+export type SelectOption = {
+    value: string;
+    label: string;
+    description?: string;
+    disabled?: boolean;
+};
 
 function mapOption(o: SelectOption): SelectOption {
     if (o.value === "") return { ...o, value: EMPTY_SENTINEL };

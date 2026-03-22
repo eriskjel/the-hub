@@ -19,10 +19,10 @@ export function KindSelect({
             value={value}
             onChange={(v) => onChange(v as CreationKind)}
             options={ENABLED_KINDS.map((k) => ({
-            value: k,
-            label: t(`kinds.${k}`),
-            description: t(`kindDescriptions.${k}`),
-        }))}
+                value: k,
+                label: t(`kinds.${k}`),
+                description: t(`kindDescriptions.${k}`),
+            }))}
             help={t("kindHelp")}
         />
     );
