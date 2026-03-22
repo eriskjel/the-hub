@@ -27,12 +27,16 @@ function useWidgetQueryMeta(widget: AnyWidget, userId: string | null) {
     const [queryState, setQueryState] = useState(() => queryClient.getQueryState(qKey));
     const [, setTick] = useState(0);
 
+    const qKeyHash = JSON.stringify(qKey);
+
     useEffect(() => {
         setQueryState(queryClient.getQueryState(qKey));
-        return queryClient.getQueryCache().subscribe(() => {
+        return queryClient.getQueryCache().subscribe((event) => {
+            if (JSON.stringify(event.query.queryKey) !== qKeyHash) return;
             queueMicrotask(() => setQueryState(queryClient.getQueryState(qKey)));
         });
-    }, [queryClient, qKey]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [queryClient, qKeyHash]);
 
     // Re-render every 30s so the "5m ago" label stays accurate between fetches
     useEffect(() => {
