@@ -6,6 +6,7 @@ import "./globals.css";
 import { ReactNode } from "react";
 import { Toaster } from "@/components/Toaster";
 import ThemeInitializer from "@/components/ThemeInitializer";
+import { QueryProvider } from "@/components/QueryProvider";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
@@ -58,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <body
                 className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground min-h-dvh overflow-x-hidden antialiased`}
             >
-                {children}
+                <QueryProvider>{children}</QueryProvider>
                 <Toaster />
                 <SpeedInsights />
                 <Analytics />
