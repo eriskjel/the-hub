@@ -2,7 +2,7 @@
 
 import type { GroceryDealsWidget } from "@/widgets/schema";
 import { Deal, GroceryDealsResponse } from "@/widgets/grocery-deals/types";
-import React, { ReactElement, useId, useRef, useState } from "react";
+import React, { ReactElement, useEffect, useId, useState } from "react";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { useMobileExpandScrollAdjust } from "@/hooks/useMobileExpandScrollAdjust";
 
@@ -95,12 +95,26 @@ export default function GroceryDealsView({
 }): ReactElement {
     const t = useTranslations("widgets.create.groceryDeals.view");
     const [expanded, setExpanded] = useState(false);
+    const [listNeedsScroll, setListNeedsScroll] = useState(false);
     const listId = useId();
     const listRef = React.useRef<HTMLUListElement>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
     const toggleButtonRef = React.useRef<HTMLButtonElement>(null);
     const { deals: rawDeals, isEnriched } = normalizeData(data);
     const isMobileViewport = useIsMobileViewport();
+
+    useEffect(() => {
+        if (!expanded) {
+            setListNeedsScroll(false);
+            return;
+        }
+        // Check after the expand animation finishes (300ms transition)
+        const t = setTimeout(() => {
+            const el = listRef.current;
+            if (el) setListNeedsScroll(el.scrollHeight > el.clientHeight);
+        }, 310);
+        return () => clearTimeout(t);
+    }, [expanded, rawDeals.length]);
 
     useMobileExpandScrollAdjust({
         expanded,
@@ -132,7 +146,11 @@ export default function GroceryDealsView({
                 ref={listRef}
                 id={listId}
                 className={`widget-scrollbar space-y-1 transition-all duration-300 ease-in-out ${
-                    expanded ? "max-h-64 overflow-y-auto pr-2 md:pr-3" : "max-h-24 overflow-hidden"
+                    expanded
+                        ? listNeedsScroll
+                            ? "max-h-64 overflow-y-auto pr-2 md:pr-3"
+                            : "max-h-64 overflow-hidden"
+                        : "max-h-24 overflow-hidden"
                 }`}
                 aria-live="polite"
             >
@@ -218,26 +236,30 @@ function renderRows(
                             <div className="text-muted truncate text-xs">{sub}</div>
                         ) : null;
                     })()}
-                    {deal.validUntil ? (() => {
-                        const days = daysUntil(deal.validUntil);
-                        const cls =
-                            days !== null && days <= 1
-                                ? "text-error font-medium"
-                                : days !== null && days <= 3
-                                  ? "text-amber-500"
-                                  : "text-muted";
-                        return (
-                            <div className={`mt-0.5 text-[11px] ${cls}`}>
-                                {t("until")} {formatDate(deal.validUntil)}
-                            </div>
-                        );
-                    })() : null}
+                    {deal.validUntil
+                        ? (() => {
+                              const days = daysUntil(deal.validUntil);
+                              const cls =
+                                  days !== null && days <= 1
+                                      ? "text-error font-medium"
+                                      : days !== null && days <= 3
+                                        ? "text-amber-500"
+                                        : "text-muted";
+                              return (
+                                  <div className={`mt-0.5 text-[11px] ${cls}`}>
+                                      {t("until")} {formatDate(deal.validUntil)}
+                                  </div>
+                              );
+                          })()
+                        : null}
                 </div>
 
                 {/* RIGHT: fixed width so left side doesn't "move in" */}
                 <div className="shrink-0 grow-0 basis-28 text-right sm:basis-32">
                     {deal.discountPercent != null && deal.price === 0 ? (
-                        <div className="text-primary text-base font-bold">-{deal.discountPercent}%</div>
+                        <div className="text-primary text-base font-bold">
+                            -{deal.discountPercent}%
+                        </div>
                     ) : (
                         <div className="text-foreground text-base font-bold">
                             {formatPrice(deal.price)} {t("currency")}
@@ -248,7 +270,9 @@ function renderRows(
                             {formatPrice(deal.perPiecePrice)} {t("currency")}/stk
                         </div>
                     ) : null}
-                    {unitLine && deal.price !== 0 ? <div className="text-muted text-[11px]">{unitLine}</div> : null}
+                    {unitLine && deal.price !== 0 ? (
+                        <div className="text-muted text-[11px]">{unitLine}</div>
+                    ) : null}
                 </div>
             </li>
         );
