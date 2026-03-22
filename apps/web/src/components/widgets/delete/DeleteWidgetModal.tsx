@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactElement, useState } from "react";
+import { ReactElement } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
@@ -20,8 +21,17 @@ export function DeleteWidgetModal({
     onDeleted: () => void;
 }): ReactElement | null {
     const t = useTranslations("widgets.delete");
-    const [busy, setBusy] = useState(false);
-    const [err, setErr] = useState<string | null>(null);
+
+    const { mutate, isPending, error } = useMutation({
+        mutationFn: async () => {
+            const res = await deleteWidget(widgetId);
+            if (!res.ok) throw new Error(res.error ?? t("genericError"));
+        },
+        onSuccess: () => {
+            onClose();
+            onDeleted();
+        },
+    });
 
     if (!open) return null;
 
@@ -29,37 +39,23 @@ export function DeleteWidgetModal({
         <Modal
             title={t("title")}
             subtitle={t("subtitle", { name: widgetTitle })}
-            onClose={() => (busy ? null : onClose())}
+            onClose={() => (isPending ? null : onClose())}
         >
             <div className="space-y-4">
                 <p className="text-muted text-sm">{t("confirmText")}</p>
 
-                {err ? (
+                {error ? (
                     <div className="border-error-muted bg-error-subtle text-error rounded-md border px-3 py-2 text-sm">
-                        {err}
+                        {error.message}
                     </div>
                 ) : null}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
-                    <Button variant="outline" onClick={onClose} disabled={busy}>
+                    <Button variant="outline" onClick={onClose} disabled={isPending}>
                         {t("cancel")}
                     </Button>
-                    <Button
-                        onClick={async () => {
-                            setBusy(true);
-                            setErr(null);
-                            const res = await deleteWidget(widgetId);
-                            setBusy(false);
-                            if (!res.ok) {
-                                setErr(res.error ?? t("genericError"));
-                                return;
-                            }
-                            onClose();
-                            onDeleted();
-                        }}
-                        disabled={busy}
-                    >
-                        {busy ? t("deleting") : t("delete")}
+                    <Button onClick={() => mutate()} disabled={isPending}>
+                        {isPending ? t("deleting") : t("delete")}
                     </Button>
                 </div>
             </div>
