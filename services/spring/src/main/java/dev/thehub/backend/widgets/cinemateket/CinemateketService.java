@@ -509,9 +509,8 @@ public class CinemateketService {
                 }
             }
 
-            showings.add(
-                    new FilmShowingDto(title, director, filmYear, showTime.toString(), ticketUrl, filmUrl, organizer,
-                            filmFormat));
+            showings.add(new FilmShowingDto(title, director, filmYear, showTime.toString(), ticketUrl, filmUrl,
+                    organizer, filmFormat));
         }
     }
 

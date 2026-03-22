@@ -66,8 +66,7 @@ public record DealDto(String name, String store, double price, Double unitPrice,
         Double unitPriceMin, // computed from sizes (best-case per-kg)
         Double unitPriceMax, // computed from sizes (worst-case per-kg)
         Boolean multipack, // (pieceCountFrom != null && >1)
-        String displayName, String displayUnit, Double displayPricePerUnit,
-        Integer discountPercent) {
+        String displayName, String displayUnit, Double displayPricePerUnit, Integer discountPercent) {
 
     /**
      * Creates a copy of this deal with LLM display fields set. Used when merging
