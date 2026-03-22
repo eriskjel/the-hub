@@ -28,6 +28,8 @@ export type Deal = {
     displayUnit?: string;
     /** Price per display unit when set by Gemini */
     displayPricePerUnit?: number;
+    /** Percentage discount (e.g. 30 for -30%); set when no absolute price is available */
+    discountPercent?: number;
 };
 
 /** API response: list plus flag so frontend can refetch when enrichment completes */

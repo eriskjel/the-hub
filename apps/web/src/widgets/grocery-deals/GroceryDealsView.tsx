@@ -234,17 +234,21 @@ function renderRows(
                     })() : null}
                 </div>
 
-                {/* RIGHT: fixed width so left side doesn't “move in” */}
+                {/* RIGHT: fixed width so left side doesn't "move in" */}
                 <div className="shrink-0 grow-0 basis-28 text-right sm:basis-32">
-                    <div className="text-foreground text-base font-bold">
-                        {formatPrice(deal.price)} {t("currency")}
-                    </div>
+                    {deal.discountPercent != null && deal.price === 0 ? (
+                        <div className="text-primary text-base font-bold">-{deal.discountPercent}%</div>
+                    ) : (
+                        <div className="text-foreground text-base font-bold">
+                            {formatPrice(deal.price)} {t("currency")}
+                        </div>
+                    )}
                     {deal.multipack && typeof deal.perPiecePrice === "number" ? (
                         <div className="text-muted text-[11px]">
                             {formatPrice(deal.perPiecePrice)} {t("currency")}/stk
                         </div>
                     ) : null}
-                    {unitLine ? <div className="text-muted text-[11px]">{unitLine}</div> : null}
+                    {unitLine && deal.price !== 0 ? <div className="text-muted text-[11px]">{unitLine}</div> : null}
                 </div>
             </li>
         );

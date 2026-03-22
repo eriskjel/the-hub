@@ -53,6 +53,9 @@ package dev.thehub.backend.widgets.groceries.dto;
  *            optional display unit label (e.g. "kr/l", "kr/kg", "kr/stk")
  * @param displayPricePerUnit
  *            optional price per display unit when normalized by LLM
+ * @param discountPercent
+ *            percentage discount (e.g., 30 for "-30%"); set when no absolute
+ *            price is available (price will be 0.0)
  */
 public record DealDto(String name, String store, double price, Double unitPrice, // vendor-provided per baseUnit (e.g.,
                                                                                  // kr/kg)
@@ -63,7 +66,8 @@ public record DealDto(String name, String store, double price, Double unitPrice,
         Double unitPriceMin, // computed from sizes (best-case per-kg)
         Double unitPriceMax, // computed from sizes (worst-case per-kg)
         Boolean multipack, // (pieceCountFrom != null && >1)
-        String displayName, String displayUnit, Double displayPricePerUnit) {
+        String displayName, String displayUnit, Double displayPricePerUnit,
+        Integer discountPercent) {
 
     /**
      * Creates a copy of this deal with LLM display fields set. Used when merging
@@ -73,6 +77,6 @@ public record DealDto(String name, String store, double price, Double unitPrice,
         return new DealDto(name(), store(), price(), unitPrice(), validFrom(), validUntil(), image(), storeLogo(),
                 unit(), pieceCountFrom(), pieceCountTo(), unitSizeFrom(), unitSizeTo(), unitSymbol(), baseUnit(),
                 perPiecePrice(), unitPriceMin(), unitPriceMax(), multipack(), displayName, displayUnit,
-                displayPricePerUnit);
+                displayPricePerUnit, discountPercent());
     }
 }
