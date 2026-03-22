@@ -170,6 +170,7 @@
                     "showMore": "Vis {count} flere",
                     "showLess": "Vis færre",
                     "until": "til",
+                    "from": "fra",
                     "storeFallback": "butikk",
                     "currency": "kr"
                 },

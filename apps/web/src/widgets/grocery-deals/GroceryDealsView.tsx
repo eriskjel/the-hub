@@ -238,6 +238,16 @@ function renderRows(
                     })()}
                     {deal.validUntil
                         ? (() => {
+                              const isUpcoming =
+                                  deal.validFrom != null && new Date(deal.validFrom) > new Date();
+                              if (isUpcoming) {
+                                  return (
+                                      <div className="text-muted mt-0.5 text-[11px]">
+                                          {t("from")} {formatDate(deal.validFrom!)} – {t("until")}{" "}
+                                          {formatDate(deal.validUntil)}
+                                      </div>
+                                  );
+                              }
                               const days = daysUntil(deal.validUntil);
                               const cls =
                                   days !== null && days <= 1
