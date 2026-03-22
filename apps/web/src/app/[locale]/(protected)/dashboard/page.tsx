@@ -55,7 +55,7 @@ async function ActionsBar({ widgetsPromise }: { widgetsPromise: Promise<WidgetsR
     return (
         <div className="flex items-center gap-1">
             <CreateWidgetButton backendUnreachable={result.stale ?? false} />
-            <RefreshAllButton />
+            {!result.stale && <RefreshAllButton />}
         </div>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AnyWidget } from "@/widgets/schema";
 import { registry } from "@/widgets";
 import { DegradedError, HttpError } from "@/lib/widgets/fetchJson";
@@ -46,6 +46,7 @@ export function useWidgetData<D = unknown>(
     intervalMs: number = DEFAULT_WIDGET_DATA_INTERVAL_MS,
     userId: string = "anon"
 ) {
+    const queryClient = useQueryClient();
     const { kind, instanceId } = widget;
     const entry = registry[kind];
     const settingsSig = JSON.stringify(widget.settings ?? {});
@@ -134,6 +135,17 @@ export function useWidgetData<D = unknown>(
             } catch {}
         }
     }, [query.error, cacheKey]);
+
+    // Clean up enrichment tracker when the query is removed from the cache
+    useEffect(() => {
+        const qKey = queryKeys.widget(userId, kind, instanceId, settingsSig);
+        const hash = JSON.stringify(qKey);
+        return queryClient.getQueryCache().subscribe((event) => {
+            if (event.type === "removed" && JSON.stringify(event.query.queryKey) === hash) {
+                enrichmentStartTs.delete(cacheKey);
+            }
+        });
+    }, [queryClient, userId, kind, instanceId, settingsSig, cacheKey]);
 
     return {
         data: query.data,

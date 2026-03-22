@@ -34,7 +34,7 @@ export default function StaleState({
 
     useEffect(() => {
         const ts = oldestCacheTs(widgets, userId);
-        if (!ts) return;
+        if (ts == null) return;
         const minutes = Math.floor((Date.now() - ts) / 60_000);
         if (minutes < 60) {
             setCacheAge(t("staleAgeMinutes", { count: minutes }));

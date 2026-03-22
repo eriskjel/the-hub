@@ -109,11 +109,11 @@ export default function GroceryDealsView({
             return;
         }
         // Check after the expand animation finishes (300ms transition)
-        const t = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             const el = listRef.current;
             if (el) setListNeedsScroll(el.scrollHeight > el.clientHeight);
         }, 310);
-        return () => clearTimeout(t);
+        return () => clearTimeout(timeoutId);
     }, [expanded, rawDeals.length]);
 
     useMobileExpandScrollAdjust({
