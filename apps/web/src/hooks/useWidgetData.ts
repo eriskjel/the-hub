@@ -11,6 +11,12 @@ import {
     MAX_RETRIES,
     MIN_POLL_INTERVAL_MS,
 } from "@/utils/timers";
+
+// Tracks when we first observed isEnriched:false per cache key.
+// Cleaned up when enrichment completes or the 2-minute cap is hit.
+const enrichmentStartTs = new Map<string, number>();
+const ENRICHMENT_FAST_POLL_MS = 5_000;
+const ENRICHMENT_MAX_WAIT_MS = 2 * 60 * 1_000;
 import { queryKeys } from "@/lib/queryKeys";
 import { warnOnce } from "@/utils/warnOnce";
 
@@ -91,6 +97,17 @@ export function useWidgetData<D = unknown>(
         refetchInterval: (q) => {
             const err = q.state.error;
             if (err instanceof HttpError && err.status === 404) return false;
+
+            const data = q.state.data as { isEnriched?: boolean } | unknown[] | undefined;
+            if (data && !Array.isArray(data) && (data as { isEnriched?: boolean }).isEnriched === false) {
+                if (!enrichmentStartTs.has(cacheKey)) enrichmentStartTs.set(cacheKey, Date.now());
+                const elapsed = Date.now() - enrichmentStartTs.get(cacheKey)!;
+                if (elapsed < ENRICHMENT_MAX_WAIT_MS) return ENRICHMENT_FAST_POLL_MS;
+                enrichmentStartTs.delete(cacheKey); // cap hit, give up
+            } else {
+                enrichmentStartTs.delete(cacheKey); // enriched, clean up
+            }
+
             return pollInterval;
         },
 

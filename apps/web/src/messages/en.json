@@ -59,13 +59,21 @@
         "welcome": "Welcome, {name}!",
         "states": {
             "staleBanner": "Showing cached data — live updates unavailable",
+            "staleAgeMinutes": "Last updated {count, plural, one {# minute} other {# minutes}} ago",
+            "staleAgeHours": "Last updated {count, plural, one {# hour} other {# hours}} ago",
             "offlineTitle": "Widgets temporarily unavailable",
             "offlineBody": "We can’t reach the service right now. Try again in a bit.",
-            "emptyTitle": "No widgets yet",
-            "emptyBody": "Add your first widget to get started.",
+            "emptyTitle": "Your deals, all in one place",
+            "emptyBody": "Save a search like 'monster' and see deals from Rema, Kiwi, Meny and more — updated automatically.",
+            "emptyGroceryShortcut": "Add a grocery search",
+            "updatedJustNow": "just now",
+            "updatedSecondsAgo": "{count}s ago",
+            "updatedMinutesAgo": "{count}m ago",
+            "updatedHoursAgo": "{count}h ago",
             "errorTitle": "Unable to Load Dashboard",
             "errorBody": "An error occurred.",
             "errorTryRefresh": "Please try refreshing the page.",
+            "errorRetry": "Try again",
             "loading": "Loading…",
             "unknownWidget": "Unknown widget: {kind}",
             "backendUnreachableAction": "Not possible while the backend is unreachable."
@@ -114,9 +122,16 @@
                 "countdown": "Countdown",
                 "cinemateket": "Cinemateket"
             },
+            "kindDescriptions": {
+                "grocery-deals": "Track deals across Rema, Kiwi, Meny and more for any search term",
+                "server-pings": "Monitor whether a URL is reachable",
+                "countdown": "Countdown to Trippel-Trumf or DNB Supertilbud",
+                "cinemateket": "Upcoming showings at Cinemateket Trondheim"
+            },
             "cancel": "Cancel",
             "submit": "Create widget",
             "submitting": "Creating…",
+            "createSuccess": "Widget created!",
             "errors": {
                 "duplicate_provider": "You already have a countdown for this provider.",
                 "duplicate_target": "You already have a widget with this target.",
@@ -151,6 +166,7 @@
                 "lonLabel": "Longitude (optional)",
                 "view": {
                     "noDeals": "No deals right now.",
+                    "enriching": "Refining results…",
                     "showMore": "Show {count} more",
                     "showLess": "Show fewer",
                     "until": "until",

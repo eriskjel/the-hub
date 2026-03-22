@@ -72,7 +72,7 @@ function WidgetWithData({
     );
 
     if (isPending) return <WidgetContentSkeleton />;
-    if (isError && error) return <WidgetErrorBox error={error} />;
+    if (isError && error) return <WidgetErrorBox error={error} refetch={refetch} />;
 
     const Component = entry.Component as (props: {
         data: unknown;

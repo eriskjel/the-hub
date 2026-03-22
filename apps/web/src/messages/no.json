@@ -59,13 +59,21 @@
         "welcome": "Velkommen, {name}!",
         "states": {
             "staleBanner": "Viser mellomlagrede data — sanntidsoppdateringer er utilgjengelige",
+            "staleAgeMinutes": "Sist oppdatert for {count, plural, one {# minutt} other {# minutter}} siden",
+            "staleAgeHours": "Sist oppdatert for {count, plural, one {# time} other {# timer}} siden",
             "offlineTitle": "Widgets er midlertidig utilgjengelige",
             "offlineBody": "Vi får ikke kontakt med tjenesten akkurat nå. Prøv igjen om litt.",
-            "emptyTitle": "Ingen widgets enda",
-            "emptyBody": "Legg til din første widget for å komme i gang.",
+            "emptyTitle": "Dine tilbud, på ett sted",
+            "emptyBody": "Lagre et søk som 'monster' og se tilbud fra Rema, Kiwi, Meny og flere — oppdateres automatisk.",
+            "emptyGroceryShortcut": "Legg til matsøk",
+            "updatedJustNow": "akkurat nå",
+            "updatedSecondsAgo": "{count}s siden",
+            "updatedMinutesAgo": "{count}m siden",
+            "updatedHoursAgo": "{count}t siden",
             "errorTitle": "Kunne ikke laste dashbord",
             "errorBody": "Noe gikk galt.",
             "errorTryRefresh": "Prøv å oppdatere siden.",
+            "errorRetry": "Prøv igjen",
             "loading": "Laster…",
             "unknownWidget": "Ukjent widget: {kind}",
             "backendUnreachableAction": "Ikke mulig når backend er utilgjengelig."
@@ -114,9 +122,16 @@
                 "countdown": "Nedtelling",
                 "cinemateket": "Cinemateket"
             },
+            "kindDescriptions": {
+                "grocery-deals": "Følg med på tilbud fra Rema, Kiwi, Meny og flere for et søkeord",
+                "server-pings": "Sjekk om en URL er tilgjengelig",
+                "countdown": "Nedtelling til Trippel-Trumf eller DNB Supertilbud",
+                "cinemateket": "Kommende visninger på Cinemateket Trondheim"
+            },
             "cancel": "Avbryt",
             "submit": "Opprett widget",
             "submitting": "Oppretter…",
+            "createSuccess": "Widget opprettet!",
             "errors": {
                 "duplicate_provider": "Du har allerede en nedtelling for denne tilbyderen.",
                 "duplicate_target": "Du har allerede en widget med dette målet.",
@@ -151,6 +166,7 @@
                 "lonLabel": "Lengdegrad (valgfritt)",
                 "view": {
                     "noDeals": "Ingen tilbud akkurat nå.",
+                    "enriching": "Bearbeider resultater…",
                     "showMore": "Vis {count} flere",
                     "showLess": "Vis færre",
                     "until": "til",

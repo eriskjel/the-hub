@@ -53,7 +53,7 @@ export function FieldText(
     );
 }
 
-export type SelectOption = { value: string; label: string; disabled?: boolean };
+export type SelectOption = { value: string; label: string; description?: string; disabled?: boolean };
 
 export function FieldSelect({
     label,

@@ -2,13 +2,10 @@
 
 import type { GroceryDealsWidget } from "@/widgets/schema";
 import { Deal, GroceryDealsResponse } from "@/widgets/grocery-deals/types";
-import React, { ReactElement, useEffect, useId, useRef, useState } from "react";
+import React, { ReactElement, useId, useRef, useState } from "react";
 import { useIsMobileViewport } from "@/hooks/useIsMobileViewport";
 import { useMobileExpandScrollAdjust } from "@/hooks/useMobileExpandScrollAdjust";
 
-/** Refetch when backend returned raw list (Gemini still running). Delay 20s so first refetch runs after typical Gemini (e.g. 6–17s); then repeat to catch very slow runs (20–45s). */
-const REFETCH_DELAY_MS = 20_000;
-const MAX_REFETCH_ATTEMPTS = 4;
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
@@ -78,6 +75,15 @@ function normalizeData(data: Deal[] | GroceryDealsResponse | null | undefined): 
     return { deals: data.deals ?? [], isEnriched: data.isEnriched ?? true };
 }
 
+function EnrichingBadge({ label }: { label: string }): ReactElement {
+    return (
+        <div className="text-muted mb-1 flex items-center gap-1.5 text-[11px]">
+            <span className="bg-primary h-1.5 w-1.5 animate-pulse rounded-full" />
+            {label}
+        </div>
+    );
+}
+
 export default function GroceryDealsView({
     data,
     widget,
@@ -94,8 +100,6 @@ export default function GroceryDealsView({
     const containerRef = React.useRef<HTMLDivElement>(null);
     const toggleButtonRef = React.useRef<HTMLButtonElement>(null);
     const { deals: rawDeals, isEnriched } = normalizeData(data);
-    const refetchScheduledRef = useRef(false);
-    const refetchCountRef = useRef(0);
     const isMobileViewport = useIsMobileViewport();
 
     useMobileExpandScrollAdjust({
@@ -105,24 +109,13 @@ export default function GroceryDealsView({
         toggleButtonRef,
     });
 
-    // Fast-first, refetch-later: when data is not enriched, schedule refetches every REFETCH_DELAY_MS (up to MAX_REFETCH_ATTEMPTS)
-    useEffect(() => {
-        if (isEnriched || !refetch || refetchCountRef.current >= MAX_REFETCH_ATTEMPTS) return;
-        if (refetchScheduledRef.current) return;
-        refetchScheduledRef.current = true;
-        const tId = setTimeout(() => {
-            refetchCountRef.current += 1;
-            refetchScheduledRef.current = false;
-            refetch();
-        }, REFETCH_DELAY_MS);
-        return () => {
-            clearTimeout(tId);
-            refetchScheduledRef.current = false;
-        };
-    }, [isEnriched, refetch]);
-
     if (!rawDeals.length) {
-        return <div className="text-muted-light text-sm">{t("noDeals")}</div>;
+        return (
+            <div className="space-y-2">
+                {!isEnriched && <EnrichingBadge label={t("enriching")} />}
+                <div className="text-muted-light text-sm">{t("noDeals")}</div>
+            </div>
+        );
     }
 
     const max = widget.settings.maxResults;
@@ -134,6 +127,7 @@ export default function GroceryDealsView({
 
     return (
         <div ref={containerRef}>
+            {!isEnriched && <EnrichingBadge label={t("enriching")} />}
             <ul
                 ref={listRef}
                 id={listId}
@@ -174,6 +168,11 @@ export default function GroceryDealsView({
 }
 
 const formatDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("no-NO") : "");
+
+function daysUntil(iso?: string): number | null {
+    if (!iso) return null;
+    return Math.ceil((new Date(iso).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
 
 function renderRows(
     rows: Deal[],
@@ -219,11 +218,20 @@ function renderRows(
                             <div className="text-muted truncate text-xs">{sub}</div>
                         ) : null;
                     })()}
-                    {deal.validUntil ? (
-                        <div className="text-muted mt-0.5 text-[11px]">
-                            {t("until")} {formatDate(deal.validUntil)}
-                        </div>
-                    ) : null}
+                    {deal.validUntil ? (() => {
+                        const days = daysUntil(deal.validUntil);
+                        const cls =
+                            days !== null && days <= 1
+                                ? "text-error font-medium"
+                                : days !== null && days <= 3
+                                  ? "text-amber-500"
+                                  : "text-muted";
+                        return (
+                            <div className={`mt-0.5 text-[11px] ${cls}`}>
+                                {t("until")} {formatDate(deal.validUntil)}
+                            </div>
+                        );
+                    })() : null}
                 </div>
 
                 {/* RIGHT: fixed width so left side doesn't “move in” */}
