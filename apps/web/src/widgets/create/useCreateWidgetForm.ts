@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import { z } from "zod";
 import { type Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +45,11 @@ export function useCreateWidgetForm(
         },
     });
 
-    useEffect(() => {
+    // useLayoutEffect so this reset runs before any child useEffect (e.g. the
+    // location bootstrap in useLocationControls) on the same commit. Without
+    // this, the child bootstrap sets localStorage values and the reset wipes
+    // them, breaking the "last used location" suggestion after a kind switch.
+    useLayoutEffect(() => {
         // Skip if the form already holds this kind — avoids wiping form state on
         // initial mount (including values pre-filled from localStorage).
         if (form.getValues("kind") === kind) return;

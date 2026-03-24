@@ -95,7 +95,7 @@ function LocationSection({
             )}
 
             {cityLookupBusy ? (
-                <div className="flex items-center gap-2 text-xs text-white/70">
+                <div className="text-muted flex items-center gap-2 text-xs">
                     <MapPin className="h-3.5 w-3.5" aria-hidden />
                     <span>{t("location.searching")}</span>
                 </div>

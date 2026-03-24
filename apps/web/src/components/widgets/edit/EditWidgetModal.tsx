@@ -11,6 +11,7 @@ import { updateWidget } from "@/lib/widgets/updateWidget";
 import { purgeWidgetLocalCache } from "@/lib/widgets/purgeCaches";
 import { useEditWidgetPrefill } from "./useEditWidgetPrefill";
 import { saveLastUsedLocation } from "@/lib/location/lastUsed";
+import { reverseGeocode } from "@/lib/location/api";
 
 type EditableWidget = Extract<AnyWidget, { kind: EditableKind }>;
 
@@ -88,8 +89,22 @@ function EditWidgetModalContent({
                                 lat?: number;
                                 lon?: number;
                             };
-                            if (s.city && typeof s.lat === "number" && typeof s.lon === "number") {
-                                saveLastUsedLocation({ city: s.city, lat: s.lat, lon: s.lon });
+                            if (typeof s.lat === "number" && typeof s.lon === "number") {
+                                if (s.city) {
+                                    saveLastUsedLocation({ city: s.city, lat: s.lat, lon: s.lon });
+                                } else {
+                                    // GPS mode where reverse geocode didn't complete — try once more
+                                    reverseGeocode(s.lat, s.lon)
+                                        .then(({ city }) => {
+                                            if (city)
+                                                saveLastUsedLocation({
+                                                    city,
+                                                    lat: s.lat!,
+                                                    lon: s.lon!,
+                                                });
+                                        })
+                                        .catch(() => {});
+                                }
                             }
                         }
                         onClose();
