@@ -3,7 +3,7 @@
 import { ReactElement } from "react";
 import { FieldText } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
-import { Crosshair, History, MapPin, X } from "lucide-react";
+import { Crosshair, MapPin, X } from "lucide-react";
 import { Divider } from "@/components/ui/Divider";
 import { useLocationControls } from "@/hooks/useLocationControls";
 import { GroceryErrors, GroceryForm } from "./types";
@@ -81,7 +81,7 @@ function LocationSection({
                     type="text"
                     aria-label={t("location.citySearchLabel")}
                     placeholder={t("location.citySearchPlaceholder")}
-                    value={cityInput}
+                    value={fromSuggestion ? "" : cityInput}
                     onChange={(e) => onCityInputChange(e.target.value)}
                     className={[
                         "border-border bg-surface text-foreground placeholder-muted w-full rounded-xl border px-3 py-2",
@@ -97,25 +97,32 @@ function LocationSection({
                     <MapPin className="h-3.5 w-3.5" aria-hidden />
                     <span>{t("location.searching")}</span>
                 </div>
+            ) : fromSuggestion && mode === "city" && hasCoords ? (
+                <div className="text-muted flex items-center gap-2 text-xs">
+                    <MapPin className="text-success h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="flex-1">
+                        {t("location.usingCityLastTime", { city: cityLabel ?? "" })}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onResetLocation}
+                        aria-label={t("location.clearSelection")}
+                        className="hover:text-foreground rounded p-0.5 transition-colors"
+                    >
+                        <X className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                </div>
             ) : mode === "city" && hasCoords ? (
-                <div>
-                    <div className="bg-success-subtle text-success ring-success-subtle inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ring-1">
-                        <MapPin className="h-3.5 w-3.5" aria-hidden />
-                        <span>
-                            {cityLabel
-                                ? t("location.usingCity", { city: cityLabel })
-                                : t("location.usingCoords", {
-                                      lat: fmtCoord(lat),
-                                      lon: fmtCoord(lon),
-                                  })}
-                        </span>
-                    </div>
-                    {fromSuggestion && (
-                        <p className="text-muted mt-1 flex items-center gap-1 text-xs">
-                            <History className="h-3 w-3" aria-hidden />
-                            {t("location.lastUsedHint")}
-                        </p>
-                    )}
+                <div className="bg-success-subtle text-success ring-success-subtle inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ring-1">
+                    <MapPin className="h-3.5 w-3.5" aria-hidden />
+                    <span>
+                        {cityLabel
+                            ? t("location.usingCity", { city: cityLabel })
+                            : t("location.usingCoords", {
+                                  lat: fmtCoord(lat),
+                                  lon: fmtCoord(lon),
+                              })}
+                    </span>
                 </div>
             ) : null}
 

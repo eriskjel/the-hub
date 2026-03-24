@@ -46,6 +46,9 @@ export function useCreateWidgetForm(
     });
 
     useEffect(() => {
+        // Skip if the form already holds this kind — avoids wiping form state on
+        // initial mount (including values pre-filled from localStorage).
+        if (form.getValues("kind") === kind) return;
         const next = creationRegistry[kind];
         form.reset({
             kind: next.kind,
