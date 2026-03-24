@@ -67,17 +67,21 @@ public class ProviderCacheDao {
                 r.confidence(), r.sourceUrl(), tsOrNull(r.fetchedAt()), tsOrNull(r.validUntil()));
     }
 
-    /** Mark the provider's current next date as admin-confirmed (not tentative). Returns rows updated. */
+    /**
+     * Mark the provider's current next date as admin-confirmed (not tentative).
+     * Returns rows updated.
+     */
     public int confirm(String providerId) {
-        return jdbc.update(
-                "update public.countdown_provider_cache set admin_confirmed = true where provider_id = ?",
+        return jdbc.update("update public.countdown_provider_cache set admin_confirmed = true where provider_id = ?",
                 providerId);
     }
 
-    /** Remove the admin confirmation, reverting to the computed tentative state. Returns rows updated. */
+    /**
+     * Remove the admin confirmation, reverting to the computed tentative state.
+     * Returns rows updated.
+     */
     public int unconfirm(String providerId) {
-        return jdbc.update(
-                "update public.countdown_provider_cache set admin_confirmed = false where provider_id = ?",
+        return jdbc.update("update public.countdown_provider_cache set admin_confirmed = false where provider_id = ?",
                 providerId);
     }
 

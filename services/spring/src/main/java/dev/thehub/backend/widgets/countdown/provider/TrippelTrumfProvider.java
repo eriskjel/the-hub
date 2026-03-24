@@ -71,8 +71,8 @@ public class TrippelTrumfProvider implements CountdownProvider {
 
     /**
      * Short-lived in-process cache so next(), previous(), isTentative(), and
-     * validUntil() share one scrape per resolver invocation.
-     * Guarded by {@code this} — use {@link #mergedWindows()} to access.
+     * validUntil() share one scrape per resolver invocation. Guarded by
+     * {@code this} — use {@link #mergedWindows()} to access.
      */
     private List<MergedWindow> mergedWindowCache;
     private Instant mergedCacheExpiry = Instant.EPOCH;

@@ -50,7 +50,8 @@ public class CountdownResolver {
      *            stable provider identifier (see {@code CountdownProvider#id()})
      * @param now
      *            reference instant used for freshness and provider logic
-     * @return ProviderResult with next/previous instants and tentative/verified flags
+     * @return ProviderResult with next/previous instants and tentative/verified
+     *         flags
      * @throws IllegalArgumentException
      *             if the provider id is unknown
      */
@@ -79,12 +80,12 @@ public class CountdownResolver {
         var prev = p.previous(now).orElse(null);
         var tentative = p.isTentative(now);
 
-        // admin_confirmed carries over when the event is on the same Oslo date — mirrors
+        // admin_confirmed carries over when the event is on the same Oslo date —
+        // mirrors
         // the SQL CASE in ProviderCacheDao.upsert (date comparison in Europe/Oslo).
         // Raw next_iso can change within the same event day (start→end when ongoing),
         // so we compare LocalDate instead of the raw instant.
-        boolean adminConfirmed = cached != null
-                && next != null && cached.nextIso() != null
+        boolean adminConfirmed = cached != null && next != null && cached.nextIso() != null
                 && LocalDate.ofInstant(next, OSLO).equals(LocalDate.ofInstant(cached.nextIso(), OSLO))
                 && cached.adminConfirmed();
 
