@@ -75,22 +75,24 @@ function LocationSection({
         <div className="space-y-3">
             <div className="text-sm font-medium">{t("location.sectionTitle")}</div>
 
-            {/* City search — always visible so the user can keep editing */}
-            <div className="space-y-1.5">
-                <input
-                    type="text"
-                    aria-label={t("location.citySearchLabel")}
-                    placeholder={t("location.citySearchPlaceholder")}
-                    value={fromSuggestion ? "" : cityInput}
-                    onChange={(e) => onCityInputChange(e.target.value)}
-                    className={[
-                        "border-border bg-surface text-foreground placeholder-muted w-full rounded-xl border px-3 py-2",
-                        "focus:border-border-subtle focus:ring-primary/20 outline-none focus:ring-2",
-                        cityErr ? "border-error" : "",
-                    ].join(" ")}
-                />
-                {cityErr && <p className="text-error text-xs">{cityErr}</p>}
-            </div>
+            {/* City search — hidden when a suggestion is active */}
+            {!fromSuggestion && (
+                <div className="space-y-1.5">
+                    <input
+                        type="text"
+                        aria-label={t("location.citySearchLabel")}
+                        placeholder={t("location.citySearchPlaceholder")}
+                        value={cityInput}
+                        onChange={(e) => onCityInputChange(e.target.value)}
+                        className={[
+                            "border-border bg-surface text-foreground placeholder-muted w-full rounded-xl border px-3 py-2",
+                            "focus:border-border-subtle focus:ring-primary/20 outline-none focus:ring-2",
+                            cityErr ? "border-error" : "",
+                        ].join(" ")}
+                    />
+                    {cityErr && <p className="text-error text-xs">{cityErr}</p>}
+                </div>
+            )}
 
             {cityLookupBusy ? (
                 <div className="flex items-center gap-2 text-xs text-white/70">
@@ -107,7 +109,7 @@ function LocationSection({
                         type="button"
                         onClick={onResetLocation}
                         aria-label={t("location.clearSelection")}
-                        className="hover:text-foreground rounded p-0.5 transition-colors"
+                        className="hover:text-foreground cursor-pointer rounded p-0.5 transition-colors"
                     >
                         <X className="h-3.5 w-3.5" aria-hidden />
                     </button>
@@ -126,10 +128,10 @@ function LocationSection({
                 </div>
             ) : null}
 
-            <Divider label={t("location.or")} />
+            {!fromSuggestion && <Divider label={t("location.or")} />}
 
-            {/* GPS — shows confirmation banner when resolved, button otherwise */}
-            {mode === "gps" && hasCoords ? (
+            {/* GPS — hidden while suggestion is active, shows confirmation banner when resolved */}
+            {!fromSuggestion && mode === "gps" && hasCoords ? (
                 <div
                     role="status"
                     aria-live="polite"
@@ -156,7 +158,7 @@ function LocationSection({
                         <span>{t("location.clearSelection")}</span>
                     </button>
                 </div>
-            ) : (
+            ) : !fromSuggestion ? (
                 <>
                     <button
                         type="button"
@@ -173,7 +175,7 @@ function LocationSection({
                     </button>
                     {geoErr ? <div className="text-error mt-1 text-xs">{geoErr}</div> : null}
                 </>
-            )}
+            ) : null}
         </div>
     );
 }
