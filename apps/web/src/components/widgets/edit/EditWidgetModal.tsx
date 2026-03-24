@@ -10,6 +10,7 @@ import { type EditableKind, isEditableKind } from "@/widgets/create/registry";
 import { updateWidget } from "@/lib/widgets/updateWidget";
 import { purgeWidgetLocalCache } from "@/lib/widgets/purgeCaches";
 import { useEditWidgetPrefill } from "./useEditWidgetPrefill";
+import { saveLastUsedLocation } from "@/lib/location/lastUsed";
 
 type EditableWidget = Extract<AnyWidget, { kind: EditableKind }>;
 
@@ -81,6 +82,16 @@ function EditWidgetModalContent({
                 onSubmit={form.handleSubmit(async (values: BaseForm) => {
                     const res = await updateWidget(widget.instanceId, values);
                     if (res.ok) {
+                        if (values.kind === "grocery-deals") {
+                            const s = values.settings as {
+                                city?: string;
+                                lat?: number;
+                                lon?: number;
+                            };
+                            if (s.city && typeof s.lat === "number" && typeof s.lon === "number") {
+                                saveLastUsedLocation({ city: s.city, lat: s.lat, lon: s.lon });
+                            }
+                        }
                         onClose();
                         purgeWidgetLocalCache(userId, widget.kind, widget.instanceId);
                         router.refresh();

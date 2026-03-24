@@ -11,6 +11,7 @@ import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetF
 import { onSubmitCreateWidget } from "@/widgets/create/onSubmitCreateWidget";
 import { KindSelect } from "@/widgets/create/KindSelect";
 import type { Path } from "react-hook-form";
+import { saveLastUsedLocation } from "@/lib/location/lastUsed";
 
 type AllowedErrorPaths = "settings.provider" | "settings.targetIso" | "settings.query";
 
@@ -43,6 +44,21 @@ export default function CreateWidgetModal({
                 onSubmit={form.handleSubmit((v) =>
                     onSubmitCreateWidget(v, {
                         onSuccess: () => {
+                            const vals = form.getValues();
+                            if (vals.kind === "grocery-deals") {
+                                const s = vals.settings as {
+                                    city?: string;
+                                    lat?: number;
+                                    lon?: number;
+                                };
+                                if (
+                                    s.city &&
+                                    typeof s.lat === "number" &&
+                                    typeof s.lon === "number"
+                                ) {
+                                    saveLastUsedLocation({ city: s.city, lat: s.lat, lon: s.lon });
+                                }
+                            }
                             toast.success(t("createSuccess"));
                             onClose();
                             router.refresh();

@@ -7,6 +7,7 @@ import {
     reverseGeocode as defReverseGeocode,
 } from "@/lib/location/api";
 import { isAbortError } from "@/utils/http";
+import { loadLastUsedLocation } from "@/lib/location/lastUsed";
 
 const CITY_SEARCH_DEBOUNCE_MS = 350 as const;
 const GEOLOCATION_TIMEOUT_MS = 10_000 as const;
@@ -36,6 +37,7 @@ export function useLocationControls(
     const [cityLookupErr, setCityLookupErr] = useState<string | null>(null);
     const [cityInput, setCityInput] = useState("");
     const [mode, setMode] = useState<"gps" | "city" | null>(null);
+    const [fromSuggestion, setFromSuggestion] = useState(false);
 
     const debounce = useDebouncedCallback(CITY_SEARCH_DEBOUNCE_MS);
     const activeCityRequest = useRef<AbortController | null>(null);
@@ -98,13 +100,34 @@ export function useLocationControls(
         } else if (savedCity) {
             setMode("city");
         } else {
-            setMode(null);
+            // No explicit initial — fall back to last used location (create mode)
+            const last = loadLastUsedLocation();
+            if (last) {
+                setCityInput(last.city);
+                form.setValue("settings.city", last.city, {
+                    shouldValidate: false,
+                    shouldDirty: false,
+                });
+                form.setValue("settings.lat", last.lat, {
+                    shouldValidate: false,
+                    shouldDirty: false,
+                });
+                form.setValue("settings.lon", last.lon, {
+                    shouldValidate: false,
+                    shouldDirty: false,
+                });
+                setMode("city");
+                setFromSuggestion(true);
+            } else {
+                setMode(null);
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const resetLocation = () => {
         setMode(null);
+        setFromSuggestion(false);
         setCityLookupErr(null);
         setGeoErr(null);
         if (activeCityRequest.current) {
@@ -126,6 +149,7 @@ export function useLocationControls(
     };
 
     const onUseMyLocation = () => {
+        setFromSuggestion(false);
         // cancel in-flight city request
         if (activeCityRequest.current) {
             activeCityRequest.current.abort();
@@ -182,6 +206,7 @@ export function useLocationControls(
     };
 
     const onCityInputChange = (value: string) => {
+        setFromSuggestion(false);
         const q = value.trim();
         setCityInput(value);
         setCityLookupErr(null);
@@ -209,7 +234,8 @@ export function useLocationControls(
                     displayName,
                 } = await geocodeCity(q, controller.signal);
                 if (!controller.signal.aborted) {
-                    setCoords(vlat, vlon, displayName ?? q);
+                    const shortName = (displayName ?? q).split(",")[0].trim();
+                    setCoords(vlat, vlon, shortName);
                     setMode("city");
                     setCityLookupBusy(false);
                 }
@@ -233,6 +259,7 @@ export function useLocationControls(
         cityInput,
         cityLookupBusy,
         cityLookupErr,
+        fromSuggestion,
         onUseMyLocation,
         onResetLocation: resetLocation,
         onCityInputChange,
