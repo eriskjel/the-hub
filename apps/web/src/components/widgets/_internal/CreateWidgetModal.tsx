@@ -11,6 +11,8 @@ import { BaseForm, useCreateWidgetForm } from "@/widgets/create/useCreateWidgetF
 import { onSubmitCreateWidget } from "@/widgets/create/onSubmitCreateWidget";
 import { KindSelect } from "@/widgets/create/KindSelect";
 import type { Path } from "react-hook-form";
+import { saveLastUsedLocation } from "@/lib/location/lastUsed";
+import { reverseGeocode } from "@/lib/location/api";
 
 type AllowedErrorPaths = "settings.provider" | "settings.targetIso" | "settings.query";
 
@@ -43,6 +45,34 @@ export default function CreateWidgetModal({
                 onSubmit={form.handleSubmit((v) =>
                     onSubmitCreateWidget(v, {
                         onSuccess: () => {
+                            if (v.kind === "grocery-deals") {
+                                const s = v.settings as {
+                                    city?: string;
+                                    lat?: number;
+                                    lon?: number;
+                                };
+                                if (typeof s.lat === "number" && typeof s.lon === "number") {
+                                    if (s.city) {
+                                        saveLastUsedLocation({
+                                            city: s.city,
+                                            lat: s.lat,
+                                            lon: s.lon,
+                                        });
+                                    } else {
+                                        // GPS mode where reverse geocode didn't complete — try once more
+                                        reverseGeocode(s.lat, s.lon)
+                                            .then(({ city }) => {
+                                                if (city)
+                                                    saveLastUsedLocation({
+                                                        city,
+                                                        lat: s.lat!,
+                                                        lon: s.lon!,
+                                                    });
+                                            })
+                                            .catch(() => {});
+                                    }
+                                }
+                            }
                             toast.success(t("createSuccess"));
                             onClose();
                             router.refresh();

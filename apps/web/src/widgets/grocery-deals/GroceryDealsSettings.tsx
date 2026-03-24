@@ -3,8 +3,8 @@
 import { ReactElement } from "react";
 import { FieldText } from "@/components/ui/Fields";
 import { useTranslations } from "next-intl";
-import { Divider } from "@/components/ui/Divider";
 import { Crosshair, MapPin, X } from "lucide-react";
+import { Divider } from "@/components/ui/Divider";
 import { useLocationControls } from "@/hooks/useLocationControls";
 import { GroceryErrors, GroceryForm } from "./types";
 import { fmtCoord } from "@/widgets/grocery-deals/format";
@@ -61,6 +61,7 @@ function LocationSection({
     cityInput,
     cityLookupBusy,
     cityLookupErr,
+    fromSuggestion,
     onUseMyLocation,
     onResetLocation,
     onCityInputChange,
@@ -69,11 +70,68 @@ function LocationSection({
     t: ReturnType<typeof useTranslations>;
     errs: GroceryErrors;
 }): ReactElement {
+    const cityErr = cityLookupErr ?? errs.settings?.city?.message;
     return (
         <div className="space-y-3">
-            <div className="text-sm font-medium opacity-80">{t("location.sectionTitle")}</div>
+            <div className="text-sm font-medium">{t("location.sectionTitle")}</div>
 
-            {mode === "gps" && hasCoords ? (
+            {/* City search — hidden when a suggestion is active */}
+            {!fromSuggestion && (
+                <div className="space-y-1.5">
+                    <input
+                        type="text"
+                        aria-label={t("location.citySearchLabel")}
+                        placeholder={t("location.citySearchPlaceholder")}
+                        value={cityInput}
+                        onChange={(e) => onCityInputChange(e.target.value)}
+                        className={[
+                            "border-border bg-surface text-foreground placeholder-muted w-full rounded-xl border px-3 py-2",
+                            "focus:border-border-subtle focus:ring-primary/20 outline-none focus:ring-2",
+                            cityErr ? "border-error" : "",
+                        ].join(" ")}
+                    />
+                    {cityErr && <p className="text-error text-xs">{cityErr}</p>}
+                </div>
+            )}
+
+            {cityLookupBusy ? (
+                <div className="text-muted flex items-center gap-2 text-xs">
+                    <MapPin className="h-3.5 w-3.5" aria-hidden />
+                    <span>{t("location.searching")}</span>
+                </div>
+            ) : fromSuggestion && mode === "city" && hasCoords ? (
+                <div className="text-muted flex items-center gap-2 text-xs">
+                    <MapPin className="text-success h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="flex-1">
+                        {t("location.usingCityLastTime", { city: cityLabel ?? "" })}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onResetLocation}
+                        aria-label={t("location.clearSelection")}
+                        className="hover:text-foreground cursor-pointer rounded p-0.5 transition-colors"
+                    >
+                        <X className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                </div>
+            ) : mode === "city" && hasCoords ? (
+                <div className="bg-success-subtle text-success ring-success-subtle inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ring-1">
+                    <MapPin className="h-3.5 w-3.5" aria-hidden />
+                    <span>
+                        {cityLabel
+                            ? t("location.usingCity", { city: cityLabel })
+                            : t("location.usingCoords", {
+                                  lat: fmtCoord(lat),
+                                  lon: fmtCoord(lon),
+                              })}
+                    </span>
+                </div>
+            ) : null}
+
+            {!fromSuggestion && <Divider label={t("location.or")} />}
+
+            {/* GPS — hidden while suggestion is active, shows confirmation banner when resolved */}
+            {!fromSuggestion && mode === "gps" && hasCoords ? (
                 <div
                     role="status"
                     aria-live="polite"
@@ -100,7 +158,7 @@ function LocationSection({
                         <span>{t("location.clearSelection")}</span>
                     </button>
                 </div>
-            ) : (
+            ) : !fromSuggestion ? (
                 <>
                     <button
                         type="button"
@@ -117,35 +175,6 @@ function LocationSection({
                     </button>
                     {geoErr ? <div className="text-error mt-1 text-xs">{geoErr}</div> : null}
                 </>
-            )}
-
-            <Divider label={t("location.or")} />
-
-            <FieldText
-                label={t("location.citySearchLabel")}
-                placeholder={t("location.citySearchPlaceholder")}
-                value={cityInput}
-                onChange={(e) => onCityInputChange(e.target.value)}
-                error={cityLookupErr ?? errs.settings?.city?.message}
-            />
-
-            {cityLookupBusy ? (
-                <div className="mt-1 flex items-center gap-2 text-xs text-white/70">
-                    <MapPin className="h-3.5 w-3.5" aria-hidden />
-                    <span>{t("location.searching")}</span>
-                </div>
-            ) : mode === "city" && hasCoords ? (
-                <div className="bg-success-subtle text-success ring-success-subtle mt-1 inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ring-1">
-                    <MapPin className="h-3.5 w-3.5" aria-hidden />
-                    <span>
-                        {cityLabel
-                            ? t("location.usingCity", { city: cityLabel })
-                            : t("location.usingCoords", {
-                                  lat: fmtCoord(lat),
-                                  lon: fmtCoord(lon),
-                              })}
-                    </span>
-                </div>
             ) : null}
         </div>
     );
