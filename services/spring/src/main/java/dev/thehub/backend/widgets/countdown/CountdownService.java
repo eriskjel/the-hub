@@ -3,6 +3,7 @@ package dev.thehub.backend.widgets.countdown;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.thehub.backend.widgets.WidgetRow;
 import dev.thehub.backend.widgets.WidgetSettingsService;
+import dev.thehub.backend.widgets.countdown.CountdownResolver.ProviderResult;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -67,6 +68,8 @@ public class CountdownService {
         Instant now = Instant.now();
         String nextIso = null;
         String previousIso = null;
+        boolean tentative = false;
+        boolean verified = false;
 
         String providerName = null;
 
@@ -80,9 +83,11 @@ public class CountdownService {
             case "provider" -> {
                 providerName = s.hasNonNull("provider") ? s.get("provider").asText() : null;
                 if (providerName != null && !providerName.isBlank()) {
-                    var pair = resolver.resolveProvider(providerName, now);
-                    nextIso = Optional.ofNullable(pair.getLeft()).map(Instant::toString).orElse(null);
-                    previousIso = Optional.ofNullable(pair.getRight()).map(Instant::toString).orElse(null);
+                    ProviderResult result = resolver.resolveProvider(providerName, now);
+                    nextIso = Optional.ofNullable(result.next()).map(Instant::toString).orElse(null);
+                    previousIso = Optional.ofNullable(result.previous()).map(Instant::toString).orElse(null);
+                    tentative = result.tentative();
+                    verified = result.verified();
                 }
             }
             default -> {
@@ -110,6 +115,6 @@ public class CountdownService {
             ongoing = inBounds && plausible;
         }
 
-        return new CountdownDto(now.toString(), nextIso, previousIso, ongoing);
+        return new CountdownDto(now.toString(), nextIso, previousIso, ongoing, tentative, verified);
     }
 }

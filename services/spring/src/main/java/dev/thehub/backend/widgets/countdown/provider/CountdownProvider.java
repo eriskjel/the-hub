@@ -23,8 +23,11 @@ public interface CountdownProvider {
         return Optional.empty();
     }
 
-    /** Whether the provided dates are tentative (subject to change). */
-    default boolean isTentative() {
+    /**
+     * Whether the next date at the given reference time is tentative (subject to
+     * change).
+     */
+    default boolean isTentative(Instant now) {
         return false;
     }
 

@@ -13,5 +13,6 @@ package dev.thehub.backend.widgets.countdown;
  *            true if now is within the interval [previousIso..nextIso], meaning
  *            a window is currently ongoing
  */
-public record CountdownDto(String nowIso, String nextIso, String previousIso, boolean ongoing) {
+public record CountdownDto(String nowIso, String nextIso, String previousIso, boolean ongoing, boolean tentative,
+        boolean verified) {
 }

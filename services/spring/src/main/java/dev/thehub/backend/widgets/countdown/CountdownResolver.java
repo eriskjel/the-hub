@@ -3,8 +3,9 @@ package dev.thehub.backend.widgets.countdown;
 import dev.thehub.backend.widgets.countdown.provider.ProviderRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,14 @@ public class CountdownResolver {
 
     /** Default freshness window when provider doesn't supply valid-until. */
     private static final Duration STALE_AFTER = Duration.ofDays(14);
+    private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
+
+    /**
+     * Result of resolving a provider. tentative = single-source date; verified =
+     * admin confirmed.
+     */
+    public record ProviderResult(Instant next, Instant previous, boolean tentative, boolean verified) {
+    }
 
     /**
      * Resolve next and previous instants for a provider at a given reference time.
@@ -41,38 +50,52 @@ public class CountdownResolver {
      *            stable provider identifier (see {@code CountdownProvider#id()})
      * @param now
      *            reference instant used for freshness and provider logic
-     * @return a pair (left=next, right=previous); either side may be null
+     * @return ProviderResult with next/previous instants and tentative/verified
+     *         flags
      * @throws IllegalArgumentException
      *             if the provider id is unknown
      */
-    public Pair<Instant, Instant> resolveProvider(String providerId, Instant now) {
+    public ProviderResult resolveProvider(String providerId, Instant now) {
         var cached = cache.find(providerId).orElse(null);
 
-        // 1) Admin override wins
+        // 1) Admin override wins (explicit date set by admin — always verified, never
+        // tentative)
         if (cached != null && cached.manualOverrideNextIso() != null) {
             log.info("CountdownResolver: using ADMIN OVERRIDE for provider={} nextIso={} prevIso={}", providerId,
                     cached.manualOverrideNextIso(), cached.previousIso());
-            return Pair.of(cached.manualOverrideNextIso(), cached.previousIso());
+            return new ProviderResult(cached.manualOverrideNextIso(), cached.previousIso(), false, true);
         }
 
         // 2) Fresh cache
         if (cached != null && isFresh(cached, now)) {
             log.info("CountdownResolver: using FRESH CACHE for provider={} nextIso={} prevIso={} fetchedAt={}",
                     providerId, cached.nextIso(), cached.previousIso(), cached.fetchedAt());
-            return Pair.of(cached.nextIso(), cached.previousIso());
+            return new ProviderResult(cached.nextIso(), cached.previousIso(), cached.tentative(),
+                    cached.adminConfirmed());
         }
 
         // 3) Fetch once, upsert, return
         var p = providers.get(providerId);
         var next = p.next(now).orElse(null);
         var prev = p.previous(now).orElse(null);
+        var tentative = p.isTentative(now);
 
-        log.info("CountdownResolver: FETCHING from provider={} nextIso={} prevIso={}", providerId, next, prev);
+        // admin_confirmed carries over when the event is on the same Oslo date —
+        // mirrors
+        // the SQL CASE in ProviderCacheDao.upsert (date comparison in Europe/Oslo).
+        // Raw next_iso can change within the same event day (start→end when ongoing),
+        // so we compare LocalDate instead of the raw instant.
+        boolean adminConfirmed = cached != null && next != null && cached.nextIso() != null
+                && LocalDate.ofInstant(next, OSLO).equals(LocalDate.ofInstant(cached.nextIso(), OSLO))
+                && cached.adminConfirmed();
 
-        cache.upsert(new ProviderCacheDao.Row(providerId, next, prev, p.isTentative(), p.confidence(),
-                p.sourceUrl().orElse(null), now, p.validUntil(now).orElse(null), null, null));
+        log.info("CountdownResolver: FETCHING from provider={} nextIso={} prevIso={} tentative={} adminConfirmed={}",
+                providerId, next, prev, tentative, adminConfirmed);
 
-        return Pair.of(next, prev);
+        cache.upsert(new ProviderCacheDao.Row(providerId, next, prev, tentative, p.confidence(),
+                p.sourceUrl().orElse(null), now, p.validUntil(now).orElse(null), null, null, false));
+
+        return new ProviderResult(next, prev, tentative, adminConfirmed);
     }
 
     /**

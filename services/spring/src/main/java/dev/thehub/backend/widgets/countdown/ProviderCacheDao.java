@@ -29,7 +29,8 @@ public class ProviderCacheDao {
     public Optional<Row> find(String providerId) {
         var sql = """
                   select provider_id, next_iso, previous_iso, tentative, confidence, source_url,
-                         fetched_at, valid_until, updated_by, manual_override_next_iso, manual_override_reason
+                         fetched_at, valid_until, updated_by, manual_override_next_iso, manual_override_reason,
+                         admin_confirmed
                   from public.countdown_provider_cache
                   where provider_id = ?
                 """;
@@ -54,10 +55,34 @@ public class ProviderCacheDao {
                     confidence = excluded.confidence,
                     source_url = excluded.source_url,
                     fetched_at = excluded.fetched_at,
-                    valid_until = excluded.valid_until
+                    valid_until = excluded.valid_until,
+                    admin_confirmed = case
+                      when date(excluded.next_iso at time zone 'Europe/Oslo')
+                           is distinct from
+                           date(countdown_provider_cache.next_iso at time zone 'Europe/Oslo') then false
+                      else countdown_provider_cache.admin_confirmed
+                    end
                 """;
         jdbc.update(sql, r.providerId(), tsOrNull(r.nextIso()), tsOrNull(r.previousIso()), r.tentative(),
                 r.confidence(), r.sourceUrl(), tsOrNull(r.fetchedAt()), tsOrNull(r.validUntil()));
+    }
+
+    /**
+     * Mark the provider's current next date as admin-confirmed (not tentative).
+     * Returns rows updated.
+     */
+    public int confirm(String providerId) {
+        return jdbc.update("update public.countdown_provider_cache set admin_confirmed = true where provider_id = ?",
+                providerId);
+    }
+
+    /**
+     * Remove the admin confirmation, reverting to the computed tentative state.
+     * Returns rows updated.
+     */
+    public int unconfirm(String providerId) {
+        return jdbc.update("update public.countdown_provider_cache set admin_confirmed = false where provider_id = ?",
+                providerId);
     }
 
     private static Timestamp tsOrNull(Instant i) {
@@ -69,7 +94,7 @@ public class ProviderCacheDao {
         return new Row(rs.getString("provider_id"), optInstant(rs, "next_iso"), optInstant(rs, "previous_iso"),
                 rs.getBoolean("tentative"), rs.getInt("confidence"), rs.getString("source_url"),
                 optInstant(rs, "fetched_at"), optInstant(rs, "valid_until"), optInstant(rs, "manual_override_next_iso"),
-                rs.getString("manual_override_reason"));
+                rs.getString("manual_override_reason"), rs.getBoolean("admin_confirmed"));
     }
 
     private static Instant optInstant(ResultSet rs, String col) throws java.sql.SQLException {
@@ -103,6 +128,6 @@ public class ProviderCacheDao {
      */
     public record Row(String providerId, Instant nextIso, Instant previousIso, boolean tentative, int confidence,
             String sourceUrl, Instant fetchedAt, Instant validUntil, Instant manualOverrideNextIso,
-            String manualOverrideReason) {
+            String manualOverrideReason, boolean adminConfirmed) {
     }
 }
