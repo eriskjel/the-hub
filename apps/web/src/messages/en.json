@@ -311,7 +311,7 @@
                 "confirm": "Confirm date",
                 "unconfirm": "Remove confirmation",
                 "confirmed": "Confirmed",
-                "uncertain": "Uncertain date",
+                "unconfirmed": "Unconfirmed date",
                 "providers": {
                     "trippel-trumf": "Trippel-Trumf",
                     "dnb-supertilbud": "DNB Supertilbud"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { CheckCircle, CircleDashed } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { fetchJson } from "@/lib/widgets/fetchJson";
@@ -16,11 +16,12 @@ export default function CountdownProviderCard({
     initialStatus: CountdownProviderStatus | null;
 }) {
     const t = useTranslations("admin.widgets.countdown");
+    const locale = useLocale();
     const [status, setStatus] = useState(initialStatus);
     const [loading, setLoading] = useState(false);
 
     const nextDate = status?.nextIso
-        ? new Date(status.nextIso).toLocaleString("no-NO", {
+        ? new Date(status.nextIso).toLocaleString(locale, {
               dateStyle: "full",
               timeStyle: "short",
               timeZone: "Europe/Oslo",
@@ -30,14 +31,17 @@ export default function CountdownProviderCard({
     async function toggle() {
         if (!status) return;
         setLoading(true);
-        await fetchJson<void>(API.admin.countdown.confirm(providerId), {
-            method: status.adminConfirmed ? "DELETE" : "POST",
-        });
-        const fresh = await fetchJson<CountdownProviderStatus>(
-            API.admin.countdown.status(providerId)
-        );
-        setStatus(fresh);
-        setLoading(false);
+        try {
+            await fetchJson<void>(API.admin.countdown.confirm(providerId), {
+                method: status.adminConfirmed ? "DELETE" : "POST",
+            });
+            const fresh = await fetchJson<CountdownProviderStatus>(
+                API.admin.countdown.status(providerId)
+            );
+            setStatus(fresh);
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -51,7 +55,7 @@ export default function CountdownProviderCard({
                     </span>
                 ) : status?.tentative ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-600 dark:text-amber-400">
-                        ~ {t("uncertain")}
+                        ~ {t("unconfirmed")}
                     </span>
                 ) : null}
             </div>

@@ -3,6 +3,8 @@ package dev.thehub.backend.widgets.countdown;
 import dev.thehub.backend.widgets.countdown.provider.ProviderRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,7 @@ public class CountdownResolver {
 
     /** Default freshness window when provider doesn't supply valid-until. */
     private static final Duration STALE_AFTER = Duration.ofDays(14);
+    private static final ZoneId OSLO = ZoneId.of("Europe/Oslo");
 
     /**
      * Result of resolving a provider. tentative = single-source date; verified =
@@ -47,7 +50,7 @@ public class CountdownResolver {
      *            stable provider identifier (see {@code CountdownProvider#id()})
      * @param now
      *            reference instant used for freshness and provider logic
-     * @return ProviderResult with next/previous instants and tentative flag
+     * @return ProviderResult with next/previous instants and tentative/verified flags
      * @throws IllegalArgumentException
      *             if the provider id is unknown
      */
@@ -74,11 +77,15 @@ public class CountdownResolver {
         var p = providers.get(providerId);
         var next = p.next(now).orElse(null);
         var prev = p.previous(now).orElse(null);
-        var tentative = p.isTentative();
+        var tentative = p.isTentative(now);
 
-        // admin_confirmed carries over from the old cache row only when next_iso is
-        // unchanged
-        boolean adminConfirmed = cached != null && java.util.Objects.equals(next, cached.nextIso())
+        // admin_confirmed carries over when the event is on the same Oslo date — mirrors
+        // the SQL CASE in ProviderCacheDao.upsert (date comparison in Europe/Oslo).
+        // Raw next_iso can change within the same event day (start→end when ongoing),
+        // so we compare LocalDate instead of the raw instant.
+        boolean adminConfirmed = cached != null
+                && next != null && cached.nextIso() != null
+                && LocalDate.ofInstant(next, OSLO).equals(LocalDate.ofInstant(cached.nextIso(), OSLO))
                 && cached.adminConfirmed();
 
         log.info("CountdownResolver: FETCHING from provider={} nextIso={} prevIso={} tentative={} adminConfirmed={}",

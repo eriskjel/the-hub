@@ -30,15 +30,17 @@ public class CountdownAdminController {
      * badge).
      */
     @PostMapping("/confirm")
-    public ResponseEntity<Map<String, String>> confirm(@RequestParam String providerId) {
-        cache.confirm(providerId);
-        return ResponseEntity.ok(Map.of("providerId", providerId, "adminConfirmed", "true"));
+    public ResponseEntity<Map<String, Object>> confirm(@RequestParam String providerId) {
+        if (cache.confirm(providerId) == 0)
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(Map.of("providerId", providerId, "adminConfirmed", true));
     }
 
     /** Remove the admin confirmation, reverting to computed tentative state. */
     @DeleteMapping("/confirm")
-    public ResponseEntity<Map<String, String>> unconfirm(@RequestParam String providerId) {
-        cache.unconfirm(providerId);
-        return ResponseEntity.ok(Map.of("providerId", providerId, "adminConfirmed", "false"));
+    public ResponseEntity<Map<String, Object>> unconfirm(@RequestParam String providerId) {
+        if (cache.unconfirm(providerId) == 0)
+            return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(Map.of("providerId", providerId, "adminConfirmed", false));
     }
 }

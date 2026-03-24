@@ -57,7 +57,9 @@ public class ProviderCacheDao {
                     fetched_at = excluded.fetched_at,
                     valid_until = excluded.valid_until,
                     admin_confirmed = case
-                      when excluded.next_iso is distinct from countdown_provider_cache.next_iso then false
+                      when date(excluded.next_iso at time zone 'Europe/Oslo')
+                           is distinct from
+                           date(countdown_provider_cache.next_iso at time zone 'Europe/Oslo') then false
                       else countdown_provider_cache.admin_confirmed
                     end
                 """;
@@ -65,15 +67,17 @@ public class ProviderCacheDao {
                 r.confidence(), r.sourceUrl(), tsOrNull(r.fetchedAt()), tsOrNull(r.validUntil()));
     }
 
-    /** Mark the provider's current next date as admin-confirmed (not tentative). */
-    public void confirm(String providerId) {
-        jdbc.update("update public.countdown_provider_cache set admin_confirmed = true where provider_id = ?",
+    /** Mark the provider's current next date as admin-confirmed (not tentative). Returns rows updated. */
+    public int confirm(String providerId) {
+        return jdbc.update(
+                "update public.countdown_provider_cache set admin_confirmed = true where provider_id = ?",
                 providerId);
     }
 
-    /** Remove the admin confirmation, reverting to the computed tentative state. */
-    public void unconfirm(String providerId) {
-        jdbc.update("update public.countdown_provider_cache set admin_confirmed = false where provider_id = ?",
+    /** Remove the admin confirmation, reverting to the computed tentative state. Returns rows updated. */
+    public int unconfirm(String providerId) {
+        return jdbc.update(
+                "update public.countdown_provider_cache set admin_confirmed = false where provider_id = ?",
                 providerId);
     }
 

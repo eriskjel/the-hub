@@ -305,13 +305,13 @@
         "widgets": {
             "countdown": {
                 "title": "Nedtelling – leverandørstatus",
-                "description": "Bekreft en dato manuelt for å fjerne «Usikker dato»-merket. Bekreftelsen nullstilles automatisk når neste dato endres.",
+                "description": "Bekreft en dato manuelt for å fjerne «Ubekreftet dato»-merket. Bekreftelsen nullstilles automatisk når neste dato endres.",
                 "next": "Neste",
                 "noDate": "Ingen dato i cache.",
                 "confirm": "Bekreft dato",
                 "unconfirm": "Fjern bekreftelse",
                 "confirmed": "Bekreftet",
-                "uncertain": "Usikker dato",
+                "unconfirmed": "Ubekreftet dato",
                 "providers": {
                     "trippel-trumf": "Trippel-Trumf",
                     "dnb-supertilbud": "DNB Supertilbud"

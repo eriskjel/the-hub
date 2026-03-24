@@ -70,14 +70,12 @@ public class TrippelTrumfProvider implements CountdownProvider {
     }
 
     /**
-     * Short-lived in-process cache so next() and previous() share one scrape per
-     * resolver call.
+     * Short-lived in-process cache so next(), previous(), isTentative(), and
+     * validUntil() share one scrape per resolver invocation.
+     * Guarded by {@code this} — use {@link #mergedWindows()} to access.
      */
-    private volatile List<MergedWindow> mergedWindowCache;
-    private volatile Instant mergedCacheExpiry = Instant.EPOCH;
-
-    /** Whether the most recently resolved next date came from only one source. */
-    private volatile boolean lastNextTentative = false;
+    private List<MergedWindow> mergedWindowCache;
+    private Instant mergedCacheExpiry = Instant.EPOCH;
 
     public TrippelTrumfProvider(RestTemplate http) {
         this.http = http;
@@ -91,25 +89,15 @@ public class TrippelTrumfProvider implements CountdownProvider {
     @Override
     public Optional<Instant> next(Instant now) {
         var wins = mergedWindows();
-        if (wins.isEmpty()) {
-            lastNextTentative = false;
+        if (wins.isEmpty())
             return Optional.empty();
-        }
         // If inside a window today -> return end (minus 1 ms) so 'ongoing' works
         for (var w : wins) {
-            if (!now.isBefore(w.start) && now.isBefore(w.endExclusive)) {
-                lastNextTentative = w.tentative;
+            if (!now.isBefore(w.start) && now.isBefore(w.endExclusive))
                 return Optional.of(w.endExclusive.minusMillis(1));
-            }
         }
         // Otherwise earliest future start
-        var nextWin = wins.stream().filter(w -> !w.start.isBefore(now)).findFirst().orElse(null);
-        if (nextWin == null) {
-            lastNextTentative = false;
-            return Optional.empty();
-        }
-        lastNextTentative = nextWin.tentative;
-        return Optional.of(nextWin.start);
+        return wins.stream().filter(w -> !w.start.isBefore(now)).findFirst().map(w -> w.start);
     }
 
     @Override
@@ -121,8 +109,13 @@ public class TrippelTrumfProvider implements CountdownProvider {
     }
 
     @Override
-    public boolean isTentative() {
-        return lastNextTentative;
+    public boolean isTentative(Instant now) {
+        var wins = mergedWindows();
+        for (var w : wins) {
+            if (!now.isBefore(w.start) && now.isBefore(w.endExclusive))
+                return w.tentative;
+        }
+        return wins.stream().filter(w -> !w.start.isBefore(now)).findFirst().map(w -> w.tentative).orElse(false);
     }
 
     @Override
@@ -167,7 +160,7 @@ public class TrippelTrumfProvider implements CountdownProvider {
      * Returns merged windows from both sources with a short in-process cache so
      * next() and previous() share a single scrape per resolver invocation.
      */
-    private List<MergedWindow> mergedWindows() {
+    private synchronized List<MergedWindow> mergedWindows() {
         if (mergedWindowCache != null && Instant.now().isBefore(mergedCacheExpiry)) {
             return mergedWindowCache;
         }
