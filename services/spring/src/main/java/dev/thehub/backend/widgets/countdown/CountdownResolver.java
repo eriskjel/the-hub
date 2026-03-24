@@ -33,8 +33,12 @@ public class CountdownResolver {
     /** Default freshness window when provider doesn't supply valid-until. */
     private static final Duration STALE_AFTER = Duration.ofDays(14);
 
-    /** Result of resolving a provider. tentative = single-source date; verified = admin confirmed. */
-    public record ProviderResult(Instant next, Instant previous, boolean tentative, boolean verified) {}
+    /**
+     * Result of resolving a provider. tentative = single-source date; verified =
+     * admin confirmed.
+     */
+    public record ProviderResult(Instant next, Instant previous, boolean tentative, boolean verified) {
+    }
 
     /**
      * Resolve next and previous instants for a provider at a given reference time.
@@ -50,7 +54,8 @@ public class CountdownResolver {
     public ProviderResult resolveProvider(String providerId, Instant now) {
         var cached = cache.find(providerId).orElse(null);
 
-        // 1) Admin override wins (explicit date set by admin — always verified, never tentative)
+        // 1) Admin override wins (explicit date set by admin — always verified, never
+        // tentative)
         if (cached != null && cached.manualOverrideNextIso() != null) {
             log.info("CountdownResolver: using ADMIN OVERRIDE for provider={} nextIso={} prevIso={}", providerId,
                     cached.manualOverrideNextIso(), cached.previousIso());
@@ -61,8 +66,8 @@ public class CountdownResolver {
         if (cached != null && isFresh(cached, now)) {
             log.info("CountdownResolver: using FRESH CACHE for provider={} nextIso={} prevIso={} fetchedAt={}",
                     providerId, cached.nextIso(), cached.previousIso(), cached.fetchedAt());
-            return new ProviderResult(cached.nextIso(), cached.previousIso(),
-                    cached.tentative(), cached.adminConfirmed());
+            return new ProviderResult(cached.nextIso(), cached.previousIso(), cached.tentative(),
+                    cached.adminConfirmed());
         }
 
         // 3) Fetch once, upsert, return
@@ -71,9 +76,9 @@ public class CountdownResolver {
         var prev = p.previous(now).orElse(null);
         var tentative = p.isTentative();
 
-        // admin_confirmed carries over from the old cache row only when next_iso is unchanged
-        boolean adminConfirmed = cached != null
-                && java.util.Objects.equals(next, cached.nextIso())
+        // admin_confirmed carries over from the old cache row only when next_iso is
+        // unchanged
+        boolean adminConfirmed = cached != null && java.util.Objects.equals(next, cached.nextIso())
                 && cached.adminConfirmed();
 
         log.info("CountdownResolver: FETCHING from provider={} nextIso={} prevIso={} tentative={} adminConfirmed={}",

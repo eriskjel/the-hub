@@ -174,7 +174,9 @@ export default function CountdownView({
                                 </span>
                             </div>
                         ) : null}
-                        <div className={`${data?.tentative ? "mt-1" : "mt-2"} mb-2 flex-none text-xs opacity-70`}>
+                        <div
+                            className={`${data?.tentative ? "mt-1" : "mt-2"} mb-2 flex-none text-xs opacity-70`}
+                        >
                             {isOngoing
                                 ? whenText && t("status.endsAt", { when: whenText })
                                 : whenText && t("status.startsAt", { when: whenText })}

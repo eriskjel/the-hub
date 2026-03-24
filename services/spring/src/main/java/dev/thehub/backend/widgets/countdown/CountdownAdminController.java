@@ -7,8 +7,8 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Admin endpoints for managing countdown provider cache state.
- * Requires ROLE_ADMIN (enforced by SecurityConfig path rule and @Secured).
+ * Admin endpoints for managing countdown provider cache state. Requires
+ * ROLE_ADMIN (enforced by SecurityConfig path rule and @Secured).
  */
 @RestController
 @RequestMapping("/api/admin/widgets/countdown")
@@ -21,12 +21,14 @@ public class CountdownAdminController {
     /** Returns the current cache row for the given provider. */
     @GetMapping("/status")
     public ResponseEntity<?> status(@RequestParam String providerId) {
-        return cache.find(providerId)
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
+        return cache.find(providerId).<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /** Mark the provider's current next date as admin-confirmed (removes tentative badge). */
+    /**
+     * Mark the provider's current next date as admin-confirmed (removes tentative
+     * badge).
+     */
     @PostMapping("/confirm")
     public ResponseEntity<Map<String, String>> confirm(@RequestParam String providerId) {
         cache.confirm(providerId);

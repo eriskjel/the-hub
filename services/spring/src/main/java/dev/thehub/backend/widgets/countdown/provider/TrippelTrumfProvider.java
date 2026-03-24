@@ -29,9 +29,11 @@ public class TrippelTrumfProvider implements CountdownProvider {
      */
     private static final String URL = "https://eurobonusguiden.no/2026/01/trippel-trumf-torsdag-datoer-2026/";
     private static final String BONUS_URL = "https://bonusjegeren.no/nar-er-det-trippel-trumf/";
-    /** Matches date text like "26. mars 2026" or "15. jan 2026" anywhere in the page. */
-    private static final Pattern DATE_PATTERN =
-            Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)\\s+(\\d{4})");
+    /**
+     * Matches date text like "26. mars 2026" or "15. jan 2026" anywhere in the
+     * page.
+     */
+    private static final Pattern DATE_PATTERN = Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)\\s+(\\d{4})");
 
     // Trippel window times (tweak if you prefer 00:00..24:00)
     private static final LocalTime START = LocalTime.of(7, 0);
@@ -44,21 +46,33 @@ public class TrippelTrumfProvider implements CountdownProvider {
             Map.entry("oktober", Month.OCTOBER), Map.entry("november", Month.NOVEMBER),
             Map.entry("desember", Month.DECEMBER));
 
-    /** Abbreviated/short month names used by bonusjegeren ("jan", "mars", "okt", …). */
+    /**
+     * Abbreviated/short month names used by bonusjegeren ("jan", "mars", "okt", …).
+     */
     private static final Map<String, Month> NO_MONTHS_SHORT;
     static {
         var m = new HashMap<String, Month>();
-        m.put("jan", Month.JANUARY); m.put("feb", Month.FEBRUARY);
-        m.put("mar", Month.MARCH);   m.put("mars", Month.MARCH);
-        m.put("apr", Month.APRIL);   m.put("mai", Month.MAY);
-        m.put("jun", Month.JUNE);    m.put("jul", Month.JULY);
-        m.put("aug", Month.AUGUST);  m.put("sep", Month.SEPTEMBER);
-        m.put("sept", Month.SEPTEMBER); m.put("okt", Month.OCTOBER);
-        m.put("nov", Month.NOVEMBER); m.put("des", Month.DECEMBER);
+        m.put("jan", Month.JANUARY);
+        m.put("feb", Month.FEBRUARY);
+        m.put("mar", Month.MARCH);
+        m.put("mars", Month.MARCH);
+        m.put("apr", Month.APRIL);
+        m.put("mai", Month.MAY);
+        m.put("jun", Month.JUNE);
+        m.put("jul", Month.JULY);
+        m.put("aug", Month.AUGUST);
+        m.put("sep", Month.SEPTEMBER);
+        m.put("sept", Month.SEPTEMBER);
+        m.put("okt", Month.OCTOBER);
+        m.put("nov", Month.NOVEMBER);
+        m.put("des", Month.DECEMBER);
         NO_MONTHS_SHORT = Collections.unmodifiableMap(m);
     }
 
-    /** Short-lived in-process cache so next() and previous() share one scrape per resolver call. */
+    /**
+     * Short-lived in-process cache so next() and previous() share one scrape per
+     * resolver call.
+     */
     private volatile List<MergedWindow> mergedWindowCache;
     private volatile Instant mergedCacheExpiry = Instant.EPOCH;
 
@@ -136,13 +150,18 @@ public class TrippelTrumfProvider implements CountdownProvider {
         return 36;
     }
 
-    /** A window from either or both sources, with a tentative flag when only one source has it. */
-    private record MergedWindow(Instant start, Instant endExclusive, boolean tentative) {}
+    /**
+     * A window from either or both sources, with a tentative flag when only one
+     * source has it.
+     */
+    private record MergedWindow(Instant start, Instant endExclusive, boolean tentative) {
+    }
 
     /**
      * Internal value object representing a single-day window with an exclusive end.
      */
-    private record Window(Instant start, Instant endExclusive) {}
+    private record Window(Instant start, Instant endExclusive) {
+    }
 
     /**
      * Returns merged windows from both sources with a short in-process cache so
@@ -156,9 +175,7 @@ public class TrippelTrumfProvider implements CountdownProvider {
         var primary = scrapeWindows();
         var secondary = scrapeBonusjegeren();
 
-        var primaryDates = primary.stream()
-                .map(w -> w.start.atZone(ZONE).toLocalDate())
-                .collect(Collectors.toSet());
+        var primaryDates = primary.stream().map(w -> w.start.atZone(ZONE).toLocalDate()).collect(Collectors.toSet());
 
         List<MergedWindow> merged = new ArrayList<>();
 
@@ -171,16 +188,14 @@ public class TrippelTrumfProvider implements CountdownProvider {
         // Secondary-only windows: tentative (single source)
         for (var d : secondary) {
             if (!primaryDates.contains(d)) {
-                merged.add(new MergedWindow(
-                        d.atTime(START).atZone(ZONE).toInstant(),
-                        d.atTime(END).atZone(ZONE).toInstant(),
-                        true));
+                merged.add(new MergedWindow(d.atTime(START).atZone(ZONE).toInstant(),
+                        d.atTime(END).atZone(ZONE).toInstant(), true));
             }
         }
 
         merged.sort(Comparator.comparing(w -> w.start));
-        log.info("Trippel merged {} windows (primary={} secondary={}): {}", merged.size(),
-                primary.size(), secondary.size(),
+        log.info("Trippel merged {} windows (primary={} secondary={}): {}", merged.size(), primary.size(),
+                secondary.size(),
                 merged.stream().map(w -> w.start.atZone(ZONE).toLocalDate() + (w.tentative ? "?" : "")).toList());
 
         mergedWindowCache = merged;
@@ -189,9 +204,9 @@ public class TrippelTrumfProvider implements CountdownProvider {
     }
 
     /**
-     * Scrapes date entries from bonusjegeren.no as a cross-check source.
-     * Returns only the current year's dates. On any error, returns an empty set
-     * so the primary source continues to work normally.
+     * Scrapes date entries from bonusjegeren.no as a cross-check source. Returns
+     * only the current year's dates. On any error, returns an empty set so the
+     * primary source continues to work normally.
      */
     private Set<LocalDate> scrapeBonusjegeren() {
         try {
@@ -210,12 +225,15 @@ public class TrippelTrumfProvider implements CountdownProvider {
                 int day = Integer.parseInt(matcher.group(1));
                 String monthKey = matcher.group(2).toLowerCase(Locale.ROOT);
                 int year = Integer.parseInt(matcher.group(3));
-                if (year != yearWanted) continue;
+                if (year != yearWanted)
+                    continue;
                 Month month = NO_MONTHS_SHORT.get(monthKey);
-                if (month == null) continue;
+                if (month == null)
+                    continue;
                 try {
                     dates.add(LocalDate.of(year, month, day));
-                } catch (DateTimeException ignored) {}
+                } catch (DateTimeException ignored) {
+                }
             }
             log.info("BonusJegeren scraped {} dates for {}: {}", dates.size(), yearWanted, dates);
             return dates;

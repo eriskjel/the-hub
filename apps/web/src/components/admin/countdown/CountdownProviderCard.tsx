@@ -33,7 +33,9 @@ export default function CountdownProviderCard({
         await fetchJson<void>(API.admin.countdown.confirm(providerId), {
             method: status.adminConfirmed ? "DELETE" : "POST",
         });
-        const fresh = await fetchJson<CountdownProviderStatus>(API.admin.countdown.status(providerId));
+        const fresh = await fetchJson<CountdownProviderStatus>(
+            API.admin.countdown.status(providerId)
+        );
         setStatus(fresh);
         setLoading(false);
     }
@@ -57,8 +59,7 @@ export default function CountdownProviderCard({
             <p className="text-muted mb-4 text-sm">
                 {nextDate ? (
                     <>
-                        {t("next")}:{" "}
-                        <span className="text-foreground font-medium">{nextDate}</span>
+                        {t("next")}: <span className="text-foreground font-medium">{nextDate}</span>
                     </>
                 ) : (
                     t("noDate")

@@ -3,6 +3,7 @@ package dev.thehub.backend.widgets.countdown;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.thehub.backend.widgets.WidgetRow;
 import dev.thehub.backend.widgets.WidgetSettingsService;
+import dev.thehub.backend.widgets.countdown.CountdownResolver.ProviderResult;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -11,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import dev.thehub.backend.widgets.countdown.CountdownResolver.ProviderResult;
 
 /**
  * Service that resolves countdown data for a widget instance based on its
