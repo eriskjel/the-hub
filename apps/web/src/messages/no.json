@@ -269,7 +269,9 @@
                 "status": {
                     "ongoing": "Pågår",
                     "endsAt": "Slutter {when}",
-                    "startsAt": "Starter {when}"
+                    "startsAt": "Starter {when}",
+                    "tentative": "Usikker dato",
+                    "verified": "Bekreftet"
                 },
                 "timeRemaining": "Gjenstående tid",
                 "units": {
@@ -300,6 +302,22 @@
         }
     },
     "admin": {
+        "widgets": {
+            "countdown": {
+                "title": "Nedtelling – leverandørstatus",
+                "description": "Bekreft en dato manuelt for å fjerne «Usikker dato»-merket. Bekreftelsen nullstilles automatisk når neste dato endres.",
+                "next": "Neste",
+                "noDate": "Ingen dato i cache.",
+                "confirm": "Bekreft dato",
+                "unconfirm": "Fjern bekreftelse",
+                "confirmed": "Bekreftet",
+                "uncertain": "Usikker dato",
+                "providers": {
+                    "trippel-trumf": "Trippel-Trumf",
+                    "dnb-supertilbud": "DNB Supertilbud"
+                }
+            }
+        },
         "sections": {
             "manage": "Administrer",
             "system": "System"

@@ -3,4 +3,6 @@ export type CountdownData = {
     nextIso: string | null;
     previousIso: string | null;
     ongoing: boolean;
+    tentative?: boolean;
+    verified?: boolean;
 };

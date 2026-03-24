@@ -269,7 +269,9 @@
                 "status": {
                     "ongoing": "Ongoing",
                     "endsAt": "Ends {when}",
-                    "startsAt": "Starts {when}"
+                    "startsAt": "Starts {when}",
+                    "tentative": "Unconfirmed date",
+                    "verified": "Verified"
                 },
                 "timeRemaining": "Time remaining",
                 "units": {
@@ -300,6 +302,22 @@
         }
     },
     "admin": {
+        "widgets": {
+            "countdown": {
+                "title": "Countdown – provider status",
+                "description": "Manually confirm a date to remove the \"Unconfirmed date\" badge. The confirmation resets automatically when the next date changes.",
+                "next": "Next",
+                "noDate": "No date in cache.",
+                "confirm": "Confirm date",
+                "unconfirm": "Remove confirmation",
+                "confirmed": "Confirmed",
+                "uncertain": "Uncertain date",
+                "providers": {
+                    "trippel-trumf": "Trippel-Trumf",
+                    "dnb-supertilbud": "DNB Supertilbud"
+                }
+            }
+        },
         "sections": {
             "manage": "Manage",
             "system": "System"

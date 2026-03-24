@@ -3,6 +3,8 @@ package dev.thehub.backend.widgets.countdown.provider;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -26,6 +28,10 @@ public class TrippelTrumfProvider implements CountdownProvider {
      * Current year's overview page – update annually when new page is published.
      */
     private static final String URL = "https://eurobonusguiden.no/2026/01/trippel-trumf-torsdag-datoer-2026/";
+    private static final String BONUS_URL = "https://bonusjegeren.no/nar-er-det-trippel-trumf/";
+    /** Matches date text like "26. mars 2026" or "15. jan 2026" anywhere in the page. */
+    private static final Pattern DATE_PATTERN =
+            Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)\\s+(\\d{4})");
 
     // Trippel window times (tweak if you prefer 00:00..24:00)
     private static final LocalTime START = LocalTime.of(7, 0);
@@ -38,6 +44,27 @@ public class TrippelTrumfProvider implements CountdownProvider {
             Map.entry("oktober", Month.OCTOBER), Map.entry("november", Month.NOVEMBER),
             Map.entry("desember", Month.DECEMBER));
 
+    /** Abbreviated/short month names used by bonusjegeren ("jan", "mars", "okt", …). */
+    private static final Map<String, Month> NO_MONTHS_SHORT;
+    static {
+        var m = new HashMap<String, Month>();
+        m.put("jan", Month.JANUARY); m.put("feb", Month.FEBRUARY);
+        m.put("mar", Month.MARCH);   m.put("mars", Month.MARCH);
+        m.put("apr", Month.APRIL);   m.put("mai", Month.MAY);
+        m.put("jun", Month.JUNE);    m.put("jul", Month.JULY);
+        m.put("aug", Month.AUGUST);  m.put("sep", Month.SEPTEMBER);
+        m.put("sept", Month.SEPTEMBER); m.put("okt", Month.OCTOBER);
+        m.put("nov", Month.NOVEMBER); m.put("des", Month.DECEMBER);
+        NO_MONTHS_SHORT = Collections.unmodifiableMap(m);
+    }
+
+    /** Short-lived in-process cache so next() and previous() share one scrape per resolver call. */
+    private volatile List<MergedWindow> mergedWindowCache;
+    private volatile Instant mergedCacheExpiry = Instant.EPOCH;
+
+    /** Whether the most recently resolved next date came from only one source. */
+    private volatile boolean lastNextTentative = false;
+
     public TrippelTrumfProvider(RestTemplate http) {
         this.http = http;
     }
@@ -49,27 +76,39 @@ public class TrippelTrumfProvider implements CountdownProvider {
 
     @Override
     public Optional<Instant> next(Instant now) {
-        var wins = scrapeWindows(); // each window is a (start,endExclusive) on a single date
-        if (wins.isEmpty())
+        var wins = mergedWindows();
+        if (wins.isEmpty()) {
+            lastNextTentative = false;
             return Optional.empty();
-
-        // If we are inside a window today -> return end (minus 1 ms) so 'ongoing' works
+        }
+        // If inside a window today -> return end (minus 1 ms) so 'ongoing' works
         for (var w : wins) {
             if (!now.isBefore(w.start) && now.isBefore(w.endExclusive)) {
+                lastNextTentative = w.tentative;
                 return Optional.of(w.endExclusive.minusMillis(1));
             }
         }
-
-        // Otherwise, return the earliest future start
-        return wins.stream().map(w -> w.start).filter(s -> !s.isBefore(now)).min(Comparator.naturalOrder());
+        // Otherwise earliest future start
+        var nextWin = wins.stream().filter(w -> !w.start.isBefore(now)).findFirst().orElse(null);
+        if (nextWin == null) {
+            lastNextTentative = false;
+            return Optional.empty();
+        }
+        lastNextTentative = nextWin.tentative;
+        return Optional.of(nextWin.start);
     }
 
     @Override
     public Optional<Instant> previous(Instant now) {
-        var wins = scrapeWindows();
+        var wins = mergedWindows();
         if (wins.isEmpty())
             return Optional.empty();
         return wins.stream().map(w -> w.start).filter(s -> s.isBefore(now)).max(Comparator.naturalOrder());
+    }
+
+    @Override
+    public boolean isTentative() {
+        return lastNextTentative;
     }
 
     @Override
@@ -79,7 +118,7 @@ public class TrippelTrumfProvider implements CountdownProvider {
 
     @Override
     public Optional<Instant> validUntil(Instant now) {
-        var wins = scrapeWindows();
+        var wins = mergedWindows();
         if (wins.isEmpty())
             return Optional.empty();
         for (var w : wins) {
@@ -88,7 +127,7 @@ public class TrippelTrumfProvider implements CountdownProvider {
             if (now.isBefore(w.endExclusive))
                 return Optional.of(w.endExclusive);
         }
-        return Optional.empty(); // after last known window
+        return Optional.empty();
     }
 
     @Override
@@ -97,10 +136,93 @@ public class TrippelTrumfProvider implements CountdownProvider {
         return 36;
     }
 
+    /** A window from either or both sources, with a tentative flag when only one source has it. */
+    private record MergedWindow(Instant start, Instant endExclusive, boolean tentative) {}
+
     /**
      * Internal value object representing a single-day window with an exclusive end.
      */
-    private record Window(Instant start, Instant endExclusive) {
+    private record Window(Instant start, Instant endExclusive) {}
+
+    /**
+     * Returns merged windows from both sources with a short in-process cache so
+     * next() and previous() share a single scrape per resolver invocation.
+     */
+    private List<MergedWindow> mergedWindows() {
+        if (mergedWindowCache != null && Instant.now().isBefore(mergedCacheExpiry)) {
+            return mergedWindowCache;
+        }
+
+        var primary = scrapeWindows();
+        var secondary = scrapeBonusjegeren();
+
+        var primaryDates = primary.stream()
+                .map(w -> w.start.atZone(ZONE).toLocalDate())
+                .collect(Collectors.toSet());
+
+        List<MergedWindow> merged = new ArrayList<>();
+
+        // Primary windows: tentative if bonusjegeren doesn't also have the date
+        for (var w : primary) {
+            var d = w.start.atZone(ZONE).toLocalDate();
+            merged.add(new MergedWindow(w.start, w.endExclusive, !secondary.contains(d)));
+        }
+
+        // Secondary-only windows: tentative (single source)
+        for (var d : secondary) {
+            if (!primaryDates.contains(d)) {
+                merged.add(new MergedWindow(
+                        d.atTime(START).atZone(ZONE).toInstant(),
+                        d.atTime(END).atZone(ZONE).toInstant(),
+                        true));
+            }
+        }
+
+        merged.sort(Comparator.comparing(w -> w.start));
+        log.info("Trippel merged {} windows (primary={} secondary={}): {}", merged.size(),
+                primary.size(), secondary.size(),
+                merged.stream().map(w -> w.start.atZone(ZONE).toLocalDate() + (w.tentative ? "?" : "")).toList());
+
+        mergedWindowCache = merged;
+        mergedCacheExpiry = Instant.now().plusSeconds(300);
+        return merged;
+    }
+
+    /**
+     * Scrapes date entries from bonusjegeren.no as a cross-check source.
+     * Returns only the current year's dates. On any error, returns an empty set
+     * so the primary source continues to work normally.
+     */
+    private Set<LocalDate> scrapeBonusjegeren() {
+        try {
+            HttpHeaders h = new HttpHeaders();
+            h.setAccept(List.of(MediaType.TEXT_HTML));
+            h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
+            h.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (CountdownBot)");
+            var resp = http.exchange(BONUS_URL, HttpMethod.GET, new HttpEntity<>(h), String.class);
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
+                return Set.of();
+
+            final int yearWanted = Year.now(ZONE).getValue();
+            Set<LocalDate> dates = new HashSet<>();
+            var matcher = DATE_PATTERN.matcher(resp.getBody());
+            while (matcher.find()) {
+                int day = Integer.parseInt(matcher.group(1));
+                String monthKey = matcher.group(2).toLowerCase(Locale.ROOT);
+                int year = Integer.parseInt(matcher.group(3));
+                if (year != yearWanted) continue;
+                Month month = NO_MONTHS_SHORT.get(monthKey);
+                if (month == null) continue;
+                try {
+                    dates.add(LocalDate.of(year, month, day));
+                } catch (DateTimeException ignored) {}
+            }
+            log.info("BonusJegeren scraped {} dates for {}: {}", dates.size(), yearWanted, dates);
+            return dates;
+        } catch (Exception e) {
+            log.info("BonusJegeren scrape error (non-fatal): {}", e.toString());
+            return Set.of();
+        }
     }
 
     /**

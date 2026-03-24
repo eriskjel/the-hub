@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { CountdownWidget } from "@/widgets/schema";
 import { CountdownData } from "@/widgets/countdown/types";
 import { useFormatter, useTranslations } from "next-intl";
+import { CheckCircle } from "lucide-react";
 
 export default function CountdownView({
     widget,
@@ -158,7 +159,22 @@ export default function CountdownView({
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-2 mb-2 flex-none text-xs opacity-70">
+                        {data?.verified ? (
+                            <div className="mt-2 flex-none">
+                                <span className="text-success inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px]">
+                                    <CheckCircle className="h-3 w-3" />
+                                    {t("status.verified")}
+                                </span>
+                            </div>
+                        ) : data?.tentative ? (
+                            <div className="mt-2 flex-none">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-600 dark:text-amber-400">
+                                    <span>~</span>
+                                    {t("status.tentative")}
+                                </span>
+                            </div>
+                        ) : null}
+                        <div className={`${data?.tentative ? "mt-1" : "mt-2"} mb-2 flex-none text-xs opacity-70`}>
                             {isOngoing
                                 ? whenText && t("status.endsAt", { when: whenText })
                                 : whenText && t("status.startsAt", { when: whenText })}

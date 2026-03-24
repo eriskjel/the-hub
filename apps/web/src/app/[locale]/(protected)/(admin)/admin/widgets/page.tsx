@@ -1,29 +1,25 @@
-export default async function UsersPage() {
-    // mock data until you have a real endpoint
-    const users = [
-        { id: "1", email: "aliceeeeeeeeeeeee@example.com", role: "admin" },
-        { id: "2", email: "bob@example.com", role: "user" },
-        { id: "3", email: "carol@example.com", role: "editor" },
-    ];
+import { getTranslations } from "next-intl/server";
+import CountdownProviderCard from "@/components/admin/countdown/CountdownProviderCard";
+import { fetchProviderStatus } from "@/lib/admin/countdown.server";
+import type { CountdownSettings } from "@/widgets/schema";
+
+const PROVIDERS: CountdownSettings["provider"][] = ["trippel-trumf", "dnb-supertilbud"];
+
+export default async function AdminWidgetsPage() {
+    const t = await getTranslations("admin.widgets.countdown");
+    const statuses = await Promise.all(PROVIDERS.map(fetchProviderStatus));
 
     return (
-        <table className="w-full border-collapse text-sm">
-            <thead>
-                <tr className="border-b text-left">
-                    <th className="py-2 pr-4">ID</th>
-                    <th className="py-2 pr-4">Email</th>
-                    <th className="py-2 pr-4">Role</th>
-                </tr>
-            </thead>
-            <tbody>
-                {users.map((u) => (
-                    <tr key={u.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4">{u.id}</td>
-                        <td className="py-2 pr-4">{u.email}</td>
-                        <td className="py-2 pr-4">{u.role}</td>
-                    </tr>
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-foreground mb-1 text-lg font-semibold">{t("title")}</h2>
+                <p className="text-muted text-sm">{t("description")}</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+                {PROVIDERS.map((id, i) => (
+                    <CountdownProviderCard key={id} providerId={id} initialStatus={statuses[i]} />
                 ))}
-            </tbody>
-        </table>
+            </div>
+        </div>
     );
 }

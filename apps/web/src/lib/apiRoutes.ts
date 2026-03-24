@@ -9,4 +9,12 @@ export const API = {
         cinemateket: "/api/widgets/cinemateket",
         byId: (id: string) => `/api/widgets/${encodeURIComponent(id)}`,
     },
+    admin: {
+        countdown: {
+            status: (providerId: string) =>
+                `/api/backend/admin/widgets/countdown/status?providerId=${encodeURIComponent(providerId)}`,
+            confirm: (providerId: string) =>
+                `/api/backend/admin/widgets/countdown/confirm?providerId=${encodeURIComponent(providerId)}`,
+        },
+    },
 } as const;
