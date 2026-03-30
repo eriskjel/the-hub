@@ -319,13 +319,19 @@
                 }
             }
         },
+        "nav": {
+            "label": "Adminnavigasjon",
+            "toggleMobile": "Bytt navigasjonsmeny",
+            "collapse": "Skjul sidepanel",
+            "expand": "Vis sidepanel"
+        },
         "sections": {
             "manage": "Administrer",
             "system": "System"
         },
         "items": {
             "users": "Brukere",
-            "widgets": "Widgeter",
+            "widgets": "Nedtelling-widgets",
             "settings": "Innstillinger"
         },
         "users": {

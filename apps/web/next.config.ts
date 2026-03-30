@@ -5,6 +5,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+    // Type-safe Link hrefs — TypeScript errors on non-existent routes.
+    typedRoutes: true,
     output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
     images: {
         remotePatterns: [

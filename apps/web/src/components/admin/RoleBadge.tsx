@@ -7,12 +7,9 @@ import { useTranslations } from "next-intl";
 export function RoleBadge({ role }: { role: RoleKey }): ReactElement {
     const t = useTranslations("admin.users.roles");
     const label = t(roleKeyToI18n(role));
+
     const styles =
-        role === "admin"
-            ? "border-red-500 text-red-600"
-            : role === "user"
-              ? "border-gray-400 text-gray-600"
-              : "border-slate-300 text-slate-500";
+        role === "admin" ? "border-error/50 bg-error/10 text-error" : "border-border text-muted";
 
     return (
         <span

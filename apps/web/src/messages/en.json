@@ -319,13 +319,19 @@
                 }
             }
         },
+        "nav": {
+            "label": "Admin navigation",
+            "toggleMobile": "Toggle navigation menu",
+            "collapse": "Collapse sidebar",
+            "expand": "Expand sidebar"
+        },
         "sections": {
             "manage": "Manage",
             "system": "System"
         },
         "items": {
             "users": "Users",
-            "widgets": "Widgets",
+            "widgets": "Countdown Widgets",
             "settings": "Settings"
         },
         "users": {

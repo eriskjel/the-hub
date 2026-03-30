@@ -45,7 +45,7 @@ export default function CountdownProviderCard({
     }
 
     return (
-        <div className="bg-surface rounded-xl border p-4">
+        <div className="bg-surface w-72 shrink-0 rounded-xl border p-4">
             <div className="mb-3 flex items-center justify-between">
                 <span className="font-semibold">{t(`providers.${providerId}`)}</span>
                 {status?.adminConfirmed ? (

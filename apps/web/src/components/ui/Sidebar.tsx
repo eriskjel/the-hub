@@ -6,32 +6,35 @@ import { cn } from "@/utils/cn";
 export type SidebarItem = {
     label: string;
     href: string;
-    icon?: ReactNode; // if omitted, no dot shown (we keep spacing)
+    icon?: ReactNode;
     badge?: number | string;
     section?: string;
+};
+
+/** Prop shape expected by Sidebar's LinkComponent. Cast Next.js Link to this when typedRoutes is on. */
+export type SidebarLinkProps = {
+    href: string;
+    className?: string;
+    children?: ReactNode;
+    onClick?: () => void;
 };
 
 export type SidebarProps = {
     items: SidebarItem[];
     currentPath?: string;
-    LinkComponent?: ComponentType<{
-        href: string;
-        className?: string;
-        children?: ReactNode;
-        onClick?: () => void;
-    }>;
-    onNavigate?: (href: string) => void;
+    /** When true, labels and section headers are hidden (icon-only mode). */
+    collapsed?: boolean;
+    ariaLabel?: string;
+    LinkComponent?: ComponentType<SidebarLinkProps>;
 };
-
-const SIDEBAR_WIDTH = 288;
 
 export default function Sidebar({
     items,
     currentPath = "",
+    collapsed = false,
+    ariaLabel,
     LinkComponent,
-    onNavigate,
 }: SidebarProps) {
-    // group by section
     const map = new Map<string | undefined, SidebarItem[]>();
     for (const it of items) {
         const key = it.section;
@@ -39,87 +42,59 @@ export default function Sidebar({
         map.get(key)!.push(it);
     }
 
-    function LinkOrButton({
-        href,
-        className,
-        children,
-    }: {
-        href: string;
-        className?: string;
-        children: ReactNode;
-    }) {
-        if (LinkComponent)
-            return (
-                <LinkComponent href={href} className={className}>
-                    {children}
-                </LinkComponent>
-            );
-        if (onNavigate)
-            return (
-                <button onClick={() => onNavigate(href)} className={className}>
-                    {children}
-                </button>
-            );
-        return (
-            <a href={href} className={className}>
-                {children}
-            </a>
-        );
-    }
+    // Defined outside render so it's stable — avoids remounting links on every
+    // parent re-render (usePathname changes).
+    const Anchor = LinkComponent ?? FallbackAnchor;
 
     return (
-        <aside
-            role="navigation"
-            aria-label="Sidebar"
-            style={{ width: SIDEBAR_WIDTH }}
-            className="not-prose border-border/60 relative z-20 flex h-full flex-col border-r bg-[var(--sidebar-bg,theme(colors.gray.50))] text-[var(--sidebar-fg,theme(colors.gray.900))]"
-        >
-            <div className="flex-1 overflow-y-auto px-2 pt-10 pb-2">
+        <nav aria-label={ariaLabel} className="text-foreground flex flex-1 flex-col">
+            <div className="flex-1 overflow-x-hidden overflow-y-auto px-2 pt-4 pb-2">
                 {[...map.entries()].map(([section, list]) => (
                     <div key={section ?? "_root"} className="mb-2">
-                        {section && (
-                            <div className="text-foreground/60 px-2 pt-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
+                        {section && !collapsed && (
+                            <div className="text-muted px-2 pt-3 pb-1 text-[11px] font-semibold tracking-wider uppercase">
                                 {section}
                             </div>
                         )}
-                        <ul className="m-0 !list-none space-y-1 pl-0">
+                        {section && collapsed && <div className="border-border my-2 border-t" />}
+                        <ul className="m-0 !list-none space-y-0.5 pl-0">
                             {list.map((it) => {
                                 const active =
                                     currentPath === it.href ||
                                     currentPath.startsWith(it.href + "/");
                                 return (
                                     <li key={it.href}>
-                                        <LinkOrButton
+                                        <Anchor
                                             href={it.href}
                                             className={cn(
-                                                "group/nav flex w-full items-center gap-4 rounded-md px-3 py-3.5 text-base transition outline-none",
+                                                "focus-visible:ring-primary flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors outline-none focus-visible:ring-2",
+                                                collapsed && "justify-center",
                                                 active
-                                                    ? "bg-blue-100 text-blue-900"
-                                                    : "hover:bg-gray-100"
+                                                    ? "bg-primary/10 text-primary font-medium"
+                                                    : "text-muted hover:bg-surface-light hover:text-foreground"
                                             )}
                                             {...(active ? { "aria-current": "page" } : {})}
                                         >
-                                            {/* icon (or spacer to keep labels aligned) */}
-                                            {it.icon ? (
+                                            {it.icon && (
                                                 <span
-                                                    className="grid h-5 w-5 place-items-center opacity-80"
+                                                    className="grid h-5 w-5 shrink-0 place-items-center"
                                                     aria-hidden
+                                                    title={collapsed ? it.label : undefined}
                                                 >
                                                     {it.icon}
                                                 </span>
-                                            ) : (
-                                                <span className="h-5 w-5" aria-hidden />
                                             )}
-
-                                            <span
-                                                className={cn(
-                                                    "min-w-0 flex-1 truncate text-left",
-                                                    active ? "font-medium" : ""
-                                                )}
-                                            >
-                                                {it.label}
-                                            </span>
-                                        </LinkOrButton>
+                                            {!collapsed && (
+                                                <span className="min-w-0 flex-1 truncate">
+                                                    {it.label}
+                                                </span>
+                                            )}
+                                            {!collapsed && it.badge != null && (
+                                                <span className="bg-primary/15 text-primary rounded-full px-1.5 py-0.5 text-[10px]">
+                                                    {it.badge}
+                                                </span>
+                                            )}
+                                        </Anchor>
                                     </li>
                                 );
                             })}
@@ -127,6 +102,26 @@ export default function Sidebar({
                     </div>
                 ))}
             </div>
-        </aside>
+        </nav>
+    );
+}
+
+function FallbackAnchor({
+    href,
+    className,
+    children,
+    onClick,
+    ...rest
+}: {
+    href: string;
+    className?: string;
+    children?: ReactNode;
+    onClick?: () => void;
+    [key: string]: unknown;
+}) {
+    return (
+        <a href={href} className={className} onClick={onClick} {...rest}>
+            {children}
+        </a>
     );
 }
