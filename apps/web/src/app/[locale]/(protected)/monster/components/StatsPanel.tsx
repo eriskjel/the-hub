@@ -9,15 +9,23 @@ import type { OpeningRecord } from "../hooks/useOpeningHistory";
 import { RARITY_BORDERS, RARITY_COLORS } from "../rarityStyles";
 import type { DrinkRarity } from "../types";
 
-const RARITY_LABELS: Record<DrinkRarity, string> = {
-	blue: "Common",
-	purple: "Uncommon",
-	pink: "Rare",
-	red: "Very Rare",
-	yellow: "Legendary",
+const RARITY_ORDER: DrinkRarity[] = ["yellow", "red", "pink", "purple", "blue"];
+
+const RARITY_TEXT_COLORS: Record<DrinkRarity, string> = {
+	blue: "text-blue-400",
+	purple: "text-purple-400",
+	pink: "text-pink-400",
+	red: "text-red-400",
+	yellow: "text-yellow-400",
 };
 
-const RARITY_ORDER: DrinkRarity[] = ["yellow", "red", "pink", "purple", "blue"];
+const RARITY_BAR_COLORS: Record<DrinkRarity, string> = {
+	blue: "bg-blue-500",
+	purple: "bg-purple-500",
+	pink: "bg-pink-500",
+	red: "bg-red-500",
+	yellow: "bg-yellow-500",
+};
 
 const EXPECTED_RATES: Record<DrinkRarity, number> = {
 	blue: 79.92,
@@ -42,7 +50,7 @@ export function StatsPanel({ history, caseKey }: Props) {
 	const collected = new Set(caseHistory.map((h) => h.item));
 	const totalVariants = currentCase.variants.length;
 
-	// Rarity counts
+	// Rarity counts + item counts (single pass)
 	const rarityCounts: Record<DrinkRarity, number> = {
 		blue: 0,
 		purple: 0,
@@ -50,8 +58,10 @@ export function StatsPanel({ history, caseKey }: Props) {
 		red: 0,
 		yellow: 0,
 	};
+	const itemCounts = new Map<string, number>();
 	for (const h of caseHistory) {
 		rarityCounts[h.rarity] = (rarityCounts[h.rarity] ?? 0) + 1;
+		itemCounts.set(h.item, (itemCounts.get(h.item) ?? 0) + 1);
 	}
 
 	if (total === 0) {
@@ -93,24 +103,16 @@ export function StatsPanel({ history, caseKey }: Props) {
 								<span
 									className={clsx(
 										"w-20 text-xs font-medium",
-										`text-${rarity === "blue" ? "blue" : rarity === "purple" ? "purple" : rarity === "pink" ? "pink" : rarity === "red" ? "red" : "yellow"}-400`,
+										RARITY_TEXT_COLORS[rarity],
 									)}
 								>
-									{RARITY_LABELS[rarity]}
+									{t(`rarity.${rarity}`)}
 								</span>
 								<div className="relative h-4 flex-1 overflow-hidden rounded-full bg-gray-800">
 									<div
 										className={clsx(
 											"h-full rounded-full transition-all duration-500",
-											rarity === "blue"
-												? "bg-blue-500"
-												: rarity === "purple"
-													? "bg-purple-500"
-													: rarity === "pink"
-														? "bg-pink-500"
-														: rarity === "red"
-															? "bg-red-500"
-															: "bg-yellow-500",
+											RARITY_BAR_COLORS[rarity],
 										)}
 										style={{
 											width: `${Math.max(pct, count > 0 ? 2 : 0)}%`,
@@ -163,9 +165,7 @@ export function StatsPanel({ history, caseKey }: Props) {
 						)
 						.map((variant) => {
 							const owned = collected.has(variant.name);
-							const count = caseHistory.filter(
-								(h) => h.item === variant.name,
-							).length;
+							const count = itemCounts.get(variant.name) ?? 0;
 							return (
 								<div
 									key={variant.name}
@@ -233,7 +233,7 @@ export function StatsPanel({ history, caseKey }: Props) {
 							>
 								<span className="font-medium">{h.item}</span>
 								<span className="text-xs text-gray-400">
-									{RARITY_LABELS[h.rarity]}
+									{t(`rarity.${h.rarity}`)}
 								</span>
 							</div>
 						))}

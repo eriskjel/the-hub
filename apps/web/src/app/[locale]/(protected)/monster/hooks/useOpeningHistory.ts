@@ -38,9 +38,13 @@ function subscribe(cb: () => void) {
 }
 
 export function recordOpening(record: OpeningRecord) {
-	const current = getSnapshot();
-	current.push(record);
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+	try {
+		const current = getSnapshot();
+		current.push(record);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+	} catch {
+		// Private browsing, quota exceeded, or blocked storage — silently drop
+	}
 	emit();
 }
 

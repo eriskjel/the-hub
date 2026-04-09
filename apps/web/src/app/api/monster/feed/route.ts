@@ -12,8 +12,9 @@ export async function GET(req: NextRequest) {
 		return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 	}
 
+	const parsed = Number(req.nextUrl.searchParams.get("limit") ?? "20");
 	const limit = Math.min(
-		Number(req.nextUrl.searchParams.get("limit") ?? "20"),
+		Number.isFinite(parsed) && parsed > 0 ? parsed : 20,
 		50,
 	);
 
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
       item,
       rarity,
       opened_at,
-      profiles!inner(username, full_name, avatar_url)
+      profiles(username, full_name, avatar_url)
     `,
 		)
 		.order("opened_at", { ascending: false })

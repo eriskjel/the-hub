@@ -1,30 +1,35 @@
 -- Monster case opening history
+-- References profiles(id) only — profiles already references auth.users(id),
+-- and this FK enables Supabase PostgREST joins for the live feed.
 create table if not exists public.monster_opening (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
   case_type text not null,        -- 'monster' | 'redbullBurn'
   item text not null,             -- variant name e.g. 'Mango Loco'
   rarity text not null,           -- 'blue' | 'purple' | 'pink' | 'red' | 'yellow'
-  opened_at timestamptz not null default now(),
-
-  -- FK to profiles for Supabase PostgREST joins
-  constraint mo_user_profile_fk foreign key (user_id) references public.profiles(id)
+  opened_at timestamptz not null default now()
 );
 
 -- Indexes for stats queries
-create index idx_mo_user on public.monster_opening (user_id);
-create index idx_mo_user_case on public.monster_opening (user_id, case_type);
-create index idx_mo_opened_at on public.monster_opening (opened_at desc);
+create index if not exists idx_mo_user on public.monster_opening (user_id);
+create index if not exists idx_mo_user_case on public.monster_opening (user_id, case_type);
+create index if not exists idx_mo_opened_at on public.monster_opening (opened_at desc);
 
 -- Constraint: only valid rarity values
-alter table public.monster_opening
-  add constraint mo_rarity_check
-  check (rarity in ('blue', 'purple', 'pink', 'red', 'yellow'));
+do $$ begin
+  alter table public.monster_opening
+    add constraint mo_rarity_check
+    check (rarity in ('blue', 'purple', 'pink', 'red', 'yellow'));
+exception when duplicate_object then null;
+end $$;
 
 -- Constraint: only valid case types
-alter table public.monster_opening
-  add constraint mo_case_type_check
-  check (case_type in ('monster', 'redbullBurn'));
+do $$ begin
+  alter table public.monster_opening
+    add constraint mo_case_type_check
+    check (case_type in ('monster', 'redbullBurn'));
+exception when duplicate_object then null;
+end $$;
 
 -- === RLS ===
 alter table public.monster_opening enable row level security;

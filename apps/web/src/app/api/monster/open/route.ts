@@ -6,6 +6,38 @@ export const dynamic = "force-dynamic";
 const VALID_RARITIES = new Set(["blue", "purple", "pink", "red", "yellow"]);
 const VALID_CASE_TYPES = new Set(["monster", "redbullBurn"]);
 
+const VALID_ITEMS: Record<string, Set<string>> = {
+	monster: new Set([
+		"Original Zero",
+		"Rio Punch",
+		"Ultra Paradise",
+		"Bad Apple",
+		"Ultra Black",
+		"Lando Norris",
+		"Ultra Gold",
+		"Ultra Watermelon",
+		"Ultra Rosa",
+		"Valentino Rossi",
+		"Ultra Fiesta Mango",
+		"Original",
+		"Full Throttle",
+		"Ultra Strawberry Dreams",
+		"Aussie Lemonade",
+		"Ultra White",
+		"Mango Loco",
+		"Peachy Keen",
+	]),
+	redbullBurn: new Set([
+		"Burn Fruit Punch",
+		"Burn Apple Kiwi",
+		"Burn White Citrus",
+		"Burn Classic",
+		"Red Bull Zero",
+		"Red Bull Sugar Free",
+		"Red Bull Original",
+	]),
+};
+
 export async function POST(req: NextRequest) {
 	const supabase = await createClient();
 	const {
@@ -37,6 +69,9 @@ export async function POST(req: NextRequest) {
 	}
 	if (!VALID_RARITIES.has(rarity)) {
 		return NextResponse.json({ error: "invalid_rarity" }, { status: 400 });
+	}
+	if (!VALID_ITEMS[caseType]?.has(item)) {
+		return NextResponse.json({ error: "invalid_item" }, { status: 400 });
 	}
 
 	const { data, error } = await supabase
