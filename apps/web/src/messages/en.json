@@ -92,6 +92,24 @@
             "pink": "Epic",
             "red": "Mythic",
             "yellow": "Legendary"
+        },
+        "tabs": {
+            "open": "Open Cases",
+            "stats": "Stats"
+        },
+        "stats": {
+            "empty": "No cases opened yet. Start spinning!",
+            "totalOpens": "Total Opens",
+            "collected": "Collected",
+            "legendaries": "Legendaries",
+            "rarityBreakdown": "Rarity Breakdown",
+            "expectedMarker": "White line = expected drop rate",
+            "collection": "Collection",
+            "recentDrops": "Recent Drops"
+        },
+        "feed": {
+            "title": "Live Drops",
+            "opened": "opened"
         }
     },
     "auth": {

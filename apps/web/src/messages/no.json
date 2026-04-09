@@ -92,6 +92,24 @@
             "pink": "Episk",
             "red": "Myte",
             "yellow": "Legendarisk"
+        },
+        "tabs": {
+            "open": "Åpne Caser",
+            "stats": "Statistikk"
+        },
+        "stats": {
+            "empty": "Ingen caser åpnet ennå. Begynn å spinne!",
+            "totalOpens": "Totalt Åpnet",
+            "collected": "Samlet",
+            "legendaries": "Legendariske",
+            "rarityBreakdown": "Sjeldenhetsfordeling",
+            "expectedMarker": "Hvit linje = forventet drop-rate",
+            "collection": "Samling",
+            "recentDrops": "Siste Drops"
+        },
+        "feed": {
+            "title": "Live Drops",
+            "opened": "åpnet"
         }
     },
     "auth": {
