@@ -84,6 +84,9 @@
         "title": "Hvilken Monster skal du drikke i dag?",
         "button_text": "Få Monster",
         "rolling": "Åpner...",
+        "opening": "Triller...",
+        "rateLimited": "Rolig — én åpning per sekund.",
+        "openFailed": "Kunne ikke åpne casen. Prøv igjen.",
         "open_another": "Åpne en til",
         "you_got": "Du fikk {name} ({rarity})!",
         "rarity": {
@@ -92,6 +95,32 @@
             "pink": "Episk",
             "red": "Myte",
             "yellow": "Legendarisk"
+        },
+        "tabs": {
+            "open": "Åpne Caser",
+            "stats": "Statistikk"
+        },
+        "stats": {
+            "loading": "Laster statistikk…",
+            "unavailable": "Statistikk er utilgjengelig akkurat nå.",
+            "empty": "Ingen caser åpnet ennå. Begynn å spinne!",
+            "totalOpens": "Caser Åpnet",
+            "legendaries": "Legendariske",
+            "rarityBreakdown": "Dine Drop-Rater",
+            "expectedMarker": "Gull-linje = forventet drop-rate",
+            "collection": "Samling",
+            "collected": "Samlet",
+            "recentDrops": "Dine Siste Drops"
+        },
+        "global": {
+            "title": "Global Statistikk",
+            "totalOpens": "Caser Åpnet",
+            "legendaries": "Legendariske Funnet"
+        },
+        "yourStats": "Din Statistikk",
+        "feed": {
+            "title": "Live Drops",
+            "opened": "åpnet"
         }
     },
     "auth": {
