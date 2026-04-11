@@ -30,9 +30,7 @@ function makeClient() {
                 order: () => typeof self;
                 limit: () => typeof self;
                 maybeSingle: () => Promise<{ data: unknown; error: unknown }>;
-                insert: (
-                    payload: Record<string, unknown>
-                ) => {
+                insert: (payload: Record<string, unknown>) => {
                     select: () => {
                         single: () => Promise<{ data: unknown; error: unknown }>;
                     };

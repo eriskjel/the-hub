@@ -34,8 +34,8 @@ export function LiveFeed() {
     if (isError || !data?.items?.length) return null;
 
     return (
-        <div className="w-full rounded-xl border border-border bg-surface p-4">
-            <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+        <div className="border-border bg-surface w-full rounded-xl border p-4">
+            <h3 className="text-muted mb-2.5 text-xs font-semibold tracking-wide uppercase">
                 {t("feed.title")}
             </h3>
             <div className="max-h-[280px] space-y-1 overflow-y-auto">
@@ -48,13 +48,11 @@ export function LiveFeed() {
                         )}
                     >
                         <span>
-                            <span className="font-medium text-foreground">{item.username}</span>
+                            <span className="text-foreground font-medium">{item.username}</span>
                             <span className="text-muted"> {t("feed.opened")} </span>
-                            <span className="font-medium text-foreground">{item.item}</span>
+                            <span className="text-foreground font-medium">{item.item}</span>
                         </span>
-                        <span className="text-xs text-muted">
-                            {formatTimeAgo(item.openedAt)}
-                        </span>
+                        <span className="text-muted text-xs">{formatTimeAgo(item.openedAt)}</span>
                     </div>
                 ))}
             </div>

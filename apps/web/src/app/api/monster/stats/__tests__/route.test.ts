@@ -33,8 +33,18 @@ function makeClient() {
                       }
                     : {
                           data: [
-                              { item: "Original Zero", rarity: "blue", opened_at: "2026-04-09T10:00:00Z", id: "a" },
-                              { item: "Rio Punch", rarity: "blue", opened_at: "2026-04-09T10:01:00Z", id: "b" },
+                              {
+                                  item: "Original Zero",
+                                  rarity: "blue",
+                                  opened_at: "2026-04-09T10:00:00Z",
+                                  id: "a",
+                              },
+                              {
+                                  item: "Rio Punch",
+                                  rarity: "blue",
+                                  opened_at: "2026-04-09T10:01:00Z",
+                                  id: "b",
+                              },
                           ],
                           error: null,
                       };
@@ -84,9 +94,7 @@ describe("GET /api/monster/stats", () => {
 
     it("returns personal and global aggregates in the expected shape", async () => {
         mockUser = { id: "user-1" };
-        const res = await GET(
-            req("http://localhost:3000/api/monster/stats?type=monster") as never
-        );
+        const res = await GET(req("http://localhost:3000/api/monster/stats?type=monster") as never);
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.personal).toBeDefined();

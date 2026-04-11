@@ -64,7 +64,7 @@ type Props = {
 
 function StatsPlaceholder({ message }: { message: string }) {
     return (
-        <div className="w-full rounded-xl border border-border bg-surface p-5 text-center">
+        <div className="border-border bg-surface w-full rounded-xl border p-5 text-center">
             <p className="text-muted">{message}</p>
         </div>
     );
@@ -81,7 +81,7 @@ export function StatsGlobal({ stats, isLoading, isError }: Props) {
 
     return (
         <div className="flex w-full flex-col gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            <h2 className="text-muted text-sm font-semibold tracking-wide uppercase">
                 {t("global.title")}
             </h2>
             <StatCard label={t("global.totalOpens")} value={String(global.total)} />
@@ -117,13 +117,13 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
 
     return (
         <div className="flex w-full flex-col gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            <h2 className="text-muted text-sm font-semibold tracking-wide uppercase">
                 {t("yourStats")}
             </h2>
 
             {/* Rarity breakdown */}
-            <div className="rounded-xl border border-border bg-surface p-4">
-                <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <div className="border-border bg-surface rounded-xl border p-4">
+                <h3 className="text-muted mb-2.5 text-xs font-semibold tracking-wide uppercase">
                     {t("stats.rarityBreakdown")}
                 </h3>
                 <div className="space-y-1.5">
@@ -141,7 +141,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                 >
                                     {t(`rarity.${rarity}`)}
                                 </span>
-                                <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-surface-light">
+                                <div className="bg-surface-light relative h-3 flex-1 overflow-hidden rounded-full">
                                     <div
                                         className={clsx(
                                             "h-full rounded-full transition-all duration-500",
@@ -157,22 +157,22 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                         title={`Expected: ${expected}%`}
                                     />
                                 </div>
-                                <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-muted">
+                                <span className="text-muted w-14 shrink-0 text-right text-[11px] tabular-nums">
                                     {count} ({pct.toFixed(1)}%)
                                 </span>
                             </div>
                         );
                     })}
                 </div>
-                <p className="mt-1.5 text-[10px] text-muted-light">{t("stats.expectedMarker")}</p>
+                <p className="text-muted-light mt-1.5 text-[10px]">{t("stats.expectedMarker")}</p>
             </div>
 
             {/* Collection grid */}
-            <div className="rounded-xl border border-border bg-surface p-4">
-                <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <div className="border-border bg-surface rounded-xl border p-4">
+                <h3 className="text-muted mb-2.5 text-xs font-semibold tracking-wide uppercase">
                     {t("stats.collection")} — {collectedCount}/{totalVariants}
                 </h3>
-                <div className="mb-2.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-light">
+                <div className="bg-surface-light mb-2.5 h-1.5 w-full overflow-hidden rounded-full">
                     <div
                         className={clsx(
                             "h-full rounded-full transition-all duration-500",
@@ -232,8 +232,8 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
 
             {/* Recent drops */}
             {personal.recentItems.length > 0 && (
-                <div className="rounded-xl border border-border bg-surface p-4">
-                    <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                <div className="border-border bg-surface rounded-xl border p-4">
+                    <h3 className="text-muted mb-2.5 text-xs font-semibold tracking-wide uppercase">
                         {t("stats.recentDrops")}
                     </h3>
                     <div className="max-h-[240px] space-y-1 overflow-y-auto">
@@ -245,7 +245,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                     RARITY_COLORS[h.rarity]
                                 )}
                             >
-                                <span className="font-medium text-foreground">{h.item}</span>
+                                <span className="text-foreground font-medium">{h.item}</span>
                                 <span className={clsx("text-xs", RARITY_TEXT_COLORS[h.rarity])}>
                                     {t(`rarity.${h.rarity}`)}
                                 </span>
@@ -268,7 +268,7 @@ function StatCard({
     highlight?: boolean;
 }) {
     return (
-        <div className="rounded-xl border border-border bg-surface p-2.5 text-center">
+        <div className="border-border bg-surface rounded-xl border p-2.5 text-center">
             <div
                 className={clsx(
                     "text-xl font-bold",
@@ -277,7 +277,7 @@ function StatCard({
             >
                 {value}
             </div>
-            <div className="text-[11px] text-muted">{label}</div>
+            <div className="text-muted text-[11px]">{label}</div>
         </div>
     );
 }

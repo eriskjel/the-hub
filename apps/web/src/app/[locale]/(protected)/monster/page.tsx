@@ -73,8 +73,17 @@ export default function DrinkCasePage() {
         return { item: result.item, rarity: result.rarity, image: result.image };
     }, [openMutation]);
 
-    const { selected, rolling, opening, offset, handleOpen, reset, duration, animate, stripMonsters } =
-        useDrinkCase(currentCase.variants, roll);
+    const {
+        selected,
+        rolling,
+        opening,
+        offset,
+        handleOpen,
+        reset,
+        duration,
+        animate,
+        stripMonsters,
+    } = useDrinkCase(currentCase.variants, roll);
 
     // Invalidate stats + feed only after the spin animation finishes,
     // so the result isn't spoiled in the side panels mid-spin.
@@ -133,7 +142,7 @@ export default function DrinkCasePage() {
                                 "rounded-lg px-4 py-2 text-sm font-medium transition",
                                 active
                                     ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/25"
-                                    : "border border-border bg-surface text-muted hover:bg-surface-subtle hover:text-foreground"
+                                    : "border-border bg-surface text-muted hover:bg-surface-subtle hover:text-foreground border"
                             )}
                             onClick={() => handleCaseSwitch(key)}
                         >
@@ -191,9 +200,7 @@ export default function DrinkCasePage() {
                                 height={64}
                                 loading="eager"
                             />
-                            <span className="text-lg font-bold text-white">
-                                {selected.name}
-                            </span>
+                            <span className="text-lg font-bold text-white">{selected.name}</span>
                         </div>
                     )}
 
@@ -215,11 +222,7 @@ export default function DrinkCasePage() {
                                     className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/60 border-t-transparent"
                                 />
                             )}
-                            {opening
-                                ? t("opening")
-                                : rolling
-                                  ? t("rolling")
-                                  : t("button_text")}
+                            {opening ? t("opening") : rolling ? t("rolling") : t("button_text")}
                         </button>
                         {rateLimited && (
                             <p className="text-xs text-yellow-400">{t("rateLimited")}</p>
