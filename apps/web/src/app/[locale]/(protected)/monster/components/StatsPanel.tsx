@@ -199,11 +199,11 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                             ? RARITY_COLORS[variant.rarity]
                                             : "border-border bg-surface-subtle"
                                     )}
-                                    title={owned ? variant.name : "???"}
+                                    title={owned ? variant.name : undefined}
                                 >
                                     <Image
                                         src={variant.image}
-                                        alt={owned ? variant.name : "???"}
+                                        alt={owned ? variant.name : ""}
                                         width={48}
                                         height={48}
                                         className={clsx(
