@@ -1,42 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { isCaseKey } from "@/lib/monster/catalog";
+import { rollCase } from "@/lib/monster/roll";
 import { createClient } from "@/utils/supabase/server";
 
+export const runtime = "nodejs"; // node:crypto is needed for the server roll
 export const dynamic = "force-dynamic";
 
-const VALID_RARITIES = new Set(["blue", "purple", "pink", "red", "yellow"]);
-const VALID_CASE_TYPES = new Set(["monster", "redbullBurn"]);
-
-const VALID_ITEMS: Record<string, Set<string>> = {
-    monster: new Set([
-        "Original Zero",
-        "Rio Punch",
-        "Ultra Paradise",
-        "Bad Apple",
-        "Ultra Black",
-        "Lando Norris",
-        "Ultra Gold",
-        "Ultra Watermelon",
-        "Ultra Rosa",
-        "Valentino Rossi",
-        "Ultra Fiesta Mango",
-        "Original",
-        "Full Throttle",
-        "Ultra Strawberry Dreams",
-        "Aussie Lemonade",
-        "Ultra White",
-        "Mango Loco",
-        "Peachy Keen",
-    ]),
-    redbullBurn: new Set([
-        "Burn Fruit Punch",
-        "Burn Apple Kiwi",
-        "Burn White Citrus",
-        "Burn Classic",
-        "Red Bull Zero",
-        "Red Bull Sugar Free",
-        "Red Bull Original",
-    ]),
-};
+/**
+ * Minimum gap between two openings from the same user, in milliseconds.
+ * Protects against rapid-fire scripts without being annoying to a human
+ * clicking the button.
+ */
+const RATE_LIMIT_MS = 1000;
 
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
@@ -54,36 +29,69 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "invalid_json" }, { status: 400 });
     }
 
-    const { caseType, item, rarity } = body as Record<string, unknown>;
-
-    if (typeof caseType !== "string" || typeof item !== "string" || typeof rarity !== "string") {
-        return NextResponse.json({ error: "missing_fields" }, { status: 400 });
-    }
-
-    if (!VALID_CASE_TYPES.has(caseType)) {
+    const caseType = (body as { caseType?: unknown } | null)?.caseType;
+    if (!isCaseKey(caseType)) {
         return NextResponse.json({ error: "invalid_case_type" }, { status: 400 });
     }
-    if (!VALID_RARITIES.has(rarity)) {
-        return NextResponse.json({ error: "invalid_rarity" }, { status: 400 });
-    }
-    if (!VALID_ITEMS[caseType]?.has(item)) {
-        return NextResponse.json({ error: "invalid_item" }, { status: 400 });
+
+    // Rate limit: reject if the user opened anything in the last RATE_LIMIT_MS.
+    // One short query against idx_mo_user_case. Not atomic — a determined
+    // attacker could beat the race — but it caps casual scripts effectively.
+    const { data: lastRow, error: lastErr } = await supabase
+        .from("monster_opening")
+        .select("opened_at")
+        .eq("user_id", user.id)
+        .order("opened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (lastErr) {
+        return NextResponse.json({ error: lastErr.message }, { status: 500 });
     }
 
-    const { data, error } = await supabase
+    if (lastRow) {
+        const elapsed = Date.now() - new Date(lastRow.opened_at).getTime();
+        if (elapsed < RATE_LIMIT_MS) {
+            const retryAfterMs = RATE_LIMIT_MS - elapsed;
+            return NextResponse.json(
+                { error: "rate_limited", retryAfterMs },
+                {
+                    status: 429,
+                    headers: {
+                        "retry-after": String(Math.ceil(retryAfterMs / 1000)),
+                    },
+                }
+            );
+        }
+    }
+
+    // Authoritative roll on the server — the client cannot influence the outcome.
+    const roll = rollCase(caseType);
+
+    const { data: inserted, error: insertErr } = await supabase
         .from("monster_opening")
         .insert({
             user_id: user.id,
             case_type: caseType,
-            item,
-            rarity,
+            item: roll.item,
+            rarity: roll.rarity,
         })
         .select("id, opened_at")
         .single();
 
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    if (insertErr) {
+        return NextResponse.json({ error: insertErr.message }, { status: 500 });
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(
+        {
+            id: inserted.id,
+            caseType,
+            item: roll.item,
+            rarity: roll.rarity,
+            image: roll.image,
+            openedAt: inserted.opened_at,
+        },
+        { status: 201 }
+    );
 }
