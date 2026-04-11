@@ -115,7 +115,9 @@ export default function DrinkCasePage() {
     };
 
     const busy = rolling || opening;
-    const rateLimited = openMutation.error?.message === "rate_limited";
+    const openErrorCode = openMutation.error?.message;
+    const rateLimited = openErrorCode === "rate_limited";
+    const openFailed = !rolling && !!openErrorCode && !rateLimited;
     const showResult = !rolling && selected;
 
     const statsProps = {
@@ -227,6 +229,7 @@ export default function DrinkCasePage() {
                         {rateLimited && (
                             <p className="text-xs text-yellow-400">{t("rateLimited")}</p>
                         )}
+                        {openFailed && <p className="text-xs text-red-400">{t("openFailed")}</p>}
                     </div>
                 </div>
 

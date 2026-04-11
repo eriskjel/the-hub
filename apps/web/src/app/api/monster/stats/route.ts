@@ -68,21 +68,21 @@ export async function GET(req: NextRequest) {
     const personal = accumulate((personalRes.data ?? []) as StatsRow[]);
     const global = accumulate((globalRes.data ?? []) as StatsRow[]);
 
-    // Distinct item count for the "X / Y collected" progress — needs per-row
-    // data, not aggregates. Bounded by the number of variants in the case
-    // (≤ ~20 today), so this select is always tiny.
-    const { data: distinctRows, error: distinctErr } = await supabase
-        .from("monster_opening")
+    // Distinct item count for the "X / Y collected" progress. Reads from a
+    // DB-side distinct view so we don't pull the full opening history into
+    // Node just to deduplicate.
+    const { data: ownedRows, error: ownedErr } = await supabase
+        .from("monster_opening_owned_items")
         .select("item")
         .eq("user_id", user.id)
         .eq("case_type", caseType);
 
-    if (distinctErr) {
-        console.error("monster/stats distinct query failed:", distinctErr.message);
+    if (ownedErr) {
+        console.error("monster/stats owned-items query failed:", ownedErr.message);
         return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
-    const ownedItems = Array.from(new Set((distinctRows ?? []).map((r) => r.item)));
+    const ownedItems = (ownedRows ?? []).map((r) => r.item as string);
 
     // Recent openings for "My recent drops" panel. Bounded to 10 — cheap,
     // served by idx_mo_user_case + in-memory sort on the per-user slice.

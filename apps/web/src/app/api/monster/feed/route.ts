@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     const parsed = Number(req.nextUrl.searchParams.get("limit") ?? "20");
-    const limit = Math.min(Number.isFinite(parsed) && parsed > 0 ? parsed : 20, 50);
+    const limit = Math.min(Math.floor(Number.isFinite(parsed) && parsed > 0 ? parsed : 20), 50);
 
     const { data, error } = await supabase
         .from("monster_opening")

@@ -86,6 +86,7 @@
         "rolling": "Åpner...",
         "opening": "Triller...",
         "rateLimited": "Rolig — én åpning per sekund.",
+        "openFailed": "Kunne ikke åpne casen. Prøv igjen.",
         "open_another": "Åpne en til",
         "you_got": "Du fikk {name} ({rarity})!",
         "rarity": {

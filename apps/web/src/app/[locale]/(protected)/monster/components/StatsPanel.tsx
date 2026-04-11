@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
+import { RARITY_PROBABILITIES } from "@/lib/monster/catalog";
 import type { CaseKey } from "../cases";
 import { CASES } from "../cases";
 import { RARITY_COLORS } from "../rarityStyles";
@@ -25,14 +26,6 @@ const RARITY_BAR_COLORS: Record<DrinkRarity, string> = {
     pink: "bg-pink-500",
     red: "bg-red-500",
     yellow: "bg-yellow-500",
-};
-
-const EXPECTED_RATES: Record<DrinkRarity, number> = {
-    blue: 79.92,
-    purple: 15.98,
-    pink: 3.2,
-    red: 0.64,
-    yellow: 0.26,
 };
 
 export type RecentItem = {
@@ -75,7 +68,10 @@ export function StatsGlobal({ stats, isLoading, isError }: Props) {
     const t = useTranslations("monster");
 
     if (isLoading) return <StatsPlaceholder message={t("stats.loading")} />;
-    if (isError || !stats) return <StatsPlaceholder message={t("stats.unavailable")} />;
+    // Hide entirely when the stats endpoint is unavailable (e.g. migration
+    // not applied), mirroring LiveFeed. Personal stats still show their own
+    // placeholder so the user knows where their history would appear.
+    if (isError || !stats) return null;
 
     const { global } = stats;
 
@@ -130,7 +126,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                     {RARITY_ORDER.map((rarity) => {
                         const count = personal.byRarity[rarity];
                         const pct = total > 0 ? (count / total) * 100 : 0;
-                        const expected = EXPECTED_RATES[rarity];
+                        const expected = RARITY_PROBABILITIES[rarity];
                         return (
                             <div key={rarity} className="flex items-center gap-2">
                                 <span
@@ -154,7 +150,6 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                     <div
                                         className="absolute top-0 h-full w-0.5 bg-amber-400/70"
                                         style={{ left: `${expected}%` }}
-                                        title={`Expected: ${expected}%`}
                                     />
                                 </div>
                                 <span className="text-muted w-14 shrink-0 text-right text-[11px] tabular-nums">

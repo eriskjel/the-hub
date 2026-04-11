@@ -13,14 +13,19 @@ create table if not exists public.monster_opening (
   opened_at timestamptz not null default now()
 );
 
--- Indexes for stats queries.
--- Note: no standalone (user_id) index — idx_mo_user_case already covers
--- user_id-only lookups on its leading column.
-create index if not exists idx_mo_user_case on public.monster_opening (user_id, case_type);
+-- Indexes for hot-path queries:
+-- 1) global feed (order by opened_at desc, no filter)
 create index if not exists idx_mo_opened_at on public.monster_opening (opened_at desc);
--- Rate-limit check (last opening for a user) + stats-by-case queries.
+-- 2) global stats by case (group by rarity for a given case_type)
 create index if not exists idx_mo_case_opened_at
   on public.monster_opening (case_type, opened_at desc);
+-- 3) rate-limit check: latest opening for a user (limit 1, no case filter)
+create index if not exists idx_mo_user_opened_at
+  on public.monster_opening (user_id, opened_at desc);
+-- 4) per-user, per-case recent drops + stats. Leading prefix also serves
+--    (user_id, case_type) equality filters, so no separate idx_mo_user_case.
+create index if not exists idx_mo_user_case_opened_at
+  on public.monster_opening (user_id, case_type, opened_at desc);
 
 -- Constraint: only valid rarity values
 do $$ begin
@@ -90,3 +95,14 @@ group by user_id, case_type, rarity;
 
 comment on view public.monster_opening_stats is
   'Pre-aggregated rarity counts. Read via PostgREST; RLS inherited from monster_opening.';
+
+-- === Distinct owned items view ===
+-- Distinct (user, case, item) tuples for the "X / Y collected" progress.
+-- Avoids loading the full opening history into Node just to deduplicate.
+create or replace view public.monster_opening_owned_items
+with (security_invoker = true) as
+select distinct user_id, case_type, item
+from public.monster_opening;
+
+comment on view public.monster_opening_owned_items is
+  'Distinct items owned per user per case. Read via PostgREST; RLS inherited from monster_opening.';

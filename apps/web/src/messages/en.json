@@ -86,6 +86,7 @@
         "rolling": "Opening...",
         "opening": "Rolling...",
         "rateLimited": "Slow down — one spin per second.",
+        "openFailed": "Couldn't open the case. Please try again.",
         "open_another": "Open another",
         "you_got": "You got {name} ({rarity})!",
         "rarity": {
