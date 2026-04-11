@@ -135,7 +135,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                             <div key={rarity} className="flex items-center gap-2">
                                 <span
                                     className={clsx(
-                                        "w-14 text-xs font-medium",
+                                        "w-16 shrink-0 text-xs font-medium",
                                         RARITY_TEXT_COLORS[rarity]
                                     )}
                                 >
@@ -157,7 +157,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                         title={`Expected: ${expected}%`}
                                     />
                                 </div>
-                                <span className="w-12 text-right text-[11px] tabular-nums text-muted">
+                                <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-muted">
                                     {count} ({pct.toFixed(1)}%)
                                 </span>
                             </div>

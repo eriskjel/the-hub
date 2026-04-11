@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
     if (lastErr) {
-        return NextResponse.json({ error: lastErr.message }, { status: 500 });
+        console.error("monster/open rate-limit check failed:", lastErr.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     if (lastRow) {
@@ -80,7 +81,8 @@ export async function POST(req: NextRequest) {
         .single();
 
     if (insertErr) {
-        return NextResponse.json({ error: insertErr.message }, { status: 500 });
+        console.error("monster/open insert failed:", insertErr.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     return NextResponse.json(

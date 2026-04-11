@@ -57,10 +57,12 @@ export async function GET(req: NextRequest) {
     ]);
 
     if (personalRes.error) {
-        return NextResponse.json({ error: personalRes.error.message }, { status: 500 });
+        console.error("monster/stats personal query failed:", personalRes.error.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
     if (globalRes.error) {
-        return NextResponse.json({ error: globalRes.error.message }, { status: 500 });
+        console.error("monster/stats global query failed:", globalRes.error.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     const personal = accumulate((personalRes.data ?? []) as StatsRow[]);
@@ -76,7 +78,8 @@ export async function GET(req: NextRequest) {
         .eq("case_type", caseType);
 
     if (distinctErr) {
-        return NextResponse.json({ error: distinctErr.message }, { status: 500 });
+        console.error("monster/stats distinct query failed:", distinctErr.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     const ownedItems = Array.from(new Set((distinctRows ?? []).map((r) => r.item)));
@@ -92,7 +95,8 @@ export async function GET(req: NextRequest) {
         .limit(10);
 
     if (recentErr) {
-        return NextResponse.json({ error: recentErr.message }, { status: 500 });
+        console.error("monster/stats recent query failed:", recentErr.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     const recentItems = (recentRows ?? []).map((r) => ({

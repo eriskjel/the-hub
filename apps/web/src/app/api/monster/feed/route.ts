@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
         .limit(limit);
 
     if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("monster/feed query failed:", error.message);
+        return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     const items = (data ?? []).map((row) => {
