@@ -3,10 +3,10 @@
 import clsx from "clsx";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 import type { CaseKey } from "../cases";
 import { CASES } from "../cases";
-import type { OpeningRecord } from "../hooks/useOpeningHistory";
-import { RARITY_BORDERS, RARITY_COLORS } from "../rarityStyles";
+import { RARITY_COLORS } from "../rarityStyles";
 import type { DrinkRarity } from "../types";
 
 const RARITY_ORDER: DrinkRarity[] = ["yellow", "red", "pink", "purple", "blue"];
@@ -35,80 +35,113 @@ const EXPECTED_RATES: Record<DrinkRarity, number> = {
     yellow: 0.26,
 };
 
+export type RecentItem = {
+    id: string;
+    item: string;
+    rarity: DrinkRarity;
+    openedAt: string;
+};
+
+export type StatsResponse = {
+    personal: {
+        total: number;
+        byRarity: Record<DrinkRarity, number>;
+        ownedItems: string[];
+        recentItems: RecentItem[];
+    };
+    global: {
+        total: number;
+        byRarity: Record<DrinkRarity, number>;
+    };
+};
+
 type Props = {
-    history: OpeningRecord[];
+    stats: StatsResponse | undefined;
+    isLoading: boolean;
+    isError: boolean;
     caseKey: CaseKey;
 };
 
-export function StatsPanel({ history, caseKey }: Props) {
+function StatsPlaceholder({ message }: { message: string }) {
+    return (
+        <div className="w-full rounded-xl border border-border bg-surface p-5 text-center">
+            <p className="text-muted">{message}</p>
+        </div>
+    );
+}
+
+/* ── Left column: global stats (total opens, legendaries) ── */
+export function StatsGlobal({ stats, isLoading, isError }: Props) {
     const t = useTranslations("monster");
-    const caseHistory = history.filter((h) => h.caseType === caseKey);
-    const total = caseHistory.length;
-    const currentCase = CASES[caseKey];
 
-    // Collection tracking
-    const collected = new Set(caseHistory.map((h) => h.item));
-    const totalVariants = currentCase.variants.length;
+    if (isLoading) return <StatsPlaceholder message={t("stats.loading")} />;
+    if (isError || !stats) return <StatsPlaceholder message={t("stats.unavailable")} />;
 
-    // Rarity counts + item counts (single pass)
-    const rarityCounts: Record<DrinkRarity, number> = {
-        blue: 0,
-        purple: 0,
-        pink: 0,
-        red: 0,
-        yellow: 0,
-    };
-    const itemCounts = new Map<string, number>();
-    for (const h of caseHistory) {
-        rarityCounts[h.rarity] = (rarityCounts[h.rarity] ?? 0) + 1;
-        itemCounts.set(h.item, (itemCounts.get(h.item) ?? 0) + 1);
-    }
-
-    if (total === 0) {
-        return (
-            <div className="w-full max-w-2xl rounded-lg border border-gray-700 bg-gray-900/50 p-6 text-center">
-                <p className="text-gray-400">{t("stats.empty")}</p>
-            </div>
-        );
-    }
+    const { global } = stats;
 
     return (
-        <div className="flex w-full max-w-2xl flex-col gap-4">
-            {/* Summary row */}
-            <div className="grid grid-cols-3 gap-3">
-                <StatCard label={t("stats.totalOpens")} value={String(total)} />
-                <StatCard
-                    label={t("stats.collected")}
-                    value={`${collected.size}/${totalVariants}`}
-                />
-                <StatCard
-                    label={t("stats.legendaries")}
-                    value={String(rarityCounts.yellow)}
-                    highlight={rarityCounts.yellow > 0}
-                />
-            </div>
+        <div className="flex w-full flex-col gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+                {t("global.title")}
+            </h2>
+            <StatCard label={t("global.totalOpens")} value={String(global.total)} />
+            <StatCard
+                label={t("global.legendaries")}
+                value={String(global.byRarity.yellow)}
+                highlight={global.byRarity.yellow > 0}
+            />
+        </div>
+    );
+}
+
+/* ── Right column: personal rarity bars + collection + recent drops ── */
+export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
+    const t = useTranslations("monster");
+    const currentCase = CASES[caseKey];
+    const totalVariants = currentCase.variants.length;
+
+    const ownedSet = useMemo(
+        () => new Set(stats?.personal.ownedItems ?? []),
+        [stats?.personal.ownedItems]
+    );
+
+    if (isLoading) return <StatsPlaceholder message={t("stats.loading")} />;
+    if (isError || !stats) return <StatsPlaceholder message={t("stats.unavailable")} />;
+
+    const { personal } = stats;
+    const total = personal.total;
+
+    if (total === 0) return <StatsPlaceholder message={t("stats.empty")} />;
+
+    const collectedCount = ownedSet.size;
+
+    return (
+        <div className="flex w-full flex-col gap-3">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+                {t("yourStats")}
+            </h2>
 
             {/* Rarity breakdown */}
-            <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-gray-300">
+            <div className="rounded-xl border border-border bg-surface p-4">
+                <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
                     {t("stats.rarityBreakdown")}
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                     {RARITY_ORDER.map((rarity) => {
-                        const count = rarityCounts[rarity];
+                        const count = personal.byRarity[rarity];
                         const pct = total > 0 ? (count / total) * 100 : 0;
                         const expected = EXPECTED_RATES[rarity];
                         return (
-                            <div key={rarity} className="flex items-center gap-3">
+                            <div key={rarity} className="flex items-center gap-2">
                                 <span
                                     className={clsx(
-                                        "w-20 text-xs font-medium",
+                                        "w-14 text-xs font-medium",
                                         RARITY_TEXT_COLORS[rarity]
                                     )}
                                 >
                                     {t(`rarity.${rarity}`)}
                                 </span>
-                                <div className="relative h-4 flex-1 overflow-hidden rounded-full bg-gray-800">
+                                <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-surface-light">
                                     <div
                                         className={clsx(
                                             "h-full rounded-full transition-all duration-500",
@@ -118,62 +151,60 @@ export function StatsPanel({ history, caseKey }: Props) {
                                             width: `${Math.max(pct, count > 0 ? 2 : 0)}%`,
                                         }}
                                     />
-                                    {/* Expected rate marker */}
                                     <div
-                                        className="absolute top-0 h-full w-0.5 bg-white/30"
+                                        className="absolute top-0 h-full w-0.5 bg-amber-400/70"
                                         style={{ left: `${expected}%` }}
                                         title={`Expected: ${expected}%`}
                                     />
                                 </div>
-                                <span className="w-16 text-right text-xs text-gray-400">
+                                <span className="w-12 text-right text-[11px] tabular-nums text-muted">
                                     {count} ({pct.toFixed(1)}%)
                                 </span>
                             </div>
                         );
                     })}
                 </div>
-                <p className="mt-2 text-xs text-gray-500">{t("stats.expectedMarker")}</p>
+                <p className="mt-1.5 text-[10px] text-muted-light">{t("stats.expectedMarker")}</p>
             </div>
 
             {/* Collection grid */}
-            <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-gray-300">
-                    {t("stats.collection")}
+            <div className="rounded-xl border border-border bg-surface p-4">
+                <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                    {t("stats.collection")} — {collectedCount}/{totalVariants}
                 </h3>
-                <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-gray-800">
+                <div className="mb-2.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-light">
                     <div
                         className={clsx(
                             "h-full rounded-full transition-all duration-500",
-                            collected.size === totalVariants
+                            collectedCount === totalVariants
                                 ? "bg-yellow-500"
-                                : collected.size / totalVariants >= 0.5
+                                : collectedCount / totalVariants >= 0.5
                                   ? "bg-green-500"
                                   : "bg-blue-500"
                         )}
                         style={{
-                            width: `${(collected.size / totalVariants) * 100}%`,
+                            width: `${(collectedCount / totalVariants) * 100}%`,
                         }}
                     />
                 </div>
-                <div className="grid grid-cols-5 gap-2 sm:grid-cols-6">
+                <div className="grid grid-cols-4 gap-1.5 xl:grid-cols-5">
                     {[...currentCase.variants]
                         .sort(
                             (a, b) =>
                                 RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity)
                         )
                         .map((variant) => {
-                            const owned = collected.has(variant.name);
-                            const count = itemCounts.get(variant.name) ?? 0;
+                            const owned = ownedSet.has(variant.name);
                             return (
                                 <div
                                     key={variant.name}
                                     className={clsx(
-                                        "relative flex flex-col items-center rounded-lg border p-1.5",
+                                        "relative flex flex-col items-center rounded-lg border p-1",
                                         owned
                                             ? RARITY_COLORS[variant.rarity]
-                                            : "border-gray-700 bg-gray-800/50"
+                                            : "border-border bg-surface-subtle"
                                     )}
-                                    title={owned ? `${variant.name} (x${count})` : "???"}
+                                    title={owned ? variant.name : "???"}
                                 >
                                     <Image
                                         src={variant.image}
@@ -181,62 +212,48 @@ export function StatsPanel({ history, caseKey }: Props) {
                                         width={48}
                                         height={48}
                                         className={clsx(
-                                            "h-10 w-10 object-contain",
-                                            !owned && "opacity-20 brightness-0"
+                                            "h-8 w-8 object-contain",
+                                            !owned && "opacity-15 brightness-0"
                                         )}
                                     />
                                     <span
                                         className={clsx(
-                                            "mt-0.5 line-clamp-1 text-center text-[10px] leading-tight",
-                                            owned ? "text-gray-200" : "text-gray-600"
+                                            "mt-0.5 line-clamp-1 text-center text-[9px] leading-tight",
+                                            owned ? "text-foreground" : "text-muted-light"
                                         )}
                                     >
                                         {owned ? variant.name : "???"}
                                     </span>
-                                    {owned && count > 1 && (
-                                        <span
-                                            className={clsx(
-                                                "absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[9px] font-bold text-white",
-                                                RARITY_BORDERS[variant.rarity].replace(
-                                                    "border-",
-                                                    "bg-"
-                                                )
-                                            )}
-                                        >
-                                            {count}
-                                        </span>
-                                    )}
                                 </div>
                             );
                         })}
                 </div>
             </div>
 
-            {/* Recent history */}
-            <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-gray-300">
-                    {t("stats.recentDrops")}
-                </h3>
-                <div className="space-y-1.5">
-                    {caseHistory
-                        .slice(-10)
-                        .reverse()
-                        .map((h) => (
+            {/* Recent drops */}
+            {personal.recentItems.length > 0 && (
+                <div className="rounded-xl border border-border bg-surface p-4">
+                    <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                        {t("stats.recentDrops")}
+                    </h3>
+                    <div className="max-h-[240px] space-y-1 overflow-y-auto">
+                        {personal.recentItems.map((h) => (
                             <div
-                                key={h.openedAt}
+                                key={h.id}
                                 className={clsx(
-                                    "flex items-center justify-between rounded px-2 py-1 text-sm",
+                                    "flex items-center justify-between rounded-lg px-2.5 py-1 text-sm",
                                     RARITY_COLORS[h.rarity]
                                 )}
                             >
-                                <span className="font-medium">{h.item}</span>
-                                <span className="text-xs text-gray-400">
+                                <span className="font-medium text-foreground">{h.item}</span>
+                                <span className={clsx("text-xs", RARITY_TEXT_COLORS[h.rarity])}>
                                     {t(`rarity.${h.rarity}`)}
                                 </span>
                             </div>
                         ))}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
@@ -251,13 +268,16 @@ function StatCard({
     highlight?: boolean;
 }) {
     return (
-        <div className="rounded-lg border border-gray-700 bg-gray-900/50 p-3 text-center">
+        <div className="rounded-xl border border-border bg-surface p-2.5 text-center">
             <div
-                className={clsx("text-2xl font-bold", highlight ? "text-yellow-400" : "text-white")}
+                className={clsx(
+                    "text-xl font-bold",
+                    highlight ? "text-yellow-400" : "text-foreground"
+                )}
             >
                 {value}
             </div>
-            <div className="text-xs text-gray-400">{label}</div>
+            <div className="text-[11px] text-muted">{label}</div>
         </div>
     );
 }

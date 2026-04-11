@@ -5,15 +5,8 @@ import {
     ITEM_WIDTH,
     SPIN_ROUNDS,
 } from "@/app/[locale]/(protected)/monster/constants";
-import type { DrinkVariant } from "../types";
-
-const RARITY_PROBABILITIES = Object.freeze({
-    blue: 79.92,
-    purple: 15.98,
-    pink: 3.2,
-    red: 0.64,
-    yellow: 0.26,
-});
+import { RARITY_PROBABILITIES } from "@/lib/monster/catalog";
+import type { DrinkRarity, DrinkVariant } from "../types";
 
 const LEGENDARY_PLACEHOLDER_IMAGE = "/drinks/gold.png";
 const SPINNER_STRIP_BASE_SIZE = 200;
@@ -26,15 +19,23 @@ export function validateRarityWeightsDev() {
     }
 }
 
-export type OnOpenCallback = (result: { caseType: string; item: string; rarity: string }) => void;
+/**
+ * The caller (page.tsx) performs the authoritative roll via the server and
+ * hands the result back through this callback. The hook is purely responsible
+ * for the visual animation + the "latest result" UI state.
+ */
+export type RollFn = () => Promise<{
+    item: string;
+    rarity: DrinkRarity;
+    image: string;
+}>;
 
-export function useDrinkCase(
-    drinks: DrinkVariant[],
-    options?: { caseType?: string; onOpen?: OnOpenCallback }
-) {
+export function useDrinkCase(drinks: DrinkVariant[], roll: RollFn) {
     if (process.env.NODE_ENV === "development") validateRarityWeightsDev();
+
     const [selected, setSelected] = useState<DrinkVariant | null>(null);
     const [rolling, setRolling] = useState(false);
+    const [opening, setOpening] = useState(false); // waiting on the server roll
     const [offset, setOffset] = useState(0);
     const [animate, setAnimate] = useState(true);
     const [stripDrinks, setStripDrinks] = useState<DrinkVariant[]>(() =>
@@ -55,8 +56,27 @@ export function useDrinkCase(
         setStripDrinks(maskLegendary(createWeightedStrip(drinks, false)));
     }, [drinks]);
 
-    const handleOpen = () => {
-        if (rolling) return;
+    const handleOpen = async () => {
+        if (rolling || opening) return;
+
+        setOpening(true);
+        let result: Awaited<ReturnType<RollFn>>;
+        try {
+            result = await roll();
+        } catch {
+            // Caller is expected to surface the error via its own toast/UI
+            // (mutation.error); we just bail out so the button re-enables.
+            setOpening(false);
+            return;
+        }
+
+        // Hydrate the chosen variant using catalog data (image from server
+        // may differ if someone races a catalog change; trust the server).
+        const chosenVariant: DrinkVariant = {
+            name: result.item,
+            image: result.image,
+            rarity: result.rarity,
+        };
 
         if (spinSound) {
             spinSound.currentTime = 0;
@@ -65,26 +85,16 @@ export function useDrinkCase(
             });
         }
 
-        const weightedChoice = getWeightedRandom(drinks);
-
-        options?.onOpen?.({
-            caseType: options.caseType ?? "monster",
-            item: weightedChoice.name,
-            rarity: weightedChoice.rarity,
-        });
-
-        const spinStrip = createVisualStrip(drinks, weightedChoice, 40); // ~40 items
-
+        const spinStrip = createVisualStrip(drinks, chosenVariant, 40);
         setStripDrinks(maskLegendary(spinStrip));
 
         setAnimate(true);
+        setOpening(false);
         setRolling(true);
         setOffset(0);
+        setSelected(chosenVariant);
 
-        setSelected(weightedChoice);
-
-        const chosenIndex = spinStrip.findIndex((d) => d.name === weightedChoice.name);
-
+        const chosenIndex = spinStrip.findIndex((d) => d.name === chosenVariant.name);
         const centerOffset = CONTAINER_WIDTH / 2 - ITEM_WIDTH / 2;
         const finalOffset =
             (spinStrip.length * SPIN_ROUNDS + chosenIndex) * ITEM_WIDTH - centerOffset;
@@ -110,6 +120,7 @@ export function useDrinkCase(
     return {
         selected,
         rolling,
+        opening,
         offset,
         handleOpen,
         reset,
@@ -126,27 +137,6 @@ function shuffle<T>(arr: T[]): T[] {
         [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
-}
-
-function getWeightedRandom(drinks: DrinkVariant[]): DrinkVariant {
-    const r = Math.random() * 100;
-    let acc = 0;
-    let picked: keyof typeof RARITY_PROBABILITIES = "blue";
-
-    for (const [rarity, p] of Object.entries(RARITY_PROBABILITIES)) {
-        acc += p;
-        if (r < acc) {
-            picked = rarity as keyof typeof RARITY_PROBABILITIES;
-            break;
-        }
-    }
-
-    const pool = drinks.filter((d) => d.rarity === picked);
-    if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
-
-    const commons = drinks.filter((d) => d.rarity === "blue");
-    if (commons.length) return commons[Math.floor(Math.random() * commons.length)];
-    return drinks[Math.floor(Math.random() * drinks.length)];
 }
 
 function maskLegendary(drinks: DrinkVariant[]): DrinkVariant[] {

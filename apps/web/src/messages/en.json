@@ -84,6 +84,8 @@
         "title": "What Monster Will You Drink Today?",
         "button_text": "Get Monster",
         "rolling": "Opening...",
+        "opening": "Rolling...",
+        "rateLimited": "Slow down — one spin per second.",
         "open_another": "Open another",
         "you_got": "You got {name} ({rarity})!",
         "rarity": {
@@ -98,15 +100,23 @@
             "stats": "Stats"
         },
         "stats": {
+            "loading": "Loading stats…",
+            "unavailable": "Stats unavailable right now.",
             "empty": "No cases opened yet. Start spinning!",
-            "totalOpens": "Total Opens",
-            "collected": "Collected",
+            "totalOpens": "Cases Opened",
             "legendaries": "Legendaries",
-            "rarityBreakdown": "Rarity Breakdown",
-            "expectedMarker": "White line = expected drop rate",
+            "rarityBreakdown": "Your Drop Rates",
+            "expectedMarker": "Gold line = expected drop rate",
             "collection": "Collection",
-            "recentDrops": "Recent Drops"
+            "collected": "Collected",
+            "recentDrops": "Your Recent Drops"
         },
+        "global": {
+            "title": "Global Stats",
+            "totalOpens": "Cases Opened",
+            "legendaries": "Legendaries Found"
+        },
+        "yourStats": "Your Stats",
         "feed": {
             "title": "Live Drops",
             "opened": "opened"

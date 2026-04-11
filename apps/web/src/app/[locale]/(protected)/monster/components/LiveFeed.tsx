@@ -27,30 +27,32 @@ export function LiveFeed() {
             return res.json();
         },
         refetchInterval: 8000,
+        refetchIntervalInBackground: false,
         retry: false,
     });
 
-    // Don't render anything if the DB isn't set up yet
     if (isError || !data?.items?.length) return null;
 
     return (
-        <div className="w-full max-w-2xl rounded-lg border border-gray-700 bg-gray-900/50 p-4">
-            <h3 className="mb-3 text-sm font-semibold text-gray-300">{t("feed.title")}</h3>
-            <div className="space-y-1.5">
+        <div className="w-full rounded-xl border border-border bg-surface p-4">
+            <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                {t("feed.title")}
+            </h3>
+            <div className="max-h-[280px] space-y-1 overflow-y-auto">
                 {data.items.map((item) => (
                     <div
                         key={item.id}
                         className={clsx(
-                            "flex items-center justify-between rounded px-2 py-1 text-sm",
+                            "flex items-center justify-between rounded-lg px-2.5 py-1 text-sm",
                             RARITY_COLORS[item.rarity]
                         )}
                     >
                         <span>
-                            <span className="font-medium text-gray-200">{item.username}</span>
-                            <span className="text-gray-400"> {t("feed.opened")} </span>
-                            <span className="font-medium">{item.item}</span>
+                            <span className="font-medium text-foreground">{item.username}</span>
+                            <span className="text-muted"> {t("feed.opened")} </span>
+                            <span className="font-medium text-foreground">{item.item}</span>
                         </span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-muted">
                             {formatTimeAgo(item.openedAt)}
                         </span>
                     </div>
