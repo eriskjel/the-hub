@@ -82,9 +82,9 @@
     "monster": {
         "pageTitle": "Monster",
         "title": "Hvilken Monster skal du drikke i dag?",
-        "button_text": "Få Monster",
+        "button_text": "Spin that wheel",
         "rolling": "Åpner...",
-        "opening": "Triller...",
+        "opening": "Åpner...",
         "rateLimited": "Rolig — én åpning per sekund.",
         "openFailed": "Kunne ikke åpne casen. Prøv igjen.",
         "open_another": "Åpne en til",
@@ -110,7 +110,8 @@
             "expectedMarker": "Gull-linje = forventet drop-rate",
             "collection": "Samling",
             "collected": "Samlet",
-            "recentDrops": "Dine Siste Drops"
+            "recentDrops": "Dine Siste Drops",
+            "betterThan": "Større samling enn {beat} av {total} spillere ({pct}%)"
         },
         "global": {
             "title": "Global Statistikk",
@@ -119,8 +120,12 @@
         },
         "yourStats": "Din Statistikk",
         "feed": {
-            "title": "Live Drops",
+            "title": "Dagens første åpninger",
             "opened": "åpnet"
+        },
+        "highlights": {
+            "legendary": "Legendariske Drops",
+            "bestPerUser": "Beste Drop Per Spiller"
         }
     },
     "auth": {

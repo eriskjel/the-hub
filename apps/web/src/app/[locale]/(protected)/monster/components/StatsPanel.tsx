@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { RARITY_PROBABILITIES } from "@/lib/monster/catalog";
 import type { CaseKey } from "../cases";
 import { CASES } from "../cases";
-import { RARITY_COLORS } from "../rarityStyles";
+import { RARITY_POP_COLORS } from "../rarityStyles";
 import type { DrinkRarity } from "../types";
 
 const RARITY_ORDER: DrinkRarity[] = ["yellow", "red", "pink", "purple", "blue"];
@@ -41,6 +41,11 @@ export type StatsResponse = {
         byRarity: Record<DrinkRarity, number>;
         ownedItems: string[];
         recentItems: RecentItem[];
+        collectionRank: {
+            playersTotal: number;
+            playersBeat: number;
+            percentile: number;
+        } | null;
     };
     global: {
         total: number;
@@ -167,7 +172,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                 <h3 className="text-muted mb-2.5 text-xs font-semibold tracking-wide uppercase">
                     {t("stats.collection")} — {collectedCount}/{totalVariants}
                 </h3>
-                <div className="bg-surface-light mb-2.5 h-1.5 w-full overflow-hidden rounded-full">
+                <div className="bg-surface-light mb-1.5 h-1.5 w-full overflow-hidden rounded-full">
                     <div
                         className={clsx(
                             "h-full rounded-full transition-all duration-500",
@@ -182,6 +187,15 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                         }}
                     />
                 </div>
+                {personal.collectionRank && personal.collectionRank.playersTotal > 1 && (
+                    <p className="text-muted mb-2 text-[11px]">
+                        {t("stats.betterThan", {
+                            beat: personal.collectionRank.playersBeat,
+                            total: personal.collectionRank.playersTotal - 1,
+                            pct: personal.collectionRank.percentile,
+                        })}
+                    </p>
+                )}
                 <div className="grid grid-cols-4 gap-1.5 xl:grid-cols-5">
                     {[...currentCase.variants]
                         .sort(
@@ -196,7 +210,7 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                                     className={clsx(
                                         "relative flex flex-col items-center rounded-lg border p-1",
                                         owned
-                                            ? RARITY_COLORS[variant.rarity]
+                                            ? RARITY_POP_COLORS[variant.rarity]
                                             : "border-border bg-surface-subtle"
                                     )}
                                     title={owned ? variant.name : undefined}
@@ -236,8 +250,8 @@ export function StatsPersonal({ stats, isLoading, isError, caseKey }: Props) {
                             <div
                                 key={h.id}
                                 className={clsx(
-                                    "flex items-center justify-between rounded-lg px-2.5 py-1 text-sm",
-                                    RARITY_COLORS[h.rarity]
+                                    "flex items-center justify-between rounded-lg border px-2.5 py-1 text-sm",
+                                    RARITY_POP_COLORS[h.rarity]
                                 )}
                             >
                                 <span className="text-foreground font-medium">{h.item}</span>

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CASES, type CaseKey } from "@/app/[locale]/(protected)/monster/cases";
 import { DrinkImagePreloader } from "@/app/[locale]/(protected)/monster/components/DrinkImagePreloader";
+import { HighlightFeeds } from "@/app/[locale]/(protected)/monster/components/HighlightFeeds";
 import { LiveFeed } from "@/app/[locale]/(protected)/monster/components/LiveFeed";
 import {
     StatsGlobal,
@@ -92,6 +93,7 @@ export default function DrinkCasePage() {
         if (wasRolling.current && !rolling) {
             queryClient.invalidateQueries({ queryKey: ["monster-feed"] });
             queryClient.invalidateQueries({ queryKey: ["monster-stats", selectedCaseKey] });
+            queryClient.invalidateQueries({ queryKey: ["monster-highlights", selectedCaseKey] });
         }
         wasRolling.current = rolling;
     }, [rolling, queryClient, selectedCaseKey]);
@@ -159,7 +161,8 @@ export default function DrinkCasePage() {
                 {/* Left: global stats + live feed */}
                 <div className="order-2 flex flex-col gap-4 lg:order-1">
                     <StatsGlobal {...statsProps} />
-                    <LiveFeed />
+                    <LiveFeed paused={busy} />
+                    <HighlightFeeds caseKey={selectedCaseKey} paused={busy} />
                 </div>
 
                 {/* Center: roller + result + button */}
