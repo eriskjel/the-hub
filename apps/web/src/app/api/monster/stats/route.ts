@@ -106,12 +106,43 @@ export async function GET(req: NextRequest) {
         openedAt: r.opened_at as string,
     }));
 
+    // Collection ranking: how many players have opened this case at all, and
+    // how many the current user is strictly ahead of by distinct-item count.
+    // Reads from the distinct-owned-items view (bounded ~users × items_in_case).
+    const { data: allOwnedRows, error: allOwnedErr } = await supabase
+        .from("monster_opening_owned_items")
+        .select("user_id, item")
+        .eq("case_type", caseType);
+
+    let collectionRank: { playersTotal: number; playersBeat: number; percentile: number } | null =
+        null;
+    if (allOwnedErr) {
+        console.error("monster/stats all-owned query failed:", allOwnedErr.message);
+    } else {
+        const countsByUser = new Map<string, number>();
+        for (const row of allOwnedRows ?? []) {
+            const uid = row.user_id as string;
+            countsByUser.set(uid, (countsByUser.get(uid) ?? 0) + 1);
+        }
+        const myCount = ownedItems.length;
+        const playersTotal = countsByUser.size;
+        let playersBeat = 0;
+        for (const [uid, count] of countsByUser) {
+            if (uid === user.id) continue;
+            if (count < myCount) playersBeat++;
+        }
+        const denom = Math.max(playersTotal - 1, 0);
+        const percentile = denom > 0 ? Math.round((playersBeat / denom) * 100) : 0;
+        collectionRank = { playersTotal, playersBeat, percentile };
+    }
+
     return NextResponse.json({
         personal: {
             total: personal.total,
             byRarity: personal.byRarity,
             ownedItems,
             recentItems,
+            collectionRank,
         },
         global: {
             total: global.total,

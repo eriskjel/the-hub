@@ -82,9 +82,9 @@
     "monster": {
         "pageTitle": "Monster",
         "title": "What Monster Will You Drink Today?",
-        "button_text": "Get Monster",
+        "button_text": "Spin that wheel",
         "rolling": "Opening...",
-        "opening": "Rolling...",
+        "opening": "Opening...",
         "rateLimited": "Slow down — one spin per second.",
         "openFailed": "Couldn't open the case. Please try again.",
         "open_another": "Open another",
@@ -110,7 +110,8 @@
             "expectedMarker": "Gold line = expected drop rate",
             "collection": "Collection",
             "collected": "Collected",
-            "recentDrops": "Your Recent Drops"
+            "recentDrops": "Your Recent Drops",
+            "betterThan": "Bigger collection than {beat} of {total} players ({pct}%)"
         },
         "global": {
             "title": "Global Stats",
@@ -119,8 +120,12 @@
         },
         "yourStats": "Your Stats",
         "feed": {
-            "title": "Live Drops",
+            "title": "Today's First Drops",
             "opened": "opened"
+        },
+        "highlights": {
+            "legendary": "Legendary Drops",
+            "bestPerUser": "Best Drop Per Player"
         }
     },
     "auth": {
