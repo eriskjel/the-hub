@@ -20,7 +20,6 @@ const RARITY_RANK: Record<DrinkRarity, number> = {
 
 const LEGENDARY_FEED_LIMIT = 50;
 const BEST_PER_USER_LIMIT = 15;
-const RECENT_WINDOW_SIZE = 500;
 
 export async function GET(req: NextRequest) {
     const supabase = await createClient();
@@ -37,10 +36,12 @@ export async function GET(req: NextRequest) {
     }
     const caseType = caseTypeParam;
 
-    // Two parallel queries:
-    //   1. All legendaries for this case (rare event — cheap even without tight cap).
-    //   2. A broad window of recent openings to compute each user's best-ever.
-    const [legendaryRes, recentRes] = await Promise.all([
+    // Parallel:
+    //   1. Every legendary for this case (rare event — cheap).
+    //   2. Pre-aggregated per-(user,rarity) counts to derive each user's
+    //      all-time top rarity. Aggregated DB-side, so this is tiny no matter
+    //      how many openings exist.
+    const [legendaryRes, statsRes] = await Promise.all([
         supabase
             .from("monster_opening")
             .select(OPENING_WITH_PROFILE_SELECT)
@@ -49,55 +50,90 @@ export async function GET(req: NextRequest) {
             .order("opened_at", { ascending: false })
             .limit(LEGENDARY_FEED_LIMIT),
         supabase
-            .from("monster_opening")
-            .select(OPENING_WITH_PROFILE_SELECT)
-            .eq("case_type", caseType)
-            .order("opened_at", { ascending: false })
-            .limit(RECENT_WINDOW_SIZE),
+            .from("monster_opening_stats")
+            .select("user_id, rarity, count")
+            .eq("case_type", caseType),
     ]);
 
     if (legendaryRes.error) {
         console.error("monster/highlights legendary query failed:", legendaryRes.error.message);
         return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
-    if (recentRes.error) {
-        console.error("monster/highlights recent query failed:", recentRes.error.message);
+    if (statsRes.error) {
+        console.error("monster/highlights stats query failed:", statsRes.error.message);
         return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
 
     const legendaryRows = (legendaryRes.data ?? []) as unknown as OpeningWithProfileRow[];
-    const recentRows = (recentRes.data ?? []) as unknown as OpeningWithProfileRow[];
-
     const legendaries = legendaryRows.map(toFeedItem);
-    const bestPerUser = pickBestPerUser(recentRows).slice(0, BEST_PER_USER_LIMIT).map(toFeedItem);
+
+    const topRarityByUser = computeTopRarityByUser(
+        (statsRes.data ?? []) as Array<{ user_id: string; rarity: DrinkRarity; count: number }>
+    );
+    const bestPerUser = await fetchBestPerUser(supabase, caseType, topRarityByUser);
 
     return NextResponse.json({ legendaries, bestPerUser });
 }
 
-/**
- * For each distinct user in `rows`, keep their highest-ranked drop.
- * Tiebreak on equal rarity: prefer the earlier opening (their original
- * highlight moment). Returns users sorted by rank desc, then opened_at desc.
- */
-function pickBestPerUser(rows: OpeningWithProfileRow[]): OpeningWithProfileRow[] {
-    const bestByUser = new Map<string, OpeningWithProfileRow>();
+/** For each user, find the rarest tier they've ever pulled at least once. */
+function computeTopRarityByUser(
+    rows: Array<{ user_id: string; rarity: DrinkRarity; count: number }>
+): Map<string, DrinkRarity> {
+    const top = new Map<string, DrinkRarity>();
     for (const row of rows) {
-        const prev = bestByUser.get(row.user_id);
-        if (!prev) {
-            bestByUser.set(row.user_id, row);
-            continue;
-        }
-        const prevRank = RARITY_RANK[prev.rarity];
-        const nextRank = RARITY_RANK[row.rarity];
-        if (nextRank > prevRank) {
-            bestByUser.set(row.user_id, row);
-        } else if (nextRank === prevRank && row.opened_at < prev.opened_at) {
-            bestByUser.set(row.user_id, row);
+        if (row.count <= 0) continue;
+        const prev = top.get(row.user_id);
+        if (!prev || RARITY_RANK[row.rarity] > RARITY_RANK[prev]) {
+            top.set(row.user_id, row.rarity);
         }
     }
-    return Array.from(bestByUser.values()).sort((a, b) => {
-        const rankDiff = RARITY_RANK[b.rarity] - RARITY_RANK[a.rarity];
-        if (rankDiff !== 0) return rankDiff;
-        return b.opened_at.localeCompare(a.opened_at);
-    });
+    return top;
+}
+
+/**
+ * Given each user's all-time top rarity, fetch the earliest opening of that
+ * rarity (their original "I pulled this!" moment). Bounded by number of
+ * active users × their top rarities — not by total openings.
+ */
+async function fetchBestPerUser(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    caseType: string,
+    topRarityByUser: Map<string, DrinkRarity>
+) {
+    if (topRarityByUser.size === 0) return [];
+
+    const userIds = Array.from(topRarityByUser.keys());
+    const topRarities = Array.from(new Set(topRarityByUser.values()));
+
+    const { data, error } = await supabase
+        .from("monster_opening")
+        .select(OPENING_WITH_PROFILE_SELECT)
+        .eq("case_type", caseType)
+        .in("user_id", userIds)
+        .in("rarity", topRarities)
+        .order("opened_at", { ascending: true });
+
+    if (error) {
+        console.error("monster/highlights best-per-user query failed:", error.message);
+        return [];
+    }
+
+    // Keep the earliest opening that matches each user's top rarity.
+    // Rows may include openings at rarities below the user's top (because
+    // we filtered by `rarity IN topRarities`, not per-user) — discard those.
+    const rows = (data ?? []) as unknown as OpeningWithProfileRow[];
+    const bestByUser = new Map<string, OpeningWithProfileRow>();
+    for (const row of rows) {
+        if (topRarityByUser.get(row.user_id) !== row.rarity) continue;
+        if (!bestByUser.has(row.user_id)) bestByUser.set(row.user_id, row);
+    }
+
+    return Array.from(bestByUser.values())
+        .sort((a, b) => {
+            const rankDiff = RARITY_RANK[b.rarity] - RARITY_RANK[a.rarity];
+            if (rankDiff !== 0) return rankDiff;
+            return a.opened_at.localeCompare(b.opened_at); // earliest first within tier
+        })
+        .slice(0, BEST_PER_USER_LIMIT)
+        .map(toFeedItem);
 }

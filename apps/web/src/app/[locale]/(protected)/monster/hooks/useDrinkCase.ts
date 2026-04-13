@@ -113,12 +113,14 @@ function useSpinSound() {
     const ref = useRef<HTMLAudioElement | null>(null);
     useEffect(() => {
         const audio = new Audio(SPIN_SOUND_SRC);
-        audio.addEventListener("error", () => {
+        const onError = () => {
             console.warn(`Failed to load audio file: ${SPIN_SOUND_SRC}`);
             ref.current = null;
-        });
+        };
+        audio.addEventListener("error", onError);
         ref.current = audio;
         return () => {
+            audio.removeEventListener("error", onError);
             audio.pause();
             ref.current = null;
         };

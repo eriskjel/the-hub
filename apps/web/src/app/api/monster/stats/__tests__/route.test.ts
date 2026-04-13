@@ -49,9 +49,8 @@ function makeClient() {
                           error: null,
                       };
 
-            (self as { then: Promise<unknown>["then"] }).then = (
-                onFulfilled: (v: unknown) => unknown
-            ) => Promise.resolve(result).then(onFulfilled);
+            (self as { then: Promise<unknown>["then"] }).then = (onFulfilled, onRejected) =>
+                Promise.resolve(result).then(onFulfilled, onRejected);
 
             return self;
         }),
