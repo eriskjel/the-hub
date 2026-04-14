@@ -11,6 +11,7 @@ import { cn } from "@/utils/cn";
 import type { ComponentType } from "react";
 
 const TypedLink = Link as ComponentType<SidebarLinkProps>;
+const MENU_ID = "admin-mobile-menu";
 
 export default function AdminMobileMenu() {
     const t = useTranslations("admin");
@@ -21,6 +22,15 @@ export default function AdminMobileMenu() {
     useEffect(() => {
         setOpen(false);
     }, [pathname]);
+
+    useEffect(() => {
+        if (!open) return;
+        function onKey(e: KeyboardEvent) {
+            if (e.key === "Escape") setOpen(false);
+        }
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [open]);
 
     const items = useMemo(() => getAdminNavItems(t, locale), [t, locale]);
 
@@ -35,23 +45,30 @@ export default function AdminMobileMenu() {
             )}
 
             <aside
+                id={MENU_ID}
+                aria-hidden={!open}
+                inert={!open}
                 className={cn(
                     "border-border bg-surface fixed top-16 bottom-0 left-0 z-50 flex w-60 flex-col border-r transition-transform duration-200",
                     open ? "translate-x-0" : "-translate-x-full"
                 )}
             >
-                <Sidebar
-                    items={items}
-                    currentPath={pathname ?? ""}
-                    ariaLabel={t("nav.label")}
-                    LinkComponent={TypedLink}
-                />
+                {open && (
+                    <Sidebar
+                        items={items}
+                        currentPath={pathname ?? ""}
+                        ariaLabel={t("nav.label")}
+                        LinkComponent={TypedLink}
+                    />
+                )}
             </aside>
 
             <button
                 className="bg-surface border-border text-foreground fixed bottom-5 left-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border shadow-lg"
                 onClick={() => setOpen((o) => !o)}
                 aria-label={t("nav.toggleMobile")}
+                aria-expanded={open}
+                aria-controls={MENU_ID}
             >
                 {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

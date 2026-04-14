@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ComponentType, ReactNode } from "react";
 import { cn } from "@/utils/cn";
 
 export type SidebarItem = {
@@ -12,11 +12,8 @@ export type SidebarItem = {
 };
 
 /** Prop shape expected by Sidebar's LinkComponent. Cast Next.js Link to this when typedRoutes is on. */
-export type SidebarLinkProps = {
+export type SidebarLinkProps = Omit<ComponentPropsWithoutRef<"a">, "href"> & {
     href: string;
-    className?: string;
-    children?: ReactNode;
-    onClick?: () => void;
 };
 
 export type SidebarProps = {
@@ -42,8 +39,6 @@ export default function Sidebar({
         map.get(key)!.push(it);
     }
 
-    // Defined outside render so it's stable — avoids remounting links on every
-    // parent re-render (usePathname changes).
     const Anchor = LinkComponent ?? FallbackAnchor;
 
     return (
@@ -106,21 +101,9 @@ export default function Sidebar({
     );
 }
 
-function FallbackAnchor({
-    href,
-    className,
-    children,
-    onClick,
-    ...rest
-}: {
-    href: string;
-    className?: string;
-    children?: ReactNode;
-    onClick?: () => void;
-    [key: string]: unknown;
-}) {
+function FallbackAnchor({ href, children, ...rest }: SidebarLinkProps) {
     return (
-        <a href={href} className={className} onClick={onClick} {...rest}>
+        <a href={href} {...rest}>
             {children}
         </a>
     );

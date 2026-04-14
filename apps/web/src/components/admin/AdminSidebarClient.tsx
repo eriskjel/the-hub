@@ -24,7 +24,11 @@ export default function AdminSidebarClient() {
 
     // Restore persisted state after mount (avoids SSR hydration mismatch).
     useEffect(() => {
-        if (localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
+        try {
+            if (localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
+        } catch {
+            // storage unavailable (private mode, quota, etc.) — fall back to default
+        }
     }, []);
 
     // Keep the CSS variable in sync so .admin-content padding-left follows.
@@ -38,7 +42,11 @@ export default function AdminSidebarClient() {
     function toggle() {
         const next = !collapsed;
         setCollapsed(next);
-        localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+        try {
+            localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+        } catch {
+            // storage unavailable — state still toggles for this session
+        }
     }
 
     const items = useMemo(() => getAdminNavItems(t, locale), [t, locale]);
