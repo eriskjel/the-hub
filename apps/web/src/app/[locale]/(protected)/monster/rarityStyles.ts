@@ -23,3 +23,16 @@ export const RARITY_GLOWS: Record<DrinkVariant["rarity"], string> = {
     red: "shadow-red-500/50",
     yellow: "shadow-yellow-500/50",
 };
+
+/**
+ * Escalating background intensity — commons stay subtle, rares pop.
+ * Used in feed rows, recent-drops list and the collection grid so the whole
+ * page shares one visual "rarer = louder" language.
+ */
+export const RARITY_POP_COLORS: Record<DrinkVariant["rarity"], string> = {
+    blue: "border-blue-500/60 bg-blue-500/10",
+    purple: "border-purple-500 bg-purple-500/20",
+    pink: "border-pink-500 bg-pink-500/25",
+    red: "border-red-500 bg-red-500/35 shadow-sm shadow-red-500/40",
+    yellow: "border-yellow-400 bg-yellow-500/40 shadow-md shadow-yellow-500/50",
+};
