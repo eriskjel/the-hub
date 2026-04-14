@@ -55,7 +55,7 @@
         "supabase": "^2.40.7",
         "tailwindcss": "^4",
         "typescript": "^5",
-        "vite-tsconfig-paths": "^4.3.2",
+        "vite-tsconfig-paths": "^6.1.1",
         "vitest": "2.1.9"
     }
 }
