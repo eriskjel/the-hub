@@ -1,7 +1,7 @@
 "use client";
 
 import { TableComponent } from "nextjs-reusable-table";
-import "nextjs-reusable-table/dist/index.css";
+import "nextjs-reusable-table/styles.css";
 import React, { ReactElement, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ProfileWithAuth } from "@/types/users";
