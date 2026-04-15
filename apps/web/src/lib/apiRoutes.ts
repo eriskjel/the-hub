@@ -15,6 +15,10 @@ export const API = {
                 `/api/backend/admin/widgets/countdown/status?providerId=${encodeURIComponent(providerId)}`,
             confirm: (providerId: string) =>
                 `/api/backend/admin/widgets/countdown/confirm?providerId=${encodeURIComponent(providerId)}`,
+            denied: (providerId: string, date?: string) => {
+                const base = `/api/backend/admin/widgets/countdown/denied?providerId=${encodeURIComponent(providerId)}`;
+                return date ? `${base}&date=${encodeURIComponent(date)}` : base;
+            },
         },
     },
 } as const;

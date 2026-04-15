@@ -347,11 +347,22 @@
                 "unconfirm": "Remove confirmation",
                 "confirmed": "Confirmed",
                 "unconfirmed": "Unconfirmed date",
+                "deny": "Flag as wrong",
+                "denyConfirm": "Flag this date as wrong and pick the next candidate?",
+                "denyFailed": "Could not flag date.",
+                "deniedDates": "Flagged dates",
+                "undeny": "Undo",
                 "providers": {
                     "trippel-trumf": "Trippel-Trumf",
                     "dnb-supertilbud": "DNB Supertilbud"
                 }
             }
+        },
+        "nav": {
+            "label": "Admin navigation",
+            "toggleMobile": "Toggle navigation menu",
+            "collapse": "Collapse sidebar",
+            "expand": "Expand sidebar"
         },
         "sections": {
             "manage": "Manage",
@@ -359,7 +370,7 @@
         },
         "items": {
             "users": "Users",
-            "widgets": "Widgets",
+            "widgets": "Countdown Widgets",
             "settings": "Settings"
         },
         "users": {

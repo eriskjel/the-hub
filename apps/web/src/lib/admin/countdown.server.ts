@@ -26,3 +26,28 @@ export async function fetchProviderStatus(
         return null;
     }
 }
+
+export type CountdownDeniedEntry = {
+    providerId: string;
+    deniedDate: string;
+    reason: string | null;
+    deniedBy: string | null;
+    deniedAt: string | null;
+};
+
+export async function fetchDeniedDates(
+    providerId: CountdownSettings["provider"]
+): Promise<CountdownDeniedEntry[]> {
+    try {
+        const token = await bearerToken();
+        if (!token) return [];
+        const res = await fetch(backendUrl("/api/admin/widgets/countdown/denied", { providerId }), {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+        });
+        if (!res.ok) return [];
+        return res.json();
+    } catch {
+        return [];
+    }
+}

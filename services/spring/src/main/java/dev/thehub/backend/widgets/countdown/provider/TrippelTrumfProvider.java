@@ -30,10 +30,11 @@ public class TrippelTrumfProvider implements CountdownProvider {
     private static final String URL = "https://eurobonusguiden.no/2026/01/trippel-trumf-torsdag-datoer-2026/";
     private static final String BONUS_URL = "https://bonusjegeren.no/nar-er-det-trippel-trumf/";
     /**
-     * Matches date text like "26. mars 2026" or "15. jan 2026" anywhere in the
-     * page.
+     * Matches "16. april 2026", "16. april", or "16. apr" — year is optional. When
+     * absent, we infer the current year (bonusjegeren groups by year with a
+     * heading, so entries within a section may omit the inline year).
      */
-    private static final Pattern DATE_PATTERN = Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)\\s+(\\d{4})");
+    private static final Pattern DATE_PATTERN = Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)(?:\\s+(\\d{4}))?");
 
     // Trippel window times (tweak if you prefer 00:00..24:00)
     private static final LocalTime START = LocalTime.of(7, 0);
@@ -47,25 +48,38 @@ public class TrippelTrumfProvider implements CountdownProvider {
             Map.entry("desember", Month.DECEMBER));
 
     /**
-     * Abbreviated/short month names used by bonusjegeren ("jan", "mars", "okt", …).
+     * Norwegian month names used by bonusjegeren — both short ("apr", "aug") and
+     * full ("april", "august"). The page is inconsistent: some cells use short
+     * forms, others full. The regex captures greedily, so the map must contain the
+     * full-word form as well or those entries get dropped.
      */
     private static final Map<String, Month> NO_MONTHS_SHORT;
     static {
         var m = new HashMap<String, Month>();
         m.put("jan", Month.JANUARY);
+        m.put("januar", Month.JANUARY);
         m.put("feb", Month.FEBRUARY);
+        m.put("februar", Month.FEBRUARY);
         m.put("mar", Month.MARCH);
         m.put("mars", Month.MARCH);
         m.put("apr", Month.APRIL);
+        m.put("april", Month.APRIL);
         m.put("mai", Month.MAY);
         m.put("jun", Month.JUNE);
+        m.put("juni", Month.JUNE);
         m.put("jul", Month.JULY);
+        m.put("juli", Month.JULY);
         m.put("aug", Month.AUGUST);
+        m.put("august", Month.AUGUST);
         m.put("sep", Month.SEPTEMBER);
         m.put("sept", Month.SEPTEMBER);
+        m.put("september", Month.SEPTEMBER);
         m.put("okt", Month.OCTOBER);
+        m.put("oktober", Month.OCTOBER);
         m.put("nov", Month.NOVEMBER);
+        m.put("november", Month.NOVEMBER);
         m.put("des", Month.DECEMBER);
+        m.put("desember", Month.DECEMBER);
         NO_MONTHS_SHORT = Collections.unmodifiableMap(m);
     }
 
@@ -211,13 +225,19 @@ public class TrippelTrumfProvider implements CountdownProvider {
             if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
                 return Set.of();
 
+            // Parse with Jsoup so HTML entities (&nbsp;) and tag boundaries are
+            // normalized to plain whitespace before the date regex runs —
+            // otherwise "16.&nbsp;april&nbsp;2026" won't match DATE_PATTERN.
+            String text = org.jsoup.Jsoup.parse(resp.getBody()).text();
+
             final int yearWanted = Year.now(ZONE).getValue();
             Set<LocalDate> dates = new HashSet<>();
-            var matcher = DATE_PATTERN.matcher(resp.getBody());
+            var matcher = DATE_PATTERN.matcher(text);
             while (matcher.find()) {
                 int day = Integer.parseInt(matcher.group(1));
                 String monthKey = matcher.group(2).toLowerCase(Locale.ROOT);
-                int year = Integer.parseInt(matcher.group(3));
+                String yearStr = matcher.group(3);
+                int year = yearStr != null ? Integer.parseInt(yearStr) : yearWanted;
                 if (year != yearWanted)
                     continue;
                 Month month = NO_MONTHS_SHORT.get(monthKey);

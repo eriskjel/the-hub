@@ -169,6 +169,46 @@ body {
     font-family: var(--font-sans);
 }
 
+/* Admin layout — sidebar width driven by JS via --admin-sidebar-w */
+:root {
+    --admin-sidebar-w: 15rem; /* w-60: default expanded */
+}
+
+.admin-content {
+    padding-top: 4rem; /* clears fixed h-16 header */
+    min-height: 100dvh;
+}
+
+@media (min-width: 768px) {
+    .admin-content {
+        padding-left: var(--admin-sidebar-w);
+        transition: padding-left 200ms ease;
+    }
+}
+
+/*
+ * Plain CSS media queries for admin sidebar/mobile visibility.
+ * Tailwind v4 utility ordering (`hidden md:flex`, `flex md:hidden`)
+ * is unreliable for display overrides, so we use real media queries.
+ */
+.admin-sidebar {
+    display: none;
+}
+@media (min-width: 768px) {
+    .admin-sidebar {
+        display: flex;
+    }
+}
+
+.admin-mobile {
+    display: block;
+}
+@media (min-width: 768px) {
+    .admin-mobile {
+        display: none;
+    }
+}
+
 .scroll-gutter-stable {
     scrollbar-gutter: stable both-edges;
 }

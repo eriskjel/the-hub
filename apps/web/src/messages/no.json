@@ -347,11 +347,22 @@
                 "unconfirm": "Fjern bekreftelse",
                 "confirmed": "Bekreftet",
                 "unconfirmed": "Ubekreftet dato",
+                "deny": "Marker som feil",
+                "denyConfirm": "Marker denne datoen som feil og bruk neste kandidat?",
+                "denyFailed": "Kunne ikke markere dato.",
+                "deniedDates": "Markerte feil",
+                "undeny": "Angre",
                 "providers": {
                     "trippel-trumf": "Trippel-Trumf",
                     "dnb-supertilbud": "DNB Supertilbud"
                 }
             }
+        },
+        "nav": {
+            "label": "Adminnavigasjon",
+            "toggleMobile": "Bytt navigasjonsmeny",
+            "collapse": "Skjul sidepanel",
+            "expand": "Vis sidepanel"
         },
         "sections": {
             "manage": "Administrer",
@@ -359,7 +370,7 @@
         },
         "items": {
             "users": "Brukere",
-            "widgets": "Widgeter",
+            "widgets": "Nedtelling-widgets",
             "settings": "Innstillinger"
         },
         "users": {

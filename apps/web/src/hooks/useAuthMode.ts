@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 
 export type AuthMode = "login" | "signup" | "forgot";
 
@@ -23,7 +24,7 @@ export function useAuthMode() {
             sp.set("mode", next);
             sp.delete("error");
             sp.delete("reset");
-            router.replace(`${pathname}?${sp.toString()}`);
+            router.replace(`${pathname}?${sp.toString()}` as Route);
         },
         [router, pathname, searchParams]
     );
