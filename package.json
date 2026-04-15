@@ -12,8 +12,14 @@
   },
   "pnpm": {
     "supportedArchitectures": {
-      "os": ["current", "linux"],
-      "cpu": ["x64", "arm64"]
+      "os": [
+        "current",
+        "linux"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
     },
     "overrides": {
       "vitest": "2.1.9",
@@ -22,7 +28,12 @@
       "import-in-the-middle": "^2.0.5",
       "require-in-the-middle": "^8.0.1"
     },
-    "neverBuiltDependencies": ["supabase"]
+    "neverBuiltDependencies": [
+      "supabase"
+    ],
+    "ignoredBuiltDependencies": [
+      "supabase"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
