@@ -29,7 +29,7 @@ export default function Sidebar({
     items,
     currentPath = "",
     collapsed = false,
-    ariaLabel,
+    ariaLabel = "Sidebar",
     LinkComponent,
 }: SidebarProps) {
     const map = new Map<string | undefined, SidebarItem[]>();

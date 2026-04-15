@@ -22,20 +22,10 @@ drop policy if exists cdd_write on public.countdown_denied_dates;
 create policy cdd_write on public.countdown_denied_dates
     for all to service_role using (true) with check (true);
 
--- Auto-fill denied_by = auth.uid() on insert/update when available.
-create or replace function public.cdd_set_denied_by() returns trigger
-language plpgsql as $$
-begin
-    if new.denied_by is null then
-        new.denied_by := auth.uid();
-    end if;
-    return new;
-end $$;
-
-drop trigger if exists cdd_set_denied_by_trg on public.countdown_denied_dates;
-create trigger cdd_set_denied_by_trg
-    before insert or update on public.countdown_denied_dates
-    for each row execute function public.cdd_set_denied_by();
+-- denied_by is left unpopulated for now: the only write path is the Spring
+-- backend running as service_role over a direct DB connection, so neither
+-- auth.uid() nor request.jwt.claims are set. The column is kept so a future
+-- change can forward the authenticated admin's id from the app.
 
 -- Invalidate any cached "next_iso" so the resolver re-picks after a deny change.
 -- We just clear the cache table; it's small and refills on the next read.

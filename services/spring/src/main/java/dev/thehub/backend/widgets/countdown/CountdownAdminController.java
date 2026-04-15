@@ -1,7 +1,9 @@
 package dev.thehub.backend.widgets.countdown;
 
+import dev.thehub.backend.widgets.countdown.provider.ProviderRegistry;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class CountdownAdminController {
 
     private final ProviderCacheDao cache;
     private final CountdownResolver resolver;
+    private final ProviderRegistry registry;
 
     /**
      * Returns the resolver's current view for the given provider (respects
@@ -31,11 +34,16 @@ public class CountdownAdminController {
     public ResponseEntity<?> status(@RequestParam String providerId) {
         try {
             var r = resolver.resolveProvider(providerId, Instant.now());
-            var row = cache.find(providerId).orElse(null);
-            return ResponseEntity
-                    .ok(Map.of("providerId", providerId, "nextIso", r.next() == null ? null : r.next().toString(),
-                            "previousIso", r.previous() == null ? null : r.previous().toString(), "tentative",
-                            r.tentative(), "adminConfirmed", row != null && row.adminConfirmed()));
+            // HashMap allows null values — nextIso/previousIso may be absent.
+            // r.verified() is the resolver's truth (covers manual overrides,
+            // which bypass the adminConfirmed cache column).
+            Map<String, Object> body = new HashMap<>();
+            body.put("providerId", providerId);
+            body.put("nextIso", r.next() == null ? null : r.next().toString());
+            body.put("previousIso", r.previous() == null ? null : r.previous().toString());
+            body.put("tentative", r.tentative());
+            body.put("adminConfirmed", r.verified());
+            return ResponseEntity.ok(body);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
@@ -73,6 +81,8 @@ public class CountdownAdminController {
     @PostMapping("/denied")
     public ResponseEntity<Map<String, Object>> deny(@RequestParam String providerId,
             @RequestParam("date") String isoDate, @RequestParam(value = "reason", required = false) String reason) {
+        if (!isKnownProvider(providerId))
+            return ResponseEntity.notFound().build();
         LocalDate date;
         try {
             date = LocalDate.parse(isoDate);
@@ -88,6 +98,8 @@ public class CountdownAdminController {
     @DeleteMapping("/denied")
     public ResponseEntity<Map<String, Object>> undeny(@RequestParam String providerId,
             @RequestParam("date") String isoDate) {
+        if (!isKnownProvider(providerId))
+            return ResponseEntity.notFound().build();
         LocalDate date;
         try {
             date = LocalDate.parse(isoDate);
@@ -99,5 +111,14 @@ public class CountdownAdminController {
             return ResponseEntity.notFound().build();
         cache.invalidate(providerId);
         return ResponseEntity.ok(Map.of("providerId", providerId, "deniedDate", date.toString()));
+    }
+
+    private boolean isKnownProvider(String providerId) {
+        try {
+            registry.get(providerId);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }
