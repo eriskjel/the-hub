@@ -127,8 +127,8 @@ public class CountdownResolver {
 
     /**
      * Ask the provider for the next instant, skipping any Oslo-date present in
-     * {@code denied}. Caps iterations to avoid pathological loops — if all
-     * upcoming candidates are denied the result is {@code (null, false)}.
+     * {@code denied}. Caps iterations to avoid pathological loops — if all upcoming
+     * candidates are denied the result is {@code (null, false)}.
      */
     private static Pick pickNextSkippingDenied(dev.thehub.backend.widgets.countdown.provider.CountdownProvider p,
             Instant now, Set<LocalDate> denied) {

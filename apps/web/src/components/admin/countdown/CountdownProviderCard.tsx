@@ -6,10 +6,7 @@ import { CheckCircle, CircleDashed, Ban, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { fetchJson } from "@/lib/widgets/fetchJson";
 import { API } from "@/lib/apiRoutes";
-import type {
-    CountdownDeniedEntry,
-    CountdownProviderStatus,
-} from "@/lib/admin/countdown.server";
+import type { CountdownDeniedEntry, CountdownProviderStatus } from "@/lib/admin/countdown.server";
 
 const OSLO_TZ = "Europe/Oslo";
 

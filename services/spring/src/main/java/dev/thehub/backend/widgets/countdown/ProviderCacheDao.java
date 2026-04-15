@@ -89,8 +89,8 @@ public class ProviderCacheDao {
     }
 
     /**
-     * Return the set of Oslo-local dates that an admin has flagged as incorrect
-     * for this provider. The resolver skips these when picking the next date.
+     * Return the set of Oslo-local dates that an admin has flagged as incorrect for
+     * this provider. The resolver skips these when picking the next date.
      */
     public Set<LocalDate> listDeniedDates(String providerId) {
         var rows = jdbc.query("select denied_date from public.countdown_denied_dates where provider_id = ?",
@@ -124,8 +124,8 @@ public class ProviderCacheDao {
     }
 
     /**
-     * Force the cache row stale so the next resolver call re-fetches. Used after
-     * a deny/undeny change so the filtered "next" is recomputed immediately.
+     * Force the cache row stale so the next resolver call re-fetches. Used after a
+     * deny/undeny change so the filtered "next" is recomputed immediately.
      */
     public int invalidate(String providerId) {
         return jdbc.update(

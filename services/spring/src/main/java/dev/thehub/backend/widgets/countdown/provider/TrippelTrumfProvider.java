@@ -30,12 +30,11 @@ public class TrippelTrumfProvider implements CountdownProvider {
     private static final String URL = "https://eurobonusguiden.no/2026/01/trippel-trumf-torsdag-datoer-2026/";
     private static final String BONUS_URL = "https://bonusjegeren.no/nar-er-det-trippel-trumf/";
     /**
-     * Matches "16. april 2026", "16. april", or "16. apr" — year is optional.
-     * When absent, we infer the current year (bonusjegeren groups by year with a
+     * Matches "16. april 2026", "16. april", or "16. apr" — year is optional. When
+     * absent, we infer the current year (bonusjegeren groups by year with a
      * heading, so entries within a section may omit the inline year).
      */
-    private static final Pattern DATE_PATTERN = Pattern
-            .compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)(?:\\s+(\\d{4}))?");
+    private static final Pattern DATE_PATTERN = Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)(?:\\s+(\\d{4}))?");
 
     // Trippel window times (tweak if you prefer 00:00..24:00)
     private static final LocalTime START = LocalTime.of(7, 0);
@@ -49,10 +48,10 @@ public class TrippelTrumfProvider implements CountdownProvider {
             Map.entry("desember", Month.DECEMBER));
 
     /**
-     * Norwegian month names used by bonusjegeren — both short ("apr", "aug")
-     * and full ("april", "august"). The page is inconsistent: some cells use
-     * short forms, others full. The regex captures greedily, so the map must
-     * contain the full-word form as well or those entries get dropped.
+     * Norwegian month names used by bonusjegeren — both short ("apr", "aug") and
+     * full ("april", "august"). The page is inconsistent: some cells use short
+     * forms, others full. The regex captures greedily, so the map must contain the
+     * full-word form as well or those entries get dropped.
      */
     private static final Map<String, Month> NO_MONTHS_SHORT;
     static {

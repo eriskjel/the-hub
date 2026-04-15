@@ -32,12 +32,10 @@ public class CountdownAdminController {
         try {
             var r = resolver.resolveProvider(providerId, Instant.now());
             var row = cache.find(providerId).orElse(null);
-            return ResponseEntity.ok(Map.of(
-                    "providerId", providerId,
-                    "nextIso", r.next() == null ? null : r.next().toString(),
-                    "previousIso", r.previous() == null ? null : r.previous().toString(),
-                    "tentative", r.tentative(),
-                    "adminConfirmed", row != null && row.adminConfirmed()));
+            return ResponseEntity
+                    .ok(Map.of("providerId", providerId, "nextIso", r.next() == null ? null : r.next().toString(),
+                            "previousIso", r.previous() == null ? null : r.previous().toString(), "tentative",
+                            r.tentative(), "adminConfirmed", row != null && row.adminConfirmed()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
@@ -69,8 +67,8 @@ public class CountdownAdminController {
     }
 
     /**
-     * Flag an upcoming date as incorrect so the resolver picks the next
-     * candidate. The date is the Oslo-local date of the rejected occurrence.
+     * Flag an upcoming date as incorrect so the resolver picks the next candidate.
+     * The date is the Oslo-local date of the rejected occurrence.
      */
     @PostMapping("/denied")
     public ResponseEntity<Map<String, Object>> deny(@RequestParam String providerId,
