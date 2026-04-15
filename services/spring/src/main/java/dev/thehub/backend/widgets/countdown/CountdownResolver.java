@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,28 +58,32 @@ public class CountdownResolver {
      */
     public ProviderResult resolveProvider(String providerId, Instant now) {
         var cached = cache.find(providerId).orElse(null);
+        var denied = cache.listDeniedDates(providerId);
 
         // 1) Admin override wins (explicit date set by admin — always verified, never
-        // tentative)
+        // tentative). Denied dates do not apply when an admin has manually set one.
         if (cached != null && cached.manualOverrideNextIso() != null) {
             log.info("CountdownResolver: using ADMIN OVERRIDE for provider={} nextIso={} prevIso={}", providerId,
                     cached.manualOverrideNextIso(), cached.previousIso());
             return new ProviderResult(cached.manualOverrideNextIso(), cached.previousIso(), false, true);
         }
 
-        // 2) Fresh cache
-        if (cached != null && isFresh(cached, now)) {
+        // 2) Fresh cache — but only if the cached next isn't a denied date (a deny
+        // after the last cache write shouldn't silently persist a rejected date).
+        if (cached != null && isFresh(cached, now) && !isDenied(cached.nextIso(), denied)) {
             log.info("CountdownResolver: using FRESH CACHE for provider={} nextIso={} prevIso={} fetchedAt={}",
                     providerId, cached.nextIso(), cached.previousIso(), cached.fetchedAt());
             return new ProviderResult(cached.nextIso(), cached.previousIso(), cached.tentative(),
                     cached.adminConfirmed());
         }
 
-        // 3) Fetch once, upsert, return
+        // 3) Fetch once, upsert, return. Denied dates are skipped by advancing the
+        // cursor past each denied Oslo-day and re-asking the provider.
         var p = providers.get(providerId);
-        var next = p.next(now).orElse(null);
+        var pick = pickNextSkippingDenied(p, now, denied);
+        var next = pick.next;
         var prev = p.previous(now).orElse(null);
-        var tentative = p.isTentative(now);
+        var tentative = pick.tentative;
 
         // admin_confirmed carries over when the event is on the same Oslo date —
         // mirrors
@@ -111,6 +116,37 @@ public class CountdownResolver {
      */
     public long plausibleSpanCapHours(String providerId) {
         return providers.get(providerId).plausibleWindowMaxHours();
+    }
+
+    private static boolean isDenied(Instant iso, Set<LocalDate> denied) {
+        return iso != null && denied.contains(LocalDate.ofInstant(iso, OSLO));
+    }
+
+    private record Pick(Instant next, boolean tentative) {
+    }
+
+    /**
+     * Ask the provider for the next instant, skipping any Oslo-date present in
+     * {@code denied}. Caps iterations to avoid pathological loops — if all
+     * upcoming candidates are denied the result is {@code (null, false)}.
+     */
+    private static Pick pickNextSkippingDenied(dev.thehub.backend.widgets.countdown.provider.CountdownProvider p,
+            Instant now, Set<LocalDate> denied) {
+        Instant cursor = now;
+        for (int i = 0; i < 24; i++) {
+            Instant candidate = p.next(cursor).orElse(null);
+            if (candidate == null)
+                return new Pick(null, false);
+            LocalDate d = LocalDate.ofInstant(candidate, OSLO);
+            if (!denied.contains(d))
+                return new Pick(candidate, p.isTentative(cursor));
+            // advance past this denied day, and past any ongoing window so we don't
+            // re-surface the same campaign's end-of-window as a new candidate.
+            Instant advanced = d.plusDays(1).atStartOfDay(OSLO).toInstant();
+            Instant windowEnd = p.validUntil(advanced).orElse(null);
+            cursor = (windowEnd != null && windowEnd.isAfter(advanced)) ? windowEnd : advanced;
+        }
+        return new Pick(null, false);
     }
 
     private boolean isFresh(ProviderCacheDao.Row c, Instant now) {

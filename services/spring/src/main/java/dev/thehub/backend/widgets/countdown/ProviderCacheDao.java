@@ -3,7 +3,10 @@ package dev.thehub.backend.widgets.countdown;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -85,6 +88,51 @@ public class ProviderCacheDao {
                 providerId);
     }
 
+    /**
+     * Return the set of Oslo-local dates that an admin has flagged as incorrect
+     * for this provider. The resolver skips these when picking the next date.
+     */
+    public Set<LocalDate> listDeniedDates(String providerId) {
+        var rows = jdbc.query("select denied_date from public.countdown_denied_dates where provider_id = ?",
+                (rs, i) -> rs.getObject("denied_date", LocalDate.class), providerId);
+        return Set.copyOf(rows);
+    }
+
+    /** Full denied entries (with reason/audit) for admin display. */
+    public List<DeniedRow> listDenied(String providerId) {
+        return jdbc.query(
+                "select provider_id, denied_date, reason, denied_by, denied_at "
+                        + "from public.countdown_denied_dates where provider_id = ? order by denied_date",
+                (rs, i) -> new DeniedRow(rs.getString("provider_id"), rs.getObject("denied_date", LocalDate.class),
+                        rs.getString("reason"), optString(rs, "denied_by"), optInstant(rs, "denied_at")),
+                providerId);
+    }
+
+    /** Insert (or overwrite reason on) a denied date for a provider. */
+    public int deny(String providerId, LocalDate deniedDate, String reason) {
+        return jdbc.update("""
+                insert into public.countdown_denied_dates (provider_id, denied_date, reason)
+                values (?, ?, ?)
+                on conflict (provider_id, denied_date) do update set reason = excluded.reason
+                """, providerId, deniedDate, reason);
+    }
+
+    /** Remove a previously denied date. */
+    public int undeny(String providerId, LocalDate deniedDate) {
+        return jdbc.update("delete from public.countdown_denied_dates where provider_id = ? and denied_date = ?",
+                providerId, deniedDate);
+    }
+
+    /**
+     * Force the cache row stale so the next resolver call re-fetches. Used after
+     * a deny/undeny change so the filtered "next" is recomputed immediately.
+     */
+    public int invalidate(String providerId) {
+        return jdbc.update(
+                "update public.countdown_provider_cache set valid_until = now() - interval '1 second', fetched_at = now() - interval '30 days' where provider_id = ?",
+                providerId);
+    }
+
     private static Timestamp tsOrNull(Instant i) {
         return i == null ? null : Timestamp.from(i);
     }
@@ -100,6 +148,15 @@ public class ProviderCacheDao {
     private static Instant optInstant(ResultSet rs, String col) throws java.sql.SQLException {
         Timestamp t = rs.getTimestamp(col);
         return t == null ? null : t.toInstant();
+    }
+
+    private static String optString(ResultSet rs, String col) throws java.sql.SQLException {
+        Object v = rs.getObject(col);
+        return v == null ? null : v.toString();
+    }
+
+    /** One entry in the denied-dates list for a provider. */
+    public record DeniedRow(String providerId, LocalDate deniedDate, String reason, String deniedBy, Instant deniedAt) {
     }
 
     /**
