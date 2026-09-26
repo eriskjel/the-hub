@@ -17,8 +17,9 @@ RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
 FROM eclipse-temurin:21-jre-alpine AS prod
 ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION}
-# add curl for healthcheck
-RUN apk add --no-cache curl
+# add curl for healthcheck; unprivileged user to run the app
+RUN apk add --no-cache curl \
+    && addgroup -S app && adduser -S -G app app
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
@@ -27,5 +28,6 @@ COPY --from=build /app/target/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=prod \
     JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 
+USER app
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
