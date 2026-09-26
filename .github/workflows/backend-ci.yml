@@ -22,7 +22,7 @@ jobs:
     outputs:
       changed: ${{ steps.changed.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: changed
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c  # v46.0.5
         with:
@@ -45,7 +45,7 @@ jobs:
         working-directory: services/spring
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No backend changes → report success and stop doing heavy work
       - name: No backend changes (noop)
