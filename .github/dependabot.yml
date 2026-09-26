@@ -4,3 +4,22 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "maven"
+    directory: "/services/spring"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot*"
+
+  - package-ecosystem: "docker"
+    directory: "/services/spring"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

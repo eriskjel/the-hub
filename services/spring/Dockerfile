@@ -22,9 +22,10 @@ RUN apk add --no-cache curl
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Keep tuning; if you ever see musl/ZGC quirks on Pi, drop ZGC first.
+# Small heap, few cores: SerialGC has the lowest footprint. MaxRAMPercentage is
+# relative to the container memory limit, so always run with one (mem_limit).
 ENV SPRING_PROFILES_ACTIVE=prod \
-    JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:MaxRAMPercentage=70"
+    JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
