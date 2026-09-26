@@ -73,7 +73,7 @@ jobs:
       # Build for PRs only (no push)
       - name: Build (no push)
         if: needs.detect.outputs.changed == 'true' && github.event_name == 'pull_request'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: services/spring
           file: services/spring/Dockerfile
@@ -85,7 +85,7 @@ jobs:
       # Build & Push on main only (push or manual dispatch)
       - name: Build & Push (GHCR)
         if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: services/spring
           file: services/spring/Dockerfile
