@@ -63,7 +63,7 @@ jobs:
         id: calver
         run: echo "tag=$(date -u +'%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         if: needs.detect.outputs.changed == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
           registry: ghcr.io
