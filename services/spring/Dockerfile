@@ -14,7 +14,7 @@ COPY . .
 RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
 
 # --- prod runtime ---
-FROM eclipse-temurin:21-jre-alpine AS prod
+FROM eclipse-temurin:24-jre-alpine AS prod
 ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION}
 # add curl for healthcheck; unprivileged user to run the app
