@@ -55,7 +55,7 @@ jobs:
       # Backend changed → do real work
       - uses: docker/setup-qemu-action@v3
         if: needs.detect.outputs.changed == 'true'
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
         if: needs.detect.outputs.changed == 'true'
 
       - name: Generate CalVer tag
