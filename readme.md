@@ -1,202 +1,148 @@
-# The Hub — Fullstack Monorepo
-
 <p align="center">
-  <img src="apps/web/public/web-app-manifest-512x512.png" alt="The Hub logo" width="128" />
+  <img src="apps/web/public/web-app-manifest-512x512.png" alt="The Hub logo" width="112" />
 </p>
 
-A personal dashboard application built as a **pnpm monorepo** with a **Next.js 16 (TypeScript)** frontend, a **Spring Boot 3.5 (Java 21)** backend, and **Supabase** for authentication and Postgres.
+<h1 align="center">The Hub</h1>
 
-Users log in and manage a customisable grid of **widgets** — each widget fetches live data from the backend and renders it on the dashboard.
+<p align="center">
+  A personal dashboard of live widgets for grocery deals, uptime checks, deal-day countdowns and cinema listings.<br/>
+  Built as a full-stack monorepo on Next.js, Spring Boot and Supabase.
+</p>
 
-> ⚠️ **Work in progress.** Expect rapid changes to features, architecture, and documentation.
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white" alt="Next.js 16" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3.5" />
+  <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21" />
+  <img src="https://img.shields.io/badge/Supabase-Auth_%2B_Postgres-3FCF8E?logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" />
+</p>
 
----
-
-## 📂 Project Structure
-
-```
-the-hub/
-├── apps/
-│   └── web/              # Next.js 16 frontend (TypeScript, Tailwind CSS 4)
-├── services/
-│   └── spring/           # Spring Boot 3.5 backend (Java 21, Maven)
-├── supabase/             # Supabase config & SQL migrations
-├── docs/                 # Developer documentation (merging strategy, etc.)
-├── compose.yaml          # Docker Compose for local development
-├── compose.prod.yaml     # Docker Compose for production (WIP — not yet ready for use)
-├── pnpm-workspace.yaml   # pnpm workspace definition
-└── package.json          # Root scripts & shared dev-dependencies
-```
+<p align="center"><a href="https://skjellevik.online"><strong>skjellevik.online</strong></a></p>
 
 ---
 
-## ✨ Features
+## What it does
 
-### Widget Dashboard
+Sign in, add widgets and arrange them on a responsive grid. Each widget has its own settings for each user and pulls live data through the API.
 
-The core feature is a widget-based dashboard where authenticated users can create, configure, and arrange widgets in a responsive grid. Supported widget types:
-
-| Widget | Description |
+| Widget | What it shows |
 | --- | --- |
-| **Server Pings** | Monitors uptime by pinging one or more URLs |
-| **Grocery Deals** | Searches Norwegian grocery deals via Etilbudsavis, with optional Gemini AI relevance filtering |
-| **Countdown** | Counts down to the next occurrence of a provider-based event (e.g. Trippel Trumf, DNB Supertilbud) |
-| **Cinemateket** | Shows upcoming film screenings from Cinemateket Trondheim |
+| **Grocery Deals** | A saved search across Norwegian grocery flyers (Etilbudsavis), filtered by location, so you don't have to check each store yourself. It can optionally use Gemini to filter results by relevance. |
+| **Server Pings** | HTTP status and latency for one or more URLs. |
+| **Countdown** | Time until the next Trippel Trumf or DNB Supertilbud day. The backend scrapes the dates from the provider, and admins can confirm or deny them. |
+| **Cinemateket** | Upcoming screenings at Cinemateket Trondheim. Listings are cached and refreshed nightly. |
 
-### Other Features
+The app also has:
 
-- **Monster Case Simulator** — A CS:GO-style case opening mini-game for energy drinks, with rarity tiers and animated rollers
-- **Admin Panel** — User and widget management for administrators
-- **Internationalisation (i18n)** — Full English and Norwegian translations via `next-intl`
-- **Dark/Light Theme** — Toggle between themes
-- **Authentication** — Email-based auth powered by Supabase Auth
-- **Error Monitoring** — Sentry integration for both client and server errors
+- **Monster case opening**: a CS:GO-style case opener for energy drinks. It has rarity tiers, animated rollers, a live drop feed and stats, and the server makes every roll.
+- **Admin panel**: user roles, widget management and countdown date overrides.
+- **Authentication**: email/password or GitHub OAuth through Supabase, with Cloudflare Turnstile on the auth forms.
+- **Localisation and theming**: every page is available in English and Norwegian, with light and dark themes.
 
----
+## How it's built
 
-## 🛠 Tech Stack
+```mermaid
+flowchart LR
+    Browser --> Web["Next.js 16<br/>apps/web"]
+    Web -- "/api/backend/* with Supabase JWT" --> API["Spring Boot API<br/>services/spring"]
+    Web --> DB[("Supabase<br/>Auth + Postgres")]
+    API --> DB
+    API --> Ext["Etilbudsavis · Cinemateket · deal providers"]
+```
 
-### Frontend (`apps/web`)
+- **API calls go through Next.js.** A catch-all route handler forwards requests to Spring Boot and attaches the user's Supabase access token. The API checks that token as an OAuth2 resource server.
+- **Widgets are typed modules.** Each widget kind has a Zod settings schema, a fetcher and a view, and a discriminated union ties them together. Adding a widget takes one frontend module and one backend package.
+- **Upstream data is cached.** Cinemateket listings and countdown dates are stored in Postgres, so a dashboard load doesn't scrape the upstream sites.
+- **Monitoring is built in.** The frontend reports errors to Sentry. The API writes structured JSON logs and has request IDs, Micrometer metrics and Actuator health checks.
+- **Schema changes are migrations.** SQL migrations live in `supabase/migrations`, and CI applies them when they merge to `main`.
 
-- [Next.js](https://nextjs.org/) 16 with Turbopack
-- [React](https://react.dev/) 19
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/) 4
-- [next-intl](https://next-intl.dev/) for i18n
-- [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/nextjs) for auth
-- [Sentry](https://sentry.io/) for error monitoring
-- [Vitest](https://vitest.dev/) + Testing Library for tests
-- [Prettier](https://prettier.io/) + [ESLint](https://eslint.org/) for formatting/linting
+## Tech stack
 
-### Backend (`services/spring`)
+| Layer | Stack |
+| --- | --- |
+| Frontend | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4, TanStack Query, next-intl, React Hook Form + Zod |
+| Backend | Spring Boot 3.5, Java 21, Spring Security (OAuth2 resource server), Spring JDBC, SpringDoc OpenAPI |
+| Data and auth | Supabase (Postgres, Auth) |
+| Quality | Vitest + Testing Library, JUnit, ESLint, Prettier, Checkstyle, Spotless |
+| Delivery | Docker, GitHub Actions, GitHub Container Registry, Sentry |
 
-- [Spring Boot](https://spring.io/projects/spring-boot) 3.5
-- Java 21
-- Spring Security (OAuth 2 Resource Server, Supabase JWT)
-- Spring JDBC with PostgreSQL
-- [SpringDoc OpenAPI](https://springdoc.org/) (Swagger UI)
-- Checkstyle (Google style) + Spotless for formatting
-- Lombok
+## Repository layout
 
-### Infrastructure
+```
+apps/web/          Next.js frontend
+services/spring/   Spring Boot API
+supabase/          Supabase config and SQL migrations
+docs/              Project documentation
+compose.yaml       Local development stack
+```
 
-- [Supabase](https://supabase.com/) — Auth & PostgreSQL database
-- [Docker](https://www.docker.com/) & Docker Compose — Containerised dev and prod environments
-- GitHub Actions CI/CD — Automated linting, testing, building, and Docker image publishing (GHCR)
+## Getting started
 
----
-
-## ✅ Prerequisites
-
-- **Node.js** 24 LTS (see `.nvmrc`)
-- **pnpm** 10.28.1 (`npm install --global pnpm@10.28.1`)
-- **Java** 21+ (for backend development)
-- **Docker & Docker Compose** (optional, for running services locally)
-- **Supabase** project (for auth & Postgres)
-
----
-
-## 🚀 Getting Started
-
-### 1. Clone & install dependencies
+**Prerequisites:** Node.js 24 (see `.nvmrc`), pnpm 10.28.1, JDK 21 and a Supabase project. Docker is optional.
 
 ```bash
 git clone https://github.com/eriskjel/the-hub.git
 cd the-hub
-corepack enable
+npm install --global pnpm@10.28.1
 pnpm install
 ```
 
-### 2. Environment variables
+### Environment
 
-Copy the example env file for the backend and fill in your values:
+**Backend:** copy `services/spring/.env.example` to `services/spring/.env`, then set the datasource and the Supabase JWT secret. `GEMINI_API_KEY` is optional.
 
-```bash
-cp services/spring/.env.example services/spring/.env
-```
-
-The frontend requires Supabase keys — set these in a `.env.local` in `apps/web/`:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
-```
-
-> ⚠️ `SUPABASE_SERVICE_ROLE_KEY` is a **server-only** secret used for admin operations (e.g. role assignment on signup). Never prefix it with `NEXT_PUBLIC_`.
-
-### 3. Run with Docker Compose (recommended)
-
-Start both frontend and backend with hot-reload:
+**Frontend:** create `apps/web/.env.local`:
 
 ```bash
-docker compose up
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...        # server-only; never prefix with NEXT_PUBLIC_
+BACKEND_URL=http://localhost:8080    # use http://api:8080 under Docker Compose
 ```
 
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8080
+Sentry (`SENTRY_*`, `NEXT_PUBLIC_SENTRY_DSN`) and Turnstile (`NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`) are optional in development. Production requires Turnstile.
 
-### 4. Run individually
-
-**Frontend only:**
+### Run
 
 ```bash
-pnpm dev          # runs Next.js dev server with Turbopack
+docker compose up    # web on :3000, API on :8080, both with hot reload
 ```
 
-**Backend only (requires JDK 21 — Maven is downloaded automatically by the wrapper):**
+Or run each side directly:
 
 ```bash
-cd services/spring
-./mvnw spring-boot:run
+pnpm dev                                        # frontend
+cd services/spring && ./mvnw spring-boot:run    # API
 ```
 
----
+With the `dev` profile, the API docs are at http://localhost:8080/swagger-ui.
 
-## 📋 Available Scripts
-
-Root-level pnpm scripts (defined in `package.json`):
+## Scripts
 
 | Command | Description |
 | --- | --- |
-| `pnpm dev` | Start the Next.js dev server |
-| `pnpm build` | Build the frontend for production |
-| `pnpm lint` | Run ESLint on the frontend |
-| `pnpm test` | Run Vitest in watch mode |
-| `pnpm test:run` | Run Vitest once (CI mode) |
-| `pnpm test:ui` | Open the Vitest UI |
+| `pnpm dev` | Next.js dev server (Turbopack) |
+| `pnpm build` | Production build of the frontend |
+| `pnpm lint` | ESLint |
+| `pnpm test` | Vitest in watch mode (`test:run` for a single run, `test:ui` for the UI) |
+| `./mvnw verify` | Backend tests plus Checkstyle and Spotless checks (run from `services/spring`). PostgreSQL tests run when `HUB_TEST_DATABASE_URL` is set. |
 
----
+## CI/CD
 
-## 🔄 CI/CD
-
-Three GitHub Actions workflows handle CI and deployment:
-
-| Workflow | Trigger | Description |
+| Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `web-ci.yml` | PR → `main` | Prettier check, Vitest tests, Next.js build |
-| `backend-ci.yml` | PR/push → `main`, manual dispatch | Maven verification (Checkstyle, Spotless and tests), then Docker build; publish to GHCR only on main |
-| `main.yml` | Push → `main` (migrations path) | Applies Supabase SQL migrations to production |
+| `web-ci` | PRs to `main` | Prettier check, Vitest, Next.js build |
+| `backend-ci` | PRs to `main`, backend changes on `main`, manual | Checkstyle, Spotless and tests against a throwaway PostgreSQL, then builds the API image. On `main`, pushes multi-arch images to GHCR |
+| `main.yml` | Migration changes on `main` | Applies Supabase migrations to production |
 
-Backend changes run build-gate tests with Node.js 24 and Maven verification with Java 21 and a disposable PostgreSQL database. The required `lint` check reports verification; `Build (PR) / Build & Push (main)` only builds after verification passes. Changes outside the backend paths skip verification and report a successful build noop; failed change detection fails the build check. Manual dispatch always verifies and builds, and publishes only when run on `main`.
+Web and backend CI check whether their part of the repo changed and skip the heavy jobs if it didn't, but they still report the required checks. The API image is built only after verification passes. A new commit on a PR cancels that PR's older runs, but a deployment that has already started on `main` always finishes.
 
-All pull requests report backend checks. Pushes to `main` start this workflow only for backend code, gate scripts or the backend workflow itself. New PR commits cancel obsolete PR checks; main and manual runs allow an active deployment to finish.
+## Contributing
 
----
+PRs are welcome. Branch from `main`. PRs are squash-merged once CI passes. See [docs/merging.md](docs/merging.md) for the full workflow.
 
-## 🤝 Contributing
+## License
 
-Contributions are very welcome — just open a PR!
-
-1. Fork the repo
-2. Create a feature branch
-3. Commit with clear messages
-4. Open a Pull Request (link to any issue if relevant)
-
-See [`docs/merging.md`](docs/merging.md) for details on the branching and merging strategy. Feature branches are opened from `main` and merged via squash; CI runs on PRs to `main`.
-
----
-
-## 📜 License
-
-This project is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE)
