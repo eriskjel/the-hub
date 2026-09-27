@@ -6,13 +6,19 @@ on:
     branches: [main]
   push:
     branches: [main]
+    # A web-only push must not replace a queued backend deployment.
+    paths:
+      - services/spring/**
+      - .github/workflows/backend-ci.yml
+      - .github/scripts/backend-*
 
 permissions:
   contents: read
 
 concurrency:
   group: backend-ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Replace obsolete PR checks, but allow a running deployment to finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   detect:
