@@ -3,23 +3,77 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    open-pull-requests-limit: 2
+    # Keep routine majors manual; allow.update-types does not restrict security updates.
+    allow:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+    groups:
+      runtime-routine:
+        applies-to: version-updates
+        dependency-type: production
+        update-types: [minor, patch]
+      tooling-routine:
+        applies-to: version-updates
+        dependency-type: development
+        update-types: [minor, patch]
+      runtime-security:
+        applies-to: security-updates
+        dependency-type: production
+        update-types: [minor, patch]
+      tooling-security:
+        applies-to: security-updates
+        dependency-type: development
+        exclude-patterns: ["vitest", "@vitest/*", "vite"]
+        update-types: [minor, patch]
 
   - package-ecosystem: "maven"
     directory: "/services/spring"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
+    allow:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
     groups:
       spring-boot:
+        applies-to: version-updates
         patterns:
-          - "org.springframework.boot*"
+          - "org.springframework.boot:*"
+        update-types: [minor, patch]
+      maven-routine:
+        applies-to: version-updates
+        patterns: ["*"]
+        exclude-patterns: ["org.springframework.boot:*"]
+        update-types: [minor, patch]
+      maven-security:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
 
   - package-ecosystem: "docker"
     directory: "/services/spring"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 1
+    # Review JDK suffix changes manually; do not suppress Maven/base-image fixes.
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    open-pull-requests-limit: 1
+    # Review major action/runtime upgrades separately each quarter.
+    allow:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+    groups:
+      actions-routine:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
+      actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
