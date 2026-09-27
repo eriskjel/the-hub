@@ -2,9 +2,9 @@ package dev.thehub.backend.widgets.countdown.provider;
 
 import java.nio.charset.StandardCharsets;
 import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -13,28 +13,50 @@ import org.springframework.web.client.RestTemplate;
 /**
  * CountdownProvider implementation for "Trippel Trumf" campaign days.
  * <p>
- * Source: a public overview table on EuroBonusguiden (see
- * {@link #sourceUrl()}). Update the URL once a year when EuroBonusguiden
- * publishes the new year's page (path/month in URL is not predictable, e.g.
- * 2025 used /10/, 2026 used /01/). For every listed date a time window is
- * created in Europe/Oslo: [07:00, 22:00).
+ * Dates are collected from three independent sources and merged by vote:
+ * <ul>
+ * <li>EuroBonusguiden overview table (see {@link #sourceUrl()}). Update the URL
+ * once a year when EuroBonusguiden publishes the new year's page (path/month in
+ * URL is not predictable, e.g. 2025 used /10/, 2026 used /01/; old paths
+ * redirect).</li>
+ * <li>Bonusjegeren's iCalendar feed.</li>
+ * <li>Kredittkortlisten's date table (one row per date, year always
+ * included).</li>
+ * </ul>
+ * A date listed by at least two sources is confirmed; a date from a single
+ * source is tentative. A single-source date within {@link #CONFLICT_DAYS} of a
+ * confirmed date is dropped as a probable typo for that date. There is
+ * deliberately no weekday check — Trumf could run one on a non-Thursday. For
+ * every date a time window is created in Europe/Oslo: [07:00, 22:00).
  */
 public class TrippelTrumfProvider implements CountdownProvider {
     private static final Logger log = LoggerFactory.getLogger(TrippelTrumfProvider.class);
 
     private final RestTemplate http;
+    private final Clock clock;
     private static final ZoneId ZONE = ZoneId.of("Europe/Oslo");
     /**
      * Current year's overview page – update annually when new page is published.
      */
     private static final String URL = "https://eurobonusguiden.no/2026/01/trippel-trumf-torsdag-datoer-2026/";
-    private static final String BONUS_URL = "https://bonusjegeren.no/nar-er-det-trippel-trumf/";
+    private static final String BONUS_ICS_URL = "https://bonusjegeren.no/trippel-trumf-kalender.ics";
+    private static final String KREDITTKORT_URL = "https://www.kredittkortlisten.no/guider/trippel-trumf-torsdag/";
+
+    /** Matches all-day and timed starts: "DTSTART;VALUE=DATE:20261015". */
+    private static final Pattern ICS_DTSTART = Pattern.compile("(?m)^DTSTART[^:\\r\\n]*:(\\d{4})(\\d{2})(\\d{2})");
     /**
-     * Matches "16. april 2026", "16. april", or "16. apr" — year is optional. When
-     * absent, we infer the current year (bonusjegeren groups by year with a
-     * heading, so entries within a section may omit the inline year).
+     * Matches a whole table cell like "tor. 15. okt. 2026" or "tor. 18. juni 2026".
+     * Anchored so prose that merely mentions a date never matches.
      */
-    private static final Pattern DATE_PATTERN = Pattern.compile("(\\d{1,2})\\.\\s*([a-zæøåA-ZÆØÅ]+)(?:\\s+(\\d{4}))?");
+    private static final Pattern KREDITTKORT_CELL = Pattern
+            .compile("^\\p{L}+\\.?\\h+(\\d{1,2})\\.\\h*(\\p{L}+)\\.?\\h+(\\d{4})$");
+
+    /**
+     * A single-source date this close to a date two or more sources agree on is
+     * treated as a typo for it. Real extra days have been at least a week apart.
+     */
+    private static final int CONFLICT_DAYS = 3;
+    private static final int CONFIRM_VOTES = 2;
 
     // Trippel window times (tweak if you prefer 00:00..24:00)
     private static final LocalTime START = LocalTime.of(7, 0);
@@ -48,10 +70,8 @@ public class TrippelTrumfProvider implements CountdownProvider {
             Map.entry("desember", Month.DECEMBER));
 
     /**
-     * Norwegian month names used by bonusjegeren — both short ("apr", "aug") and
-     * full ("april", "august"). The page is inconsistent: some cells use short
-     * forms, others full. The regex captures greedily, so the map must contain the
-     * full-word form as well or those entries get dropped.
+     * Norwegian month names used by kredittkortlisten — short ("okt", "des") and
+     * full ("juni", "mars") forms are mixed on the same page.
      */
     private static final Map<String, Month> NO_MONTHS_SHORT;
     static {
@@ -92,7 +112,12 @@ public class TrippelTrumfProvider implements CountdownProvider {
     private Instant mergedCacheExpiry = Instant.EPOCH;
 
     public TrippelTrumfProvider(RestTemplate http) {
+        this(http, Clock.systemUTC());
+    }
+
+    TrippelTrumfProvider(RestTemplate http, Clock clock) {
         this.http = http;
+        this.clock = clock;
     }
 
     @Override
@@ -158,119 +183,147 @@ public class TrippelTrumfProvider implements CountdownProvider {
     }
 
     /**
-     * A window from either or both sources, with a tentative flag when only one
-     * source has it.
+     * A window with a tentative flag when fewer than {@link #CONFIRM_VOTES} sources
+     * list the date.
      */
     private record MergedWindow(Instant start, Instant endExclusive, boolean tentative) {
     }
 
     /**
-     * Internal value object representing a single-day window with an exclusive end.
-     */
-    private record Window(Instant start, Instant endExclusive) {
-    }
-
-    /**
-     * Returns merged windows from both sources with a short in-process cache so
+     * Returns merged windows from all sources with a short in-process cache so
      * next() and previous() share a single scrape per resolver invocation.
      */
     private synchronized List<MergedWindow> mergedWindows() {
-        if (mergedWindowCache != null && Instant.now().isBefore(mergedCacheExpiry)) {
+        if (mergedWindowCache != null && clock.instant().isBefore(mergedCacheExpiry)) {
             return mergedWindowCache;
         }
 
-        var primary = scrapeWindows();
-        var secondary = scrapeBonusjegeren();
+        final int yearWanted = LocalDate.ofInstant(clock.instant(), ZONE).getYear();
+        var eurobonus = scrapeEurobonusguiden(yearWanted);
+        var bonusjegeren = fetchBonusjegerenIcs(yearWanted);
+        var kredittkort = scrapeKredittkortlisten(yearWanted);
 
-        var primaryDates = primary.stream().map(w -> w.start.atZone(ZONE).toLocalDate()).collect(Collectors.toSet());
+        // Each source is a Set, so a source can vote at most once per date.
+        Map<LocalDate, Integer> votes = new TreeMap<>();
+        for (var source : List.of(eurobonus, bonusjegeren, kredittkort)) {
+            for (var d : source)
+                votes.merge(d, 1, Integer::sum);
+        }
+
+        var confirmed = votes.entrySet().stream().filter(e -> e.getValue() >= CONFIRM_VOTES).map(Map.Entry::getKey)
+                .toList();
 
         List<MergedWindow> merged = new ArrayList<>();
-
-        // Primary windows: tentative if bonusjegeren doesn't also have the date
-        for (var w : primary) {
-            var d = w.start.atZone(ZONE).toLocalDate();
-            merged.add(new MergedWindow(w.start, w.endExclusive, !secondary.contains(d)));
-        }
-
-        // Secondary-only windows: tentative (single source)
-        for (var d : secondary) {
-            if (!primaryDates.contains(d)) {
-                merged.add(new MergedWindow(d.atTime(START).atZone(ZONE).toInstant(),
-                        d.atTime(END).atZone(ZONE).toInstant(), true));
+        List<LocalDate> dropped = new ArrayList<>();
+        for (var e : votes.entrySet()) {
+            var d = e.getKey();
+            boolean tentative = e.getValue() < CONFIRM_VOTES;
+            if (tentative
+                    && confirmed.stream().anyMatch(c -> Math.abs(ChronoUnit.DAYS.between(c, d)) <= CONFLICT_DAYS)) {
+                dropped.add(d);
+                continue;
             }
+            merged.add(new MergedWindow(d.atTime(START).atZone(ZONE).toInstant(),
+                    d.atTime(END).atZone(ZONE).toInstant(), tentative));
         }
 
-        merged.sort(Comparator.comparing(w -> w.start));
-        log.info("Trippel merged {} windows (primary={} secondary={}): {}", merged.size(), primary.size(),
-                secondary.size(),
-                merged.stream().map(w -> w.start.atZone(ZONE).toLocalDate() + (w.tentative ? "?" : "")).toList());
+        log.info("Trippel merged {} windows (eurobonusguiden={} bonusjegeren={} kredittkortlisten={}): {} dropped={}",
+                merged.size(), eurobonus.size(), bonusjegeren.size(), kredittkort.size(),
+                merged.stream().map(w -> w.start.atZone(ZONE).toLocalDate() + (w.tentative ? "?" : "")).toList(),
+                dropped);
 
         mergedWindowCache = merged;
-        mergedCacheExpiry = Instant.now().plusSeconds(300);
+        mergedCacheExpiry = clock.instant().plusSeconds(300);
         return merged;
     }
 
+    /** GETs a URL as text; empty on a non-2xx or empty body, errors propagate. */
+    private Optional<String> fetch(String url, MediaType accept) {
+        HttpHeaders h = new HttpHeaders();
+        h.setAccept(List.of(accept));
+        h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
+        h.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (CountdownBot)");
+        var resp = http.exchange(url, HttpMethod.GET, new HttpEntity<>(h), String.class);
+        if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
+            return Optional.empty();
+        return Optional.of(resp.getBody());
+    }
+
     /**
-     * Scrapes date entries from bonusjegeren.no as a cross-check source. Returns
-     * only the current year's dates. On any error, returns an empty set so the
-     * primary source continues to work normally.
+     * Reads DTSTART dates from bonusjegeren's iCalendar feed. The feed also carries
+     * next year's guesses, which the year filter drops.
      */
-    private Set<LocalDate> scrapeBonusjegeren() {
+    private Set<LocalDate> fetchBonusjegerenIcs(int yearWanted) {
         try {
-            HttpHeaders h = new HttpHeaders();
-            h.setAccept(List.of(MediaType.TEXT_HTML));
-            h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-            h.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (CountdownBot)");
-            var resp = http.exchange(BONUS_URL, HttpMethod.GET, new HttpEntity<>(h), String.class);
-            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
+            var body = fetch(BONUS_ICS_URL, MediaType.ALL).orElse(null);
+            if (body == null)
                 return Set.of();
 
-            // Parse with Jsoup so HTML entities (&nbsp;) and tag boundaries are
-            // normalized to plain whitespace before the date regex runs —
-            // otherwise "16.&nbsp;april&nbsp;2026" won't match DATE_PATTERN.
-            String text = org.jsoup.Jsoup.parse(resp.getBody()).text();
-
-            final int yearWanted = Year.now(ZONE).getValue();
-            Set<LocalDate> dates = new HashSet<>();
-            var matcher = DATE_PATTERN.matcher(text);
+            Set<LocalDate> dates = new TreeSet<>();
+            var matcher = ICS_DTSTART.matcher(body);
             while (matcher.find()) {
-                int day = Integer.parseInt(matcher.group(1));
-                String monthKey = matcher.group(2).toLowerCase(Locale.ROOT);
-                String yearStr = matcher.group(3);
-                int year = yearStr != null ? Integer.parseInt(yearStr) : yearWanted;
+                int year = Integer.parseInt(matcher.group(1));
                 if (year != yearWanted)
                     continue;
-                Month month = NO_MONTHS_SHORT.get(monthKey);
-                if (month == null)
-                    continue;
                 try {
-                    dates.add(LocalDate.of(year, month, day));
+                    dates.add(
+                            LocalDate.of(year, Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3))));
                 } catch (DateTimeException ignored) {
                 }
             }
-            log.info("BonusJegeren scraped {} dates for {}: {}", dates.size(), yearWanted, dates);
+            log.info("Bonusjegeren ICS gave {} dates for {}: {}", dates.size(), yearWanted, dates);
             return dates;
         } catch (Exception e) {
-            log.info("BonusJegeren scrape error (non-fatal): {}", e.toString());
+            log.info("Bonusjegeren ICS error (non-fatal): {}", e.toString());
             return Set.of();
         }
     }
 
     /**
-     * Scrapes the source page for a table with headers År / Måned / Dato and
-     * converts each target-year row to a [07:00, 22:00) window in Europe/Oslo.
+     * Scrapes kredittkortlisten's date table. Only cells consisting entirely of a
+     * weekday + date + year are used, so other tables and prose are ignored.
      */
-    private List<Window> scrapeWindows() {
+    private Set<LocalDate> scrapeKredittkortlisten(int yearWanted) {
         try {
-            HttpHeaders h = new HttpHeaders();
-            h.setAccept(List.of(MediaType.TEXT_HTML));
-            h.set(HttpHeaders.ACCEPT_CHARSET, StandardCharsets.UTF_8.name());
-            h.set(HttpHeaders.USER_AGENT, "Mozilla/5.0 (CountdownBot)");
-            var resp = http.exchange(URL, HttpMethod.GET, new HttpEntity<>(h), String.class);
-            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null)
-                return List.of();
+            var body = fetch(KREDITTKORT_URL, MediaType.TEXT_HTML).orElse(null);
+            if (body == null)
+                return Set.of();
 
-            org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(resp.getBody());
+            Set<LocalDate> dates = new TreeSet<>();
+            for (var td : org.jsoup.Jsoup.parse(body).select("table td")) {
+                var matcher = KREDITTKORT_CELL.matcher(td.text().trim());
+                if (!matcher.matches())
+                    continue;
+                int year = Integer.parseInt(matcher.group(3));
+                if (year != yearWanted)
+                    continue;
+                Month month = NO_MONTHS_SHORT.get(matcher.group(2).toLowerCase(Locale.ROOT));
+                if (month == null)
+                    continue;
+                try {
+                    dates.add(LocalDate.of(year, month, Integer.parseInt(matcher.group(1))));
+                } catch (DateTimeException ignored) {
+                }
+            }
+            log.info("Kredittkortlisten scraped {} dates for {}: {}", dates.size(), yearWanted, dates);
+            return dates;
+        } catch (Exception e) {
+            log.info("Kredittkortlisten scrape error (non-fatal): {}", e.toString());
+            return Set.of();
+        }
+    }
+
+    /**
+     * Scrapes the EuroBonusguiden page for a table with headers År / Måned / Dato
+     * and returns each target-year date.
+     */
+    private Set<LocalDate> scrapeEurobonusguiden(int yearWanted) {
+        try {
+            var body = fetch(URL, MediaType.TEXT_HTML).orElse(null);
+            if (body == null)
+                return Set.of();
+
+            org.jsoup.nodes.Document doc = org.jsoup.Jsoup.parse(body);
 
             // Find the table that has headers År / Måned / Dato
             org.jsoup.select.Elements tables = doc.select("table");
@@ -290,11 +343,10 @@ public class TrippelTrumfProvider implements CountdownProvider {
             }
             if (target == null) {
                 log.info("Trippel provider: no table with headers År/Måned/Dato found");
-                return List.of();
+                return Set.of();
             }
 
-            List<Window> out = new ArrayList<>();
-            final int yearWanted = Year.now(ZONE).getValue();
+            Set<LocalDate> out = new TreeSet<>();
 
             var rows = target.select("tr");
             for (int i = 1; i < rows.size(); i++) {
@@ -321,26 +373,18 @@ public class TrippelTrumfProvider implements CountdownProvider {
                 if (month == null)
                     continue;
 
-                LocalDate date;
                 try {
-                    date = LocalDate.of(year, month, day);
+                    out.add(LocalDate.of(year, month, day));
                 } catch (DateTimeException e) {
                     continue;
                 }
-                Instant start = date.atTime(START).atZone(ZONE).toInstant();
-                Instant endEx = date.atTime(END).atZone(ZONE).toInstant();
-
-                out.add(new Window(start, endEx));
             }
 
-            out.sort(Comparator.comparing(w -> w.start));
-            log.info("Trippel provider parsed {} windows: {}", out.size(),
-                    out.stream().map(w -> w.start.atZone(ZONE).toLocalDate().toString()).toList());
-
+            log.info("EuroBonusguiden parsed {} dates for {}: {}", out.size(), yearWanted, out);
             return out;
         } catch (Exception e) {
-            log.info("Trippel provider scrape error: {}", e.toString());
-            return List.of();
+            log.info("EuroBonusguiden scrape error (non-fatal): {}", e.toString());
+            return Set.of();
         }
     }
 }
