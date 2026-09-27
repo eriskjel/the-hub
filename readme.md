@@ -180,6 +180,8 @@ Three GitHub Actions workflows handle CI and deployment:
 
 Backend changes run build-gate tests with Node.js 24 and Maven verification with Java 21 and a disposable PostgreSQL database. The required `lint` check reports verification; `Build (PR) / Build & Push (main)` only builds after verification passes. Changes outside the backend paths skip verification and report a successful build noop; failed change detection fails the build check. Manual dispatch always verifies and builds, and publishes only when run on `main`.
 
+All pull requests report backend checks. Pushes to `main` start this workflow only for backend code, gate scripts or the backend workflow itself. New PR commits cancel obsolete PR checks; main and manual runs allow an active deployment to finish.
+
 ---
 
 ## 🤝 Contributing
