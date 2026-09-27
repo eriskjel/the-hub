@@ -6,7 +6,7 @@ if (!process.env.NEXT_PUBLIC_SITE_URL) {
     process.env.NEXT_PUBLIC_SITE_URL = "http://localhost:3000";
 }
 
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { vi, afterEach } from "vitest";
 
 /** ---------- next-intl (namespace-aware, tiny) ---------- */

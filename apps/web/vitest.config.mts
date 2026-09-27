@@ -9,11 +9,27 @@ export default defineConfig({
     },
     test: {
         globals: true,
-        include: ["src/**/*.test.{ts,tsx}"],
-        environment: "node",
         api: false,
         css: false,
-        environmentMatchGlobs: [["**/*.component.test.{ts,tsx}", "jsdom"]],
         setupFiles: ["./vitest.setup.ts"],
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: "node",
+                    environment: "node",
+                    include: ["src/**/*.test.{ts,tsx}"],
+                    exclude: ["src/**/*.component.test.{ts,tsx}"],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: "components",
+                    environment: "jsdom",
+                    include: ["src/**/*.component.test.{ts,tsx}"],
+                },
+            },
+        ],
     },
 });

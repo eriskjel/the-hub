@@ -1,6 +1,6 @@
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 WORKDIR /repo
-RUN corepack enable
+RUN npm install --global pnpm@10.28.1
 
 # Copy only what's needed to install deps first (faster caching)
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -21,7 +21,7 @@ COPY . .
 RUN pnpm --filter ./apps/web... build
 
 # --- prod runtime (standalone output) ---
-FROM node:20-alpine AS prod
+FROM node:24-alpine AS prod
 WORKDIR /app
 ENV NODE_ENV=production
 # Next.js standalone requires: next.config.js -> module.exports = { output: 'standalone' }

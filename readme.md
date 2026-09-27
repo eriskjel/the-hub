@@ -88,8 +88,8 @@ The core feature is a widget-based dashboard where authenticated users can creat
 
 ## ✅ Prerequisites
 
-- **Node.js** 20+
-- **pnpm** (via Corepack)
+- **Node.js** 24 LTS (see `.nvmrc`)
+- **pnpm** 10.28.1 (`npm install --global pnpm@10.28.1`)
 - **Java** 21+ (for backend development)
 - **Docker & Docker Compose** (optional, for running services locally)
 - **Supabase** project (for auth & Postgres)
