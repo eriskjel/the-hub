@@ -57,6 +57,10 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
       - name: Check build gate behavior
         run: node --test .github/scripts/backend-gate.test.mjs
       - name: Verify formatting, style and tests

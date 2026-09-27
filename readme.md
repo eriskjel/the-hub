@@ -170,14 +170,15 @@ Root-level pnpm scripts (defined in `package.json`):
 
 ## 🔄 CI/CD
 
-Four GitHub Actions workflows handle CI and deployment:
+Three GitHub Actions workflows handle CI and deployment:
 
 | Workflow | Trigger | Description |
 | --- | --- | --- |
 | `web-ci.yml` | PR → `main` | Prettier check, Vitest tests, Next.js build |
-| `backend-ci.yml` | PR/push → `main` | Docker build (PR) or build & push to GHCR (main) |
-| `backend-lint.yml` | PR/push → `main` | Checkstyle + Spotless formatting verification |
+| `backend-ci.yml` | PR/push → `main`, manual dispatch | Maven verification (Checkstyle, Spotless and tests), then Docker build; publish to GHCR only on main |
 | `main.yml` | Push → `main` (migrations path) | Applies Supabase SQL migrations to production |
+
+Backend changes run build-gate tests with Node.js 24 and Maven verification with Java 21 and a disposable PostgreSQL database. The required `lint` check reports verification; `Build (PR) / Build & Push (main)` only builds after verification passes. Changes outside the backend paths skip verification and report a successful build noop; failed change detection fails the build check. Manual dispatch always verifies and builds, and publishes only when run on `main`.
 
 ---
 
