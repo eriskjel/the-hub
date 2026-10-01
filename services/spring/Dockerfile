@@ -1,5 +1,5 @@
 # --- dev (hot reload via spring-boot:run) ---
-FROM maven:3.9-eclipse-temurin-21 AS dev
+FROM maven:3-eclipse-temurin-26 AS dev
 WORKDIR /app
 COPY pom.xml .
 RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests dependency:go-offline
@@ -8,7 +8,7 @@ EXPOSE 8080
 CMD ["mvn","spring-boot:run"]
 
 # --- build jar ---
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 WORKDIR /app
 COPY . .
 RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
