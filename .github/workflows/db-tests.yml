@@ -1,0 +1,21 @@
+name: Database tests
+
+# Migrations are applied to production on merge (main.yml), so check them
+# against a throwaway Supabase Postgres before that happens.
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  media-requests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Media request RLS and privilege tests
+        run: bash supabase/tests/media_requests/run.sh
