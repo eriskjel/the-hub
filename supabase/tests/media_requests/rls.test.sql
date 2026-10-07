@@ -1,4 +1,5 @@
--- RLS and privilege tests for the media request tables.
+-- RLS and privilege tests for the media request tables and the profiles they
+-- show.
 -- Runs as a superuser and switches role per section, the way PostgREST does
 -- (SET ROLE + request.jwt.claim.sub). Any failed assertion stops the run.
 --
@@ -67,6 +68,17 @@ begin
         'authenticated must not use the request id sequence';
     assert not has_function_privilege('anon', 'public.is_media_member()', 'EXECUTE'),
         'anon must not execute is_media_member';
+
+    foreach p in array array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE'] loop
+        assert not has_table_privilege('anon', 'public.profiles', p),
+            format('anon must not have %s on profiles', p);
+    end loop;
+    assert not exists (
+        select 1 from pg_policies
+        where schemaname = 'public' and tablename = 'profiles'
+          and cmd in ('SELECT', 'ALL')
+          and (roles && array['anon', 'public']::name[])
+    ), 'no profiles read policy may target anon or public';
 end $$;
 
 -- ---------------------------------------------------------------------------
@@ -84,6 +96,10 @@ do $$ begin
     perform 1 from public.media_worker_status;
     raise exception 'FAIL: anon read media_worker_status';
 exception when insufficient_privilege then null; end $$;
+do $$ begin
+    perform 1 from public.profiles;
+    raise exception 'FAIL: anon read profiles';
+exception when insufficient_privilege then null; end $$;
 reset role;
 
 -- ---------------------------------------------------------------------------
@@ -96,6 +112,7 @@ do $$ begin
     assert (select count(*) from public.media_worker_status) = 0, 'non-member must not see worker status';
     assert (select count(*) from public.media_member) = 0, 'non-member must see no member rows';
     assert not public.is_media_member(), 'non-member is not a member';
+    assert (select count(*) from public.profiles) = 5, 'signed-in users read every profile';
 end $$;
 do $$ begin
     insert into public.media_member (user_id, library_account)
