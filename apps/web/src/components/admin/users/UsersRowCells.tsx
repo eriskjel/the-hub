@@ -5,7 +5,13 @@ import { RoleBadge } from "@/components/admin/RoleBadge";
 import type { RoleKey } from "@/lib/auth/role";
 import UsersRowActions from "./UsersRowActions";
 
-export type UsersRow = { id: string; name: string; email: string; roleKey: RoleKey };
+export type UsersRow = {
+    id: string;
+    name: string;
+    email: string;
+    roleKey: RoleKey;
+    requests: string;
+};
 
 export default function UsersRowCells(row: UsersRow): ReactElement {
     return (
@@ -16,6 +22,7 @@ export default function UsersRowCells(row: UsersRow): ReactElement {
             <td className="px-6 py-4 text-left text-sm">
                 <RoleBadge role={row.roleKey} />
             </td>
+            <td className="px-6 py-4 text-left font-mono text-sm">{row.requests}</td>
             <td className="px-6 py-4 text-left text-sm" onClick={(e) => e.stopPropagation()}>
                 <UsersRowActions id={row.id} />
             </td>
