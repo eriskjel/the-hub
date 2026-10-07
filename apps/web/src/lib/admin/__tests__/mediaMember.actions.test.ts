@@ -13,6 +13,7 @@ type Write = { op: "update" | "upsert"; payload: Record<string, unknown>; filter
 
 let isAdmin = true;
 let targetUser: { id: string; app_metadata: Record<string, unknown> } | null = null;
+// The user's media_member row as the database has it, or null for none.
 let existingRow: { revoked_at: string | null } | null = null;
 let writeError: { code: string; message: string } | null = null;
 let writes: Write[] = [];
@@ -47,12 +48,7 @@ function fakeAdminClient() {
         from: vi.fn((table: string) => {
             expect(table).toBe("media_member");
             return {
-                select: () => ({
-                    eq: () => ({
-                        maybeSingle: async () => ({ data: existingRow, error: null }),
-                    }),
-                }),
-                update: (payload: Record<string, unknown>) => filtered("update", payload),
+                update: (payload: Record<string, unknown>) => filteredUpdate(payload),
                 upsert: async (payload: Record<string, unknown>) => {
                     writes.push({ op: "upsert", payload, filters: [] });
                     return { error: writeError };
@@ -62,9 +58,13 @@ function fakeAdminClient() {
     };
 }
 
-/** An awaitable builder that records .eq()/.is() filters, like supabase-js. */
-function filtered(op: Write["op"], payload: Record<string, unknown>) {
-    const write: Write = { op, payload, filters: [] };
+/**
+ * An update builder like supabase-js: records .eq()/.is() filters, and .select()
+ * returns the rows that matched. The row matches `revoked_at is null` only while
+ * it is active.
+ */
+function filteredUpdate(payload: Record<string, unknown>) {
+    const write: Write = { op: "update", payload, filters: [] };
     writes.push(write);
     const builder = {
         eq: (k: string, v: unknown) => {
@@ -75,8 +75,12 @@ function filtered(op: Write["op"], payload: Record<string, unknown>) {
             write.filters.push(`${k} is ${String(v)}`);
             return builder;
         },
-        then: (resolve: (r: { error: typeof writeError }) => unknown) =>
-            resolve({ error: writeError }),
+        select: async () => {
+            if (writeError) return { data: null, error: writeError };
+            const onlyActive = write.filters.includes("revoked_at is null");
+            const matches = existingRow && (!onlyActive || existingRow.revoked_at === null);
+            return { data: matches ? [{ user_id: USER_ID }] : [], error: null };
+        },
     };
     return builder;
 }
@@ -89,6 +93,8 @@ vi.mock("next/cache", () => ({ refresh: refreshMock, revalidatePath: vi.fn() }))
 import { mediaMemberAction } from "../mediaMember.actions";
 
 const IDLE = { status: "idle" } as const;
+const ACTIVE = { revoked_at: null };
+const REVOKED = { revoked_at: "2026-10-01T00:00:00Z" };
 
 function form(fields: Record<string, string>): FormData {
     const fd = new FormData();
@@ -96,15 +102,21 @@ function form(fields: Record<string, string>): FormData {
     return fd;
 }
 
-function saveForm(overrides: Record<string, string> = {}): FormData {
+function memberForm(intent: string, overrides: Record<string, string> = {}): FormData {
     return form({
-        intent: "save",
+        intent,
         userId: USER_ID,
         libraryAccount: "fredrik",
         weeklyQuota: "5",
         ...overrides,
     });
 }
+
+const grant = (overrides?: Record<string, string>) =>
+    mediaMemberAction(IDLE, memberForm("grant", overrides));
+const update = (overrides?: Record<string, string>) =>
+    mediaMemberAction(IDLE, memberForm("update", overrides));
+const revoke = (userId = USER_ID) => mediaMemberAction(IDLE, form({ intent: "revoke", userId }));
 
 beforeEach(() => {
     isAdmin = true;
@@ -118,137 +130,193 @@ beforeEach(() => {
 });
 
 describe("mediaMemberAction", () => {
-    it("rejects non-admins before touching the database", async () => {
-        isAdmin = false;
-        await expect(mediaMemberAction(IDLE, saveForm())).rejects.toThrow("REDIRECT");
-        await expect(
-            mediaMemberAction(IDLE, form({ intent: "revoke", userId: USER_ID }))
-        ).rejects.toThrow("REDIRECT");
-        expect(createAdminClientMock).not.toHaveBeenCalled();
-    });
-
-    it("grants access to a new member", async () => {
-        const state = await mediaMemberAction(IDLE, saveForm({ libraryAccount: " fredrik " }));
-
-        expect(state).toEqual({ status: "saved" });
-        expect(writes).toHaveLength(1);
-        expect(writes[0].op).toBe("upsert");
-        expect(writes[0].payload).toMatchObject({
-            user_id: USER_ID,
-            library_account: "fredrik",
-            weekly_quota: 5,
-            granted_by: ADMIN_ID,
-            revoked_at: null,
-        });
-        expect(typeof writes[0].payload.granted_at).toBe("string");
-        expect(refreshMock).toHaveBeenCalledOnce();
-    });
-
-    it("re-grants a revoked member as a fresh grant", async () => {
-        existingRow = { revoked_at: "2026-10-01T00:00:00Z" };
-        const state = await mediaMemberAction(IDLE, saveForm());
-
-        expect(state).toEqual({ status: "saved" });
-        expect(writes[0].op).toBe("upsert");
-        expect(writes[0].payload).toMatchObject({ granted_by: ADMIN_ID, revoked_at: null });
-    });
-
-    it("edits an active member without resetting their grant", async () => {
-        existingRow = { revoked_at: null };
-        const state = await mediaMemberAction(
-            IDLE,
-            saveForm({ libraryAccount: "fredrik2", weeklyQuota: "10" })
-        );
-
-        expect(state).toEqual({ status: "saved" });
-        expect(writes).toEqual([
-            {
-                op: "update",
-                payload: { library_account: "fredrik2", weekly_quota: 10 },
-                filters: [`user_id=${USER_ID}`],
-            },
-        ]);
-    });
-
-    it("requires a library account for users who aren't admins", async () => {
-        const state = await mediaMemberAction(IDLE, saveForm({ libraryAccount: "  " }));
-
-        expect(state).toEqual({ status: "error", error: "account_required" });
-        expect(writes).toHaveLength(0);
-    });
-
-    it("lets an admin have access without a library account", async () => {
-        targetUser = { id: USER_ID, app_metadata: { roles: ["admin"] } };
-        const state = await mediaMemberAction(IDLE, saveForm({ libraryAccount: "" }));
-
-        expect(state).toEqual({ status: "saved" });
-        expect(writes[0].payload).toMatchObject({ library_account: null });
-    });
-
-    it.each(["eve smith", "a/b", "x".repeat(65), "ålesund"])(
-        "rejects the library account %j",
-        async (libraryAccount) => {
-            const state = await mediaMemberAction(IDLE, saveForm({ libraryAccount }));
-
-            expect(state).toEqual({ status: "error", error: "invalid_account" });
-            expect(writes).toHaveLength(0);
+    it.each(["grant", "update", "revoke"])(
+        "rejects non-admins before touching the database (%s)",
+        async (intent) => {
+            isAdmin = false;
+            await expect(mediaMemberAction(IDLE, memberForm(intent))).rejects.toThrow("REDIRECT");
+            expect(createAdminClientMock).not.toHaveBeenCalled();
         }
     );
 
-    it.each(["", "-1", "2.5", "51", "1e1", "abc"])("rejects the quota %j", async (weeklyQuota) => {
-        const state = await mediaMemberAction(IDLE, saveForm({ weeklyQuota }));
-
-        expect(state).toEqual({ status: "error", error: "invalid_quota" });
-        expect(writes).toHaveLength(0);
-    });
-
-    it("accepts the quota bounds", async () => {
-        expect(await mediaMemberAction(IDLE, saveForm({ weeklyQuota: "0" }))).toEqual({
-            status: "saved",
-        });
-        expect(await mediaMemberAction(IDLE, saveForm({ weeklyQuota: "50" }))).toEqual({
-            status: "saved",
-        });
-    });
-
-    it("reports a library account that is already linked", async () => {
-        writeError = { code: "23505", message: "duplicate key value" };
-        const state = await mediaMemberAction(IDLE, saveForm());
-
-        expect(state).toEqual({ status: "error", error: "account_taken" });
-        expect(refreshMock).not.toHaveBeenCalled();
-    });
-
-    it("reports an unknown user", async () => {
-        targetUser = null;
-        const state = await mediaMemberAction(IDLE, saveForm());
-
-        expect(state).toEqual({ status: "error", error: "not_found" });
-        expect(writes).toHaveLength(0);
-    });
-
-    it("rejects a user id that isn't a uuid", async () => {
-        const state = await mediaMemberAction(IDLE, saveForm({ userId: "1 or 1=1" }));
-
-        expect(state).toEqual({ status: "error", error: "not_found" });
-        expect(createAdminClientMock).not.toHaveBeenCalled();
-    });
-
-    it("revokes only an active membership and keeps the row", async () => {
-        const state = await mediaMemberAction(IDLE, form({ intent: "revoke", userId: USER_ID }));
-
-        expect(state).toEqual({ status: "revoked" });
-        expect(writes).toHaveLength(1);
-        expect(writes[0].op).toBe("update");
-        expect(Object.keys(writes[0].payload)).toEqual(["revoked_at"]);
-        expect(writes[0].filters).toEqual([`user_id=${USER_ID}`, "revoked_at is null"]);
-        expect(refreshMock).toHaveBeenCalledOnce();
-    });
-
     it("rejects an unknown intent", async () => {
-        const state = await mediaMemberAction(IDLE, saveForm({ intent: "delete" }));
+        const state = await mediaMemberAction(IDLE, memberForm("delete"));
 
         expect(state).toEqual({ status: "error", error: "failed" });
         expect(createAdminClientMock).not.toHaveBeenCalled();
+    });
+
+    describe("grant", () => {
+        it("grants access to a new member", async () => {
+            const state = await grant({ libraryAccount: " fredrik " });
+
+            expect(state).toEqual({ status: "saved" });
+            expect(writes).toHaveLength(1);
+            expect(writes[0].op).toBe("upsert");
+            expect(writes[0].payload).toMatchObject({
+                user_id: USER_ID,
+                library_account: "fredrik",
+                weekly_quota: 5,
+                granted_by: ADMIN_ID,
+                revoked_at: null,
+            });
+            expect(typeof writes[0].payload.granted_at).toBe("string");
+            expect(refreshMock).toHaveBeenCalledOnce();
+        });
+
+        it("turns a revoked member's row into a fresh grant", async () => {
+            existingRow = REVOKED;
+            const state = await grant();
+
+            expect(state).toEqual({ status: "saved" });
+            expect(writes[0].op).toBe("upsert");
+            expect(writes[0].payload).toMatchObject({ granted_by: ADMIN_ID, revoked_at: null });
+        });
+
+        it("lets an admin have access without a library account", async () => {
+            targetUser = { id: USER_ID, app_metadata: { roles: ["admin"] } };
+            const state = await grant({ libraryAccount: "" });
+
+            expect(state).toEqual({ status: "saved" });
+            expect(writes[0].payload).toMatchObject({ library_account: null });
+        });
+
+        it("reports a library account that is already linked", async () => {
+            writeError = { code: "23505", message: "duplicate key value" };
+            const state = await grant();
+
+            expect(state).toEqual({ status: "error", error: "account_taken" });
+            expect(refreshMock).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("update", () => {
+        it("edits an active member in one conditional write, keeping their grant", async () => {
+            existingRow = ACTIVE;
+            const state = await update({ libraryAccount: "fredrik2", weeklyQuota: "10" });
+
+            expect(state).toEqual({ status: "saved" });
+            expect(writes).toEqual([
+                {
+                    op: "update",
+                    payload: { library_account: "fredrik2", weekly_quota: 10 },
+                    filters: [`user_id=${USER_ID}`, "revoked_at is null"],
+                },
+            ]);
+            expect(refreshMock).toHaveBeenCalledOnce();
+        });
+
+        it("changes nothing once access has been revoked, and says so", async () => {
+            existingRow = REVOKED;
+            const state = await update();
+
+            expect(state).toEqual({ status: "error", error: "not_active" });
+            expect(writes.map((w) => w.op)).toEqual(["update"]);
+            // The card re-renders with the current (revoked) state.
+            expect(refreshMock).toHaveBeenCalledOnce();
+        });
+
+        it("never grants access to someone without a membership", async () => {
+            const state = await update();
+
+            expect(state).toEqual({ status: "error", error: "not_active" });
+            expect(writes.some((w) => w.op === "upsert")).toBe(false);
+        });
+
+        it("reports a library account that is already linked", async () => {
+            existingRow = ACTIVE;
+            writeError = { code: "23505", message: "duplicate key value" };
+            const state = await update();
+
+            expect(state).toEqual({ status: "error", error: "account_taken" });
+        });
+    });
+
+    describe("validation (grant and update)", () => {
+        it.each(["grant", "update"])(
+            "requires a library account for users who aren't admins (%s)",
+            async (intent) => {
+                existingRow = ACTIVE;
+                const state = await mediaMemberAction(
+                    IDLE,
+                    memberForm(intent, { libraryAccount: "  " })
+                );
+
+                expect(state).toEqual({ status: "error", error: "account_required" });
+                expect(writes).toHaveLength(0);
+            }
+        );
+
+        it.each(["eve smith", "a/b", "x".repeat(65), "ålesund"])(
+            "rejects the library account %j",
+            async (libraryAccount) => {
+                const state = await grant({ libraryAccount });
+
+                expect(state).toEqual({ status: "error", error: "invalid_account" });
+                expect(writes).toHaveLength(0);
+            }
+        );
+
+        it.each(["", "-1", "2.5", "51", "1e1", "abc"])(
+            "rejects the quota %j",
+            async (weeklyQuota) => {
+                const state = await grant({ weeklyQuota });
+
+                expect(state).toEqual({ status: "error", error: "invalid_quota" });
+                expect(writes).toHaveLength(0);
+            }
+        );
+
+        it("accepts the quota bounds", async () => {
+            expect(await grant({ weeklyQuota: "0" })).toEqual({ status: "saved" });
+            expect(await grant({ weeklyQuota: "50" })).toEqual({ status: "saved" });
+        });
+
+        it("reports an unknown user", async () => {
+            targetUser = null;
+            const state = await grant();
+
+            expect(state).toEqual({ status: "error", error: "not_found" });
+            expect(writes).toHaveLength(0);
+        });
+
+        it("rejects a user id that isn't a uuid", async () => {
+            const state = await grant({ userId: "1 or 1=1" });
+
+            expect(state).toEqual({ status: "error", error: "not_found" });
+            expect(createAdminClientMock).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("revoke", () => {
+        it("revokes an active membership and keeps the row", async () => {
+            existingRow = ACTIVE;
+            const state = await revoke();
+
+            expect(state).toEqual({ status: "revoked" });
+            expect(writes).toHaveLength(1);
+            expect(writes[0].op).toBe("update");
+            expect(Object.keys(writes[0].payload)).toEqual(["revoked_at"]);
+            expect(writes[0].filters).toEqual([`user_id=${USER_ID}`, "revoked_at is null"]);
+            expect(refreshMock).toHaveBeenCalledOnce();
+        });
+
+        it.each([
+            ["already revoked", REVOKED],
+            ["never a member", null],
+        ])("reports when there was nothing to revoke (%s)", async (_label, row) => {
+            existingRow = row;
+            const state = await revoke();
+
+            expect(state).toEqual({ status: "error", error: "not_active" });
+            expect(refreshMock).toHaveBeenCalledOnce();
+        });
+
+        it("rejects a user id that isn't a uuid", async () => {
+            const state = await revoke("nope");
+
+            expect(state).toEqual({ status: "error", error: "not_found" });
+            expect(createAdminClientMock).not.toHaveBeenCalled();
+        });
     });
 });

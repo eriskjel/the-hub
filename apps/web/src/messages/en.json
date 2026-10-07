@@ -435,6 +435,7 @@
                         "invalid_quota": "Enter a whole number from 0 to 50.",
                         "account_required": "A library account is required for users who aren't admins.",
                         "account_taken": "That library account is already linked to another user.",
+                        "not_active": "Access isn't active any more, so nothing was changed.",
                         "not_found": "User not found.",
                         "failed": "Something went wrong. Try again."
                     }

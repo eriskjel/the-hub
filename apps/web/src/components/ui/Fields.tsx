@@ -1,6 +1,6 @@
 "use client";
 
-import type { InputHTMLAttributes, ReactElement, ReactNode } from "react";
+import { useId, type InputHTMLAttributes, type ReactElement, type ReactNode } from "react";
 import { Select } from "@/components/ui/Select";
 
 function cx(...parts: Array<string | false | null | undefined>) {
@@ -11,8 +11,18 @@ export function FieldRow({ children }: { children: ReactNode }): ReactElement {
     return <div className="space-y-1.5">{children}</div>;
 }
 
-export function Label({ children }: { children: ReactNode }): ReactElement {
-    return <label className="block text-sm font-medium">{children}</label>;
+export function Label({
+    children,
+    htmlFor,
+}: {
+    children: ReactNode;
+    htmlFor?: string;
+}): ReactElement {
+    return (
+        <label htmlFor={htmlFor} className="block text-sm font-medium">
+            {children}
+        </label>
+    );
 }
 
 export function Help({ children }: { children?: ReactNode }): ReactElement | null {
@@ -33,12 +43,15 @@ export function FieldText(
         inputClassName?: string;
     }
 ): ReactElement {
-    const { label, error, help, inputClassName, className, ...rest } = props;
+    const { label, error, help, inputClassName, className, id, ...rest } = props;
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
     return (
         <FieldRow>
-            <Label>{label}</Label>
+            <Label htmlFor={inputId}>{label}</Label>
             <input
                 {...rest}
+                id={inputId}
                 className={cx(
                     "border-border bg-surface w-full rounded-xl border",
                     "text-foreground placeholder-muted px-3 py-2",

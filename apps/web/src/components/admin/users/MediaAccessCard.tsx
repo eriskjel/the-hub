@@ -105,7 +105,7 @@ export default function MediaAccessCard({
                     <Button
                         type="submit"
                         name="intent"
-                        value="save"
+                        value={active ? "update" : "grant"}
                         variant="primary"
                         disabled={pending}
                     >
