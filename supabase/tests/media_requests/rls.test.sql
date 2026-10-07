@@ -345,4 +345,65 @@ do $$ begin
     raise exception 'FAIL: option rank 4 accepted';
 exception when check_violation then null; end $$;
 
+-- ---------------------------------------------------------------------------
+\echo '== integrity: an approved option stays put'
+set role media_worker;
+insert into public.media_request_option (request_id, rank, label)
+    select id, r, 'Inception option ' || r
+    from public.media_request, generate_series(1, 2) as r
+    where tmdb_id = 27205;
+reset role;
+
+do $$ begin
+    update public.media_request set chosen_rank = 3 where tmdb_id = 27205;
+    raise exception 'FAIL: approved a rank with no option';
+exception when foreign_key_violation then null; end $$;
+
+-- An admin approves option 1 (service role in the app).
+update public.media_request set chosen_rank = 1, status = 'approved' where tmdb_id = 27205;
+
+set role media_worker;
+do $$ begin
+    delete from public.media_request_option
+     where rank = 1 and request_id = (select id from public.media_request where tmdb_id = 27205);
+    raise exception 'FAIL: worker removed the approved option';
+exception when foreign_key_violation then null; end $$;
+do $$ begin
+    delete from public.media_request_option
+     where rank = 2 and request_id = (select id from public.media_request where tmdb_id = 27205);
+end $$;
+reset role;
+
+-- Re-queue clears the choice; then the worker may replace options again.
+update public.media_request set chosen_rank = null, status = 'wanted' where tmdb_id = 27205;
+set role media_worker;
+delete from public.media_request_option
+ where request_id = (select id from public.media_request where tmdb_id = 27205);
+reset role;
+
+-- Deleting a request with an approved option still cascades.
+begin;
+insert into public.media_request_option (request_id, rank, label)
+    select id, 1, 'x' from public.media_request where tmdb_id = 27205;
+update public.media_request set chosen_rank = 1 where tmdb_id = 27205;
+delete from public.media_request where tmdb_id = 27205;
+rollback;
+
+-- ---------------------------------------------------------------------------
+\echo '== integrity: a request outlives its requester (runs last: deletes alice)'
+delete from auth.users where id = '00000000-0000-0000-0000-0000000000b1';
+do $$ begin
+    assert (select count(*) from public.media_request where tmdb_id = 157336) = 1,
+        'request must survive its requester being deleted';
+    assert (select requested_by from public.media_request where tmdb_id = 157336) is null,
+        'requester becomes null';
+    assert (select count(*) from public.media_request_follower f
+              join public.media_request r on r.id = f.request_id
+             where r.tmdb_id = 157336) = 1,
+        'followers keep their +1';
+    assert not exists (select 1 from public.media_member
+                        where user_id = '00000000-0000-0000-0000-0000000000b1'),
+        'membership goes with the account';
+end $$;
+
 \echo '== all media request tests passed'
