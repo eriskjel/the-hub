@@ -380,6 +380,7 @@
                 "name": "Name",
                 "email": "Email",
                 "role": "Role",
+                "requests": "Requests",
                 "actions": "Actions"
             },
             "actions": {
@@ -414,6 +415,30 @@
                     },
                     "meta": {
                         "title": "Metadata"
+                    }
+                },
+                "media": {
+                    "title": "Requests",
+                    "status_none": "No access",
+                    "status_active": "Can request since {date}",
+                    "status_revoked": "Access revoked {date}",
+                    "library_account": "Library account",
+                    "library_account_help": "Their username in the media library. Required unless the user is an admin.",
+                    "weekly_quota": "Requests per week",
+                    "grant": "Allow requests",
+                    "save": "Save",
+                    "revoke": "Revoke access",
+                    "saved": "Saved.",
+                    "revoked": "Access revoked.",
+                    "errors": {
+                        "invalid_account": "Use 1–64 letters, digits, dots, dashes or underscores.",
+                        "invalid_quota": "Enter a whole number from 0 to 50.",
+                        "account_required": "A library account is required for users who aren't admins.",
+                        "account_taken": "That library account is already linked to another user.",
+                        "already_active": "This user already has access, so nothing was changed.",
+                        "not_active": "Access isn't active any more, so nothing was changed.",
+                        "not_found": "User not found.",
+                        "failed": "Something went wrong. Try again."
                     }
                 }
             }

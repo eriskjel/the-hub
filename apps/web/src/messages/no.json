@@ -380,6 +380,7 @@
                 "name": "Navn",
                 "email": "E-post",
                 "role": "Rolle",
+                "requests": "Ønsker",
                 "actions": "Handlinger"
             },
             "actions": {
@@ -414,6 +415,30 @@
                     },
                     "meta": {
                         "title": "Metadata"
+                    }
+                },
+                "media": {
+                    "title": "Ønsker",
+                    "status_none": "Ingen tilgang",
+                    "status_active": "Kan ønske siden {date}",
+                    "status_revoked": "Tilgang fjernet {date}",
+                    "library_account": "Bibliotekskonto",
+                    "library_account_help": "Brukernavnet deres i mediebiblioteket. Påkrevd for alle som ikke er administratorer.",
+                    "weekly_quota": "Ønsker per uke",
+                    "grant": "Gi tilgang",
+                    "save": "Lagre",
+                    "revoke": "Fjern tilgang",
+                    "saved": "Lagret.",
+                    "revoked": "Tilgangen er fjernet.",
+                    "errors": {
+                        "invalid_account": "Bruk 1–64 bokstaver, tall, punktum, bindestreker eller understreker.",
+                        "invalid_quota": "Skriv et heltall fra 0 til 50.",
+                        "account_required": "Bibliotekskonto er påkrevd for brukere som ikke er administratorer.",
+                        "account_taken": "Den bibliotekskontoen er allerede koblet til en annen bruker.",
+                        "already_active": "Brukeren har allerede tilgang, så ingenting ble endret.",
+                        "not_active": "Tilgangen er ikke aktiv lenger, så ingenting ble endret.",
+                        "not_found": "Fant ikke brukeren.",
+                        "failed": "Noe gikk galt. Prøv igjen."
                     }
                 }
             }
