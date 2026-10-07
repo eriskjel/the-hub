@@ -25,6 +25,7 @@ export type MemberActionError =
     | "invalid_quota"
     | "account_required"
     | "account_taken"
+    | "already_active"
     | "not_active"
     | "not_found"
     | "failed";

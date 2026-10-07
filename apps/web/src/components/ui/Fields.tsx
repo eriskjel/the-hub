@@ -25,14 +25,29 @@ export function Label({
     );
 }
 
-export function Help({ children }: { children?: ReactNode }): ReactElement | null {
+export function Help({ children, id }: { children?: ReactNode; id?: string }): ReactElement | null {
     if (!children) return null;
-    return <p className="text-muted-subtle text-xs">{children}</p>;
+    return (
+        <p id={id} className="text-muted-subtle text-xs">
+            {children}
+        </p>
+    );
 }
 
-export function ErrorText({ children }: { children?: ReactNode }): ReactElement | null {
+/** Rendered only while there is an error; role="alert" makes screen readers announce it. */
+export function ErrorText({
+    children,
+    id,
+}: {
+    children?: ReactNode;
+    id?: string;
+}): ReactElement | null {
     if (!children) return null;
-    return <p className="text-error mt-1 text-xs">{children}</p>;
+    return (
+        <p id={id} role="alert" className="text-error mt-1 text-xs">
+            {children}
+        </p>
+    );
 }
 
 export function FieldText(
@@ -43,15 +58,29 @@ export function FieldText(
         inputClassName?: string;
     }
 ): ReactElement {
-    const { label, error, help, inputClassName, className, id, ...rest } = props;
+    const {
+        label,
+        error,
+        help,
+        inputClassName,
+        className,
+        id,
+        "aria-describedby": describedBy,
+        ...rest
+    } = props;
     const generatedId = useId();
     const inputId = id ?? generatedId;
+    const errorId = `${inputId}-error`;
+    const helpId = `${inputId}-help`;
+    const descriptions = [error && errorId, help && helpId, describedBy].filter(Boolean).join(" ");
     return (
         <FieldRow>
             <Label htmlFor={inputId}>{label}</Label>
             <input
                 {...rest}
                 id={inputId}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={descriptions || undefined}
                 className={cx(
                     "border-border bg-surface w-full rounded-xl border",
                     "text-foreground placeholder-muted px-3 py-2",
@@ -60,8 +89,8 @@ export function FieldText(
                     className
                 )}
             />
-            <ErrorText>{error}</ErrorText>
-            <Help>{help}</Help>
+            <ErrorText id={errorId}>{error}</ErrorText>
+            <Help id={helpId}>{help}</Help>
         </FieldRow>
     );
 }

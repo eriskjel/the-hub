@@ -16,14 +16,16 @@ const PG_FOREIGN_KEY_VIOLATION = "23503";
 
 /**
  * Admin form action for request access:
- * - `grant` gives access afresh (a revoked row becomes a new grant).
+ * - `grant` gives access to someone without it: a revoked row becomes a fresh
+ *   grant, or a new row is created. An active membership is never overwritten
+ *   (`already_active`).
  * - `update` changes the account and quota of an active member, keeping the
- *   original grant.
- * - `revoke` ends access but keeps the row as history.
- * `update` and `revoke` only touch an active membership, in a single write, and
- * report `not_active` when there was none (e.g. it was revoked meanwhile).
- * Users never write media_member themselves (RLS has no write policies), so this
- * goes through the service role after requireAdmin.
+ *   original grant (`not_active` if there is none, e.g. revoked meanwhile).
+ * - `revoke` ends access but keeps the row as history (`not_active` likewise).
+ * Each write is conditional on the membership's state, so a stale form can't
+ * undo someone else's change. Users never write media_member themselves (RLS
+ * has no write policies), so this goes through the service role after
+ * requireAdmin.
  */
 export async function mediaMemberAction(
     _prev: MemberActionState,
@@ -67,15 +69,33 @@ async function save(
     if (!libraryAccount && !isAdminFromUser(target.user)) return fail("account_required");
 
     if (intent === "grant") {
-        const { error } = await admin.from("media_member").upsert({
-            user_id: userId,
+        const grantFields = {
             library_account: libraryAccount,
             weekly_quota: weeklyQuota,
             granted_by: actorId,
             granted_at: new Date().toISOString(),
             revoked_at: null,
-        });
+        };
+        // Reactivate a revoked membership as a fresh grant...
+        const { data: regranted, error } = await admin
+            .from("media_member")
+            .update(grantFields)
+            .eq("user_id", userId)
+            .not("revoked_at", "is", null)
+            .select("user_id");
         if (error) return writeFailure(error);
+        if (!regranted?.length) {
+            // ...or create one. An existing (active) row is left alone.
+            const { data: created, error: insertError } = await admin
+                .from("media_member")
+                .upsert(
+                    { user_id: userId, ...grantFields },
+                    { onConflict: "user_id", ignoreDuplicates: true }
+                )
+                .select("user_id");
+            if (insertError) return writeFailure(insertError);
+            if (!created?.length) return unchanged("already_active");
+        }
     } else {
         const { data, error } = await admin
             .from("media_member")
@@ -84,7 +104,7 @@ async function save(
             .is("revoked_at", null)
             .select("user_id");
         if (error) return writeFailure(error);
-        if (!data?.length) return notActive();
+        if (!data?.length) return unchanged("not_active");
     }
 
     refresh();
@@ -105,7 +125,7 @@ async function revoke(formData: FormData): Promise<MemberActionState> {
         console.error("media member: revoke failed:", error.message);
         return fail("failed");
     }
-    if (!data?.length) return notActive();
+    if (!data?.length) return unchanged("not_active");
 
     refresh();
     return { status: "revoked" };
@@ -118,10 +138,10 @@ function writeFailure(error: { code?: string; message: string }): MemberActionSt
     return fail("failed");
 }
 
-/** Nothing matched: show the current state instead of the stale one. */
-function notActive(): MemberActionState {
+/** Nothing changed because the membership wasn't in the expected state: show the current one. */
+function unchanged(error: "already_active" | "not_active"): MemberActionState {
     refresh();
-    return fail("not_active");
+    return fail(error);
 }
 
 function formError(error: ZodError): MemberActionError {

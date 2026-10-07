@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
 import enMessages from "@/messages/en.json";
 import MediaAccessCard from "../MediaAccessCard";
 import type { MediaMember } from "@/lib/media/member";
+import { mediaMemberAction } from "@/lib/admin/mediaMember.actions";
 
 vi.mock("@/lib/admin/mediaMember.actions", () => ({ mediaMemberAction: vi.fn() }));
 
@@ -46,6 +47,27 @@ describe("MediaAccessCard", () => {
 
         expect(screen.getByText(/^Access revoked/)).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Allow requests" })).toHaveValue("grant");
+    });
+
+    it("sends the button's intent and announces a field error", async () => {
+        vi.mocked(mediaMemberAction).mockResolvedValueOnce({
+            status: "error",
+            error: "account_taken",
+        });
+        renderCard(member());
+
+        fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("That library account is already linked to another user.");
+        const input = screen.getByLabelText("Library account");
+        expect(input).toHaveAttribute("aria-invalid", "true");
+        expect(input).toHaveAccessibleDescription(expect.stringContaining("already linked"));
+
+        const formData = vi.mocked(mediaMemberAction).mock.calls[0][1] as FormData;
+        expect(formData.get("intent")).toBe("update");
+        expect(formData.get("userId")).toBe(USER_ID);
+        expect(formData.get("libraryAccount")).toBe("fredrik");
     });
 
     it("edits or revokes an active member", () => {

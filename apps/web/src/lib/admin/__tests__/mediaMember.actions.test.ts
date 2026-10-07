@@ -9,7 +9,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const ADMIN_ID = "00000000-0000-0000-0000-0000000000a1";
 const USER_ID = "00000000-0000-0000-0000-0000000000b1";
 
-type Write = { op: "update" | "upsert"; payload: Record<string, unknown>; filters: string[] };
+type Write = {
+    op: "update" | "upsert";
+    payload: Record<string, unknown>;
+    filters: string[];
+    options?: Record<string, unknown>;
+};
 
 let isAdmin = true;
 let targetUser: { id: string; app_metadata: Record<string, unknown> } | null = null;
@@ -49,9 +54,21 @@ function fakeAdminClient() {
             expect(table).toBe("media_member");
             return {
                 update: (payload: Record<string, unknown>) => filteredUpdate(payload),
-                upsert: async (payload: Record<string, unknown>) => {
-                    writes.push({ op: "upsert", payload, filters: [] });
-                    return { error: writeError };
+                upsert: (payload: Record<string, unknown>, options?: Record<string, unknown>) => {
+                    writes.push({ op: "upsert", payload, filters: [], options });
+                    return {
+                        // An existing row is skipped only when duplicates are ignored.
+                        select: async () =>
+                            writeError
+                                ? { data: null, error: writeError }
+                                : {
+                                      data:
+                                          existingRow && options?.ignoreDuplicates
+                                              ? []
+                                              : [{ user_id: USER_ID }],
+                                      error: null,
+                                  },
+                    };
                 },
             };
         }),
@@ -59,9 +76,9 @@ function fakeAdminClient() {
 }
 
 /**
- * An update builder like supabase-js: records .eq()/.is() filters, and .select()
- * returns the rows that matched. The row matches `revoked_at is null` only while
- * it is active.
+ * An update builder like supabase-js: records .eq()/.is()/.not() filters, and
+ * .select() returns the rows that matched: `revoked_at is null` matches only an
+ * active row, `revoked_at not is null` only a revoked one.
  */
 function filteredUpdate(payload: Record<string, unknown>) {
     const write: Write = { op: "update", payload, filters: [] };
@@ -75,10 +92,20 @@ function filteredUpdate(payload: Record<string, unknown>) {
             write.filters.push(`${k} is ${String(v)}`);
             return builder;
         },
+        not: (k: string, op: string, v: unknown) => {
+            write.filters.push(`${k} not ${op} ${String(v)}`);
+            return builder;
+        },
         select: async () => {
             if (writeError) return { data: null, error: writeError };
-            const onlyActive = write.filters.includes("revoked_at is null");
-            const matches = existingRow && (!onlyActive || existingRow.revoked_at === null);
+            const active = existingRow?.revoked_at === null;
+            const matches =
+                existingRow &&
+                (write.filters.includes("revoked_at is null")
+                    ? active
+                    : write.filters.includes("revoked_at not is null")
+                      ? !active
+                      : true);
             return { data: matches ? [{ user_id: USER_ID }] : [], error: null };
         },
     };
@@ -147,20 +174,23 @@ describe("mediaMemberAction", () => {
     });
 
     describe("grant", () => {
-        it("grants access to a new member", async () => {
+        it("creates a membership for a new member", async () => {
             const state = await grant({ libraryAccount: " fredrik " });
 
             expect(state).toEqual({ status: "saved" });
-            expect(writes).toHaveLength(1);
-            expect(writes[0].op).toBe("upsert");
-            expect(writes[0].payload).toMatchObject({
+            expect(writes.map((w) => w.op)).toEqual(["update", "upsert"]);
+            // No revoked row to reactivate...
+            expect(writes[0].filters).toEqual([`user_id=${USER_ID}`, "revoked_at not is null"]);
+            // ...so insert, leaving any existing row alone.
+            expect(writes[1].options).toEqual({ onConflict: "user_id", ignoreDuplicates: true });
+            expect(writes[1].payload).toMatchObject({
                 user_id: USER_ID,
                 library_account: "fredrik",
                 weekly_quota: 5,
                 granted_by: ADMIN_ID,
                 revoked_at: null,
             });
-            expect(typeof writes[0].payload.granted_at).toBe("string");
+            expect(typeof writes[1].payload.granted_at).toBe("string");
             expect(refreshMock).toHaveBeenCalledOnce();
         });
 
@@ -169,8 +199,25 @@ describe("mediaMemberAction", () => {
             const state = await grant();
 
             expect(state).toEqual({ status: "saved" });
-            expect(writes[0].op).toBe("upsert");
-            expect(writes[0].payload).toMatchObject({ granted_by: ADMIN_ID, revoked_at: null });
+            expect(writes).toHaveLength(1);
+            expect(writes[0].op).toBe("update");
+            expect(writes[0].filters).toEqual([`user_id=${USER_ID}`, "revoked_at not is null"]);
+            expect(writes[0].payload).toMatchObject({
+                library_account: "fredrik",
+                granted_by: ADMIN_ID,
+                revoked_at: null,
+            });
+        });
+
+        it("never overwrites an active membership, and says so", async () => {
+            existingRow = ACTIVE;
+            const state = await grant({ libraryAccount: "someone-else", weeklyQuota: "50" });
+
+            expect(state).toEqual({ status: "error", error: "already_active" });
+            expect(writes.map((w) => w.op)).toEqual(["update", "upsert"]);
+            expect(writes[1].options).toMatchObject({ ignoreDuplicates: true });
+            // The card re-renders with the current (active) state.
+            expect(refreshMock).toHaveBeenCalledOnce();
         });
 
         it("lets an admin have access without a library account", async () => {
@@ -178,7 +225,7 @@ describe("mediaMemberAction", () => {
             const state = await grant({ libraryAccount: "" });
 
             expect(state).toEqual({ status: "saved" });
-            expect(writes[0].payload).toMatchObject({ library_account: null });
+            expect(writes.at(-1)?.payload).toMatchObject({ library_account: null });
         });
 
         it("reports a library account that is already linked", async () => {
