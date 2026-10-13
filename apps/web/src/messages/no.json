@@ -443,6 +443,12 @@
                         "failed": "Noe gikk galt. Prøv igjen."
                     }
                 }
+            },
+            "search": {
+                "label": "S?k etter brukere",
+                "placeholder": "E-post, navn eller brukernavn",
+                "submit": "S?k",
+                "clear": "T?m s?ket"
             }
         }
     },

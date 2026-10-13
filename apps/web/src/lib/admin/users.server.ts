@@ -1,30 +1,63 @@
 import "server-only";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/auth/requireAdmin.server";
 import type { Profile } from "@/types/database";
 import type { ProfileWithAuth } from "@/types/users";
 import { deriveEffectiveRole, RoleKey } from "@/lib/auth/role";
 
 export type AdminUsersQuery = { page?: number; perPage?: number; q?: string };
 
+/** Global search is filtered before pagination; blank searches keep the paginated API path. */
 export async function listUsersAdmin({ page = 1, perPage = 20, q = "" }: AdminUsersQuery) {
+    await requireAdmin();
     const admin = createAdminClient();
+    page = Number.isSafeInteger(page) && page > 0 ? page : 1;
+    perPage = Number.isSafeInteger(perPage) && perPage > 0 ? Math.min(perPage, 100) : 20;
+    const query = q.trim().toLowerCase().slice(0, 100);
 
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-
-    let authUsers = data.users;
-    const qq = q.trim().toLowerCase();
-    if (qq) {
-        authUsers = authUsers.filter(
-            (u) =>
-                u.email?.toLowerCase().includes(qq) ||
-                (u.user_metadata?.preferred_username as string | undefined)
-                    ?.toLowerCase()
-                    .includes(qq)
-        );
+    if (!query) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+        if (error) throw new Error(error.message);
+        return {
+            page,
+            perPage,
+            total: data.total ?? data.users.length,
+            users: await enrichUsers(admin, data.users),
+        };
     }
 
+    const matches: ProfileWithAuth[] = [];
+    const batchSize = 100;
+    for (let batchPage = 1; ; batchPage++) {
+        const { data, error } = await admin.auth.admin.listUsers({
+            page: batchPage,
+            perPage: batchSize,
+        });
+        if (error) throw new Error(error.message);
+        const users = await enrichUsers(admin, data.users);
+        matches.push(
+            ...users.filter((u) =>
+                [
+                    u.auth.email,
+                    u.username,
+                    u.full_name,
+                    u.auth.raw_user_meta_data.preferred_username,
+                    u.auth.raw_user_meta_data.user_name,
+                    u.auth.raw_user_meta_data.full_name,
+                    u.auth.raw_user_meta_data.name,
+                ].some((value) => typeof value === "string" && value.toLowerCase().includes(query))
+            )
+        );
+        if (data.users.length < batchSize) break;
+    }
+    const total = matches.length;
+    page = Math.min(page, Math.max(1, Math.ceil(total / perPage)));
+    return { page, perPage, total, users: matches.slice((page - 1) * perPage, page * perPage) };
+}
+
+async function enrichUsers(admin: SupabaseClient, authUsers: User[]): Promise<ProfileWithAuth[]> {
     const ids = authUsers.map((u) => u.id);
 
     let rawProfiles:
@@ -94,5 +127,5 @@ export async function listUsersAdmin({ page = 1, perPage = 20, q = "" }: AdminUs
         } satisfies ProfileWithAuth;
     });
 
-    return { page, perPage, total: data.total ?? users.length, users };
+    return users;
 }
