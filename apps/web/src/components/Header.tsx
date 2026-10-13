@@ -2,7 +2,9 @@ import { Link } from "@/i18n/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
+import type { User } from "@supabase/supabase-js";
 import { isAdminFromUser } from "@/lib/auth/isAdmin";
+import { getOwnMembership } from "@/lib/media/membership.server";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserMenu from "@/components/UserMenu";
 
@@ -20,6 +22,8 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
         data: { user },
     } = await supabase.auth.getUser();
 
+    const isMediaMember = user ? await hasMediaAccess(user) : false;
+
     const position = mode === "fixed" ? "fixed" : "sticky";
     const base = `${position} top-0 z-50 h-16 w-full backdrop-blur-sm`;
     const look = variant === "transparent" ? "bg-black/10 text-white" : "bg-gray-900 text-white";
@@ -28,7 +32,12 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
         <header className={`${base} ${look}`}>
             <nav className="relative flex h-full w-full items-center justify-center px-8">
                 <ul className="flex gap-8">
-                    <NavItems isLoggedIn={!!user} isAdmin={isAdminFromUser(user)} t={t} />
+                    <NavItems
+                        isLoggedIn={!!user}
+                        isAdmin={isAdminFromUser(user)}
+                        isMediaMember={isMediaMember}
+                        t={t}
+                    />
                 </ul>
 
                 {/* Right: theme (wide) + user menu; theme also in dropdown on narrow */}
@@ -48,17 +57,40 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
     );
 }
 
+/** Only members (and admins) see the Requests link. A failed lookup just hides it. */
+async function hasMediaAccess(user: User): Promise<boolean> {
+    try {
+        return (await getOwnMembership(user))?.active ?? false;
+    } catch (e) {
+        console.error("header:", (e as Error).message);
+        return false;
+    }
+}
+
 type NavAuthProps = {
     isLoggedIn: boolean;
     isAdmin: boolean;
+    isMediaMember: boolean;
     t: (key: string) => string;
 };
 
-function NavItems({ isLoggedIn, isAdmin, t }: NavAuthProps): ReactElement {
-    return isLoggedIn ? <AuthLinks isAdmin={isAdmin} t={t} /> : <GuestLinks t={t} />;
+function NavItems({ isLoggedIn, isAdmin, isMediaMember, t }: NavAuthProps): ReactElement {
+    return isLoggedIn ? (
+        <AuthLinks isAdmin={isAdmin} isMediaMember={isMediaMember} t={t} />
+    ) : (
+        <GuestLinks t={t} />
+    );
 }
 
-function AuthLinks({ isAdmin, t }: { isAdmin: boolean; t: (k: string) => string }): ReactElement {
+function AuthLinks({
+    isAdmin,
+    isMediaMember,
+    t,
+}: {
+    isAdmin: boolean;
+    isMediaMember: boolean;
+    t: (k: string) => string;
+}): ReactElement {
     return (
         <>
             <li>
@@ -71,6 +103,13 @@ function AuthLinks({ isAdmin, t }: { isAdmin: boolean; t: (k: string) => string 
                     {t("monster.pageTitle")}
                 </Link>
             </li>
+            {isMediaMember && (
+                <li>
+                    <Link href="/requests" className="hover:text-gray-300">
+                        {t("header.requests")}
+                    </Link>
+                </li>
+            )}
             {isAdmin && (
                 <li>
                     <Link href="/admin" className="hover:text-gray-300">

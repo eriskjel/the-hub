@@ -18,7 +18,7 @@ export default function LocaleToggle() {
     const pathname = usePathname();
     const qs = useSearchParams().toString();
 
-    const debouncedCheck = useDebouncedCallback(50);
+    const { debounce: debouncedCheck } = useDebouncedCallback(50);
 
     useEffect(() => {
         setIsMounted(true);

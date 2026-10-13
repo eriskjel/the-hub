@@ -5,7 +5,8 @@
         "logout": "Logg ut",
         "admin": "Admin",
         "themeLight": "Lys modus",
-        "themeDark": "Mørk modus"
+        "themeDark": "Mørk modus",
+        "requests": "Ønsker"
     },
     "login": {
         "title": "Vennligst logg inn",
@@ -422,8 +423,9 @@
                     "status_none": "Ingen tilgang",
                     "status_active": "Kan ønske siden {date}",
                     "status_revoked": "Tilgang fjernet {date}",
-                    "library_account": "Bibliotekskonto",
-                    "library_account_help": "Brukernavnet deres i mediebiblioteket. Påkrevd for alle som ikke er administratorer.",
+                    "status_admin": "Administratorer har alltid tilgang, uten ukegrense.",
+                    "library_account": "Brukernavn for strømming",
+                    "library_account_help": "Brukernavnet de ser på med. Det er ikke en innlogging: det noterer hvilken strømmekonto som er deres, og hver konto kan bare kobles én gang.",
                     "weekly_quota": "Ønsker per uke",
                     "grant": "Gi tilgang",
                     "save": "Lagre",
@@ -433,8 +435,8 @@
                     "errors": {
                         "invalid_account": "Bruk 1–64 bokstaver, tall, punktum, bindestreker eller understreker.",
                         "invalid_quota": "Skriv et heltall fra 0 til 50.",
-                        "account_required": "Bibliotekskonto er påkrevd for brukere som ikke er administratorer.",
-                        "account_taken": "Den bibliotekskontoen er allerede koblet til en annen bruker.",
+                        "account_required": "Skriv inn brukernavnet deres for strømming.",
+                        "account_taken": "Det brukernavnet er allerede koblet til en annen bruker.",
                         "already_active": "Brukeren har allerede tilgang, så ingenting ble endret.",
                         "changed": "Tilgangen ble endret i mellomtiden, så ingenting ble lagret. Sjekk innstillingene og prøv igjen.",
                         "not_found": "Fant ikke brukeren.",
@@ -443,5 +445,81 @@
                 }
             }
         }
+    },
+    "requests": {
+        "pageTitle": "Ønsker",
+        "intro": "Ønsk deg en film. Alle med tilgang deler én liste, og ønsker du deg en film som allerede står der, får den din +1.",
+        "quota": "{used} av {quota} ønsker brukt denne uken",
+        "quotaAdmin": "Som administrator har du ingen ukegrense.",
+        "quotaNone": "Du kan gi +1 til ønsker, men ikke lage nye.",
+        "noAccess": {
+            "none": "Ønsker er bare for inviterte. Spør administratoren hvis du vil ha tilgang.",
+            "revoked": "Tilgangen din til ønsker er avsluttet."
+        },
+        "search": {
+            "label": "Søk etter en film",
+            "placeholder": "Tittel",
+            "loading": "Søker…",
+            "empty": "Fant ingen filmer.",
+            "failed": "Søket virker ikke akkurat nå. Prøv igjen senere.",
+            "showMore": "Vis {count} til"
+        },
+        "actions": {
+            "request": "Ønsk",
+            "requestTitle": "Ønsk deg {title}",
+            "plusOne": "+1",
+            "plusOneTitle": "Gi +1 til {title}",
+            "unfollow": "Fjern +1",
+            "unfollowTitle": "Fjern din +1 for {title}",
+            "cancel": "Avbryt",
+            "cancelTitle": "Avbryt ønsket ditt om {title}"
+        },
+        "status": {
+            "wanted": "I køen",
+            "searching": "Søker",
+            "proposed": "Venter på godkjenning",
+            "approved": "Godkjent",
+            "downloading": "Legges til",
+            "available": "Tilgjengelig",
+            "failed": "Ikke funnet",
+            "declined": "Avslått",
+            "cancelled": "Avbrutt"
+        },
+        "queue": {
+            "title": "Kø",
+            "done": "Tilgjengelig",
+            "closed": "Lukket",
+            "empty": "Ingenting i køen.",
+            "filter": "Vis",
+            "all": "Alle",
+            "mine": "Mine",
+            "requestedBy": "Ønsket av {name}",
+            "requestedByYou": "Ønsket av deg",
+            "formerMember": "Ønsket av et tidligere medlem",
+            "unknownMember": "Ønsket av et medlem",
+            "plusOthers": "+{count} til",
+            "unknownTitle": "Film #{id}"
+        },
+        "outcomes": {
+            "requested": "Ønsket.",
+            "reopened": "Ønsket på nytt.",
+            "followed": "La til din +1.",
+            "unfollowed": "Fjernet din +1.",
+            "cancelled": "Ønsket er avbrutt.",
+            "handed_over": "Ønsket er avbrutt. En som ga +1 har tatt det over.",
+            "already_requested": "Du har allerede ønsket deg denne.",
+            "already_following": "Du har allerede gitt +1 til denne.",
+            "available": "Denne er allerede tilgjengelig.",
+            "closed": "Dette ønsket er lukket. Spør administratoren hvis du vil åpne det igjen."
+        },
+        "errors": {
+            "not_member": "Du har ikke tilgang til ønsker.",
+            "not_found": "Fant ikke filmen.",
+            "quota_exceeded": "Du har brukt ukens ønsker. Du kan fortsatt gi +1 til andre.",
+            "not_cancellable": "Dette kan ikke avbrytes lenger.",
+            "changed": "Dette ble endret i mellomtiden. Listen er oppdatert nå.",
+            "failed": "Noe gikk galt. Prøv igjen."
+        },
+        "attribution": "Filmdata og bilder fra TMDB. Dette produktet bruker TMDB-API-et, men er ikke godkjent eller sertifisert av TMDB."
     }
 }
