@@ -5,6 +5,7 @@ import "nextjs-reusable-table/styles.css";
 import React, { ReactElement, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ProfileWithAuth } from "@/types/users";
+import { isActiveMember, type MediaMember } from "@/lib/media/member";
 
 import { pickDisplayName } from "@/lib/auth/pickDisplayName";
 import { PaginationControls } from "@/components/ui/PaginationControls";
@@ -15,11 +16,13 @@ import TableTopBar from "@/components/ui/TableTopBar";
 
 export default function UsersTable({
     users,
+    mediaMembers,
     page,
     pageSize,
     total,
 }: {
     users: ProfileWithAuth[];
+    mediaMembers: Record<string, MediaMember>;
     page: number;
     pageSize: number;
     total: number;
@@ -32,7 +35,10 @@ export default function UsersTable({
 
     const columns: string[] = useMemo(() => getUserTableColumns(t), [t]);
 
-    const data: UsersRow[] = useMemo(() => mapUsersToRows(users), [users]);
+    const data: UsersRow[] = useMemo(
+        () => mapUsersToRows(users, mediaMembers),
+        [users, mediaMembers]
+    );
 
     useEffect(() => {
         setIsNavigating(false);
@@ -65,7 +71,7 @@ export default function UsersTable({
             <TableComponent<UsersRow>
                 columns={columns}
                 data={data}
-                props={["id", "name", "email", "roleKey"] as const}
+                props={["id", "name", "email", "roleKey", "requests"] as const}
                 loading={isNavigating}
                 disableDefaultStyles={false}
                 enableDarkMode={false}
@@ -101,15 +107,24 @@ function getUserTableColumns(t: ReturnType<typeof useTranslations>): string[] {
         t("columns.name"),
         t("columns.email"),
         t("columns.role"),
+        t("columns.requests"),
         t("columns.actions"),
     ];
 }
 
-function mapUsersToRows(users: ProfileWithAuth[]): UsersRow[] {
-    return users.map((user: ProfileWithAuth) => ({
-        id: user.id,
-        name: pickDisplayName(user),
-        email: user.auth.email,
-        roleKey: user.auth.effective_role,
-    }));
+function mapUsersToRows(
+    users: ProfileWithAuth[],
+    mediaMembers: Record<string, MediaMember>
+): UsersRow[] {
+    return users.map((user: ProfileWithAuth) => {
+        const member = mediaMembers[user.id];
+        return {
+            id: user.id,
+            name: pickDisplayName(user),
+            email: user.auth.email,
+            roleKey: user.auth.effective_role,
+            // The linked library account, a check mark for an admin without one, or a dash.
+            requests: isActiveMember(member) ? (member.libraryAccount ?? "✓") : "—",
+        };
+    });
 }

@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/requireAdmin.server";
 import { Link } from "@/i18n/navigation";
 import { getUserAdmin } from "@/lib/admin/fetchUser.server";
+import { getMediaMember } from "@/lib/admin/mediaMember.server";
 import { RoleBadge } from "@/components/admin/RoleBadge";
+import MediaAccessCard from "@/components/admin/users/MediaAccessCard";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ export default async function AdminUserDetailPage({
 
     const user = await getUserAdmin(userId);
     if (!user) return notFound();
+    const mediaMember = await getMediaMember(user.id);
 
     return (
         <div className="space-y-6 p-6">
@@ -86,6 +89,13 @@ export default async function AdminUserDetailPage({
                         {JSON.stringify(user.auth.raw_app_meta_data, null, 2)}
                     </pre>
                 </div>
+
+                <MediaAccessCard
+                    key={user.id}
+                    userId={user.id}
+                    member={mediaMember}
+                    targetIsAdmin={user.auth.effective_role === "admin"}
+                />
             </section>
         </div>
     );
