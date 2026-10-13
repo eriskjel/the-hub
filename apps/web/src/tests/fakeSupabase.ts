@@ -4,7 +4,8 @@
  * builder subset the app uses: select (with `count`/`head` and simple
  * one-level embeds), insert, update, upsert (`onConflict`, `ignoreDuplicates`),
  * delete, the filters eq/neq/in/is/gte/not-is, order, limit, maybeSingle and
- * single. There is no RLS: give each test the rows its caller could see.
+ * single, plus `rpc` with test-supplied stand-ins. There is no RLS: give each
+ * test the rows its caller could see.
  */
 
 export type Row = Record<string, unknown>;
@@ -21,6 +22,8 @@ export type FakeDbOptions = {
     embeds?: Record<string, { foreignKey: string }>;
     /** Column defaults applied on insert, per table. Functions are called per row. */
     defaults?: Record<string, Record<string, unknown | (() => unknown)>>;
+    /** Stand-ins for database functions called with `rpc`; they get the args and the tables. */
+    rpc?: Record<string, (args: Record<string, unknown>, tables: Tables) => unknown>;
 };
 
 export type FakeDb = {
@@ -30,9 +33,10 @@ export type FakeDb = {
     /** Run `fn` right before the next matching operation, e.g. to simulate a concurrent write. */
     beforeNext: (table: string, op: Op, fn: () => void) => void;
     from: (table: string) => Query;
+    rpc: (fn: string, args?: Record<string, unknown>) => Promise<Result>;
 };
 
-type Op = "select" | "insert" | "update" | "upsert" | "delete";
+type Op = "select" | "insert" | "update" | "upsert" | "delete" | "rpc";
 
 export function fakeDb(tables: Tables, options: FakeDbOptions = {}): FakeDb {
     const failures: { table: string; op: Op; error: DbError }[] = [];
@@ -45,6 +49,15 @@ export function fakeDb(tables: Tables, options: FakeDbOptions = {}): FakeDb {
             failures.push({ table, op, error }),
         beforeNext: (table, op, fn) => hooks.push({ table, op, fn }),
         from: (table) => new Query(table, run),
+        rpc: async (fn, args = {}) => {
+            const hook = hooks.findIndex((h) => h.table === fn && h.op === "rpc");
+            if (hook >= 0) hooks.splice(hook, 1)[0].fn();
+            const failure = failures.findIndex((f) => f.table === fn && f.op === "rpc");
+            if (failure >= 0) return { data: null, error: failures.splice(failure, 1)[0].error };
+            const handler = options.rpc?.[fn];
+            if (!handler) return { data: null, error: { message: `fakeDb: no rpc ${fn}` } };
+            return { data: handler(args, tables), error: null };
+        },
     };
 
     function run(q: Query): Result {
@@ -95,6 +108,8 @@ export function fakeDb(tables: Tables, options: FakeDbOptions = {}): FakeDb {
                 tables[q.table] = rows.filter((r) => !matches.includes(r));
                 return { data: q.returning ? matches.map((r) => ({ ...r })) : null, error: null };
             }
+            case "rpc":
+                throw new Error("fakeDb: functions are called with db.rpc, not from()");
         }
     }
 

@@ -407,6 +407,74 @@ delete from public.media_request where tmdb_id = 27205;
 rollback;
 
 -- ---------------------------------------------------------------------------
+\echo '== media_request_add: only the service role may call it'
+do $$ begin
+    assert not has_function_privilege('anon', 'public.media_request_add(uuid, text, int, int)', 'EXECUTE'),
+        'anon must not execute media_request_add';
+    assert not has_function_privilege('authenticated', 'public.media_request_add(uuid, text, int, int)', 'EXECUTE'),
+        'authenticated must not execute media_request_add';
+    assert has_function_privilege('service_role', 'public.media_request_add(uuid, text, int, int)', 'EXECUTE'),
+        'service_role must execute media_request_add';
+end $$;
+
+\echo '== media_request_add: quota, +1 and reopening'
+begin;
+set local role service_role;
+do $$
+declare
+    alice constant uuid := '00000000-0000-0000-0000-0000000000b1';
+    bob   constant uuid := '00000000-0000-0000-0000-0000000000c1';
+    r public.media_request;
+begin
+    -- bob has one open request (27205), so a quota of 2 leaves room for one.
+    assert public.media_request_add(bob, 'movie', 1001, 2) = 'requested',
+        'a request within the quota is created';
+    assert (select requested_by from public.media_request where tmdb_id = 1001) = bob,
+        'the new request is bob''s';
+    assert public.media_request_add(bob, 'movie', 1002, 2) = 'quota_exceeded',
+        'a request over the quota is refused';
+    assert not exists (select 1 from public.media_request where tmdb_id = 1002),
+        'nothing is created over the quota';
+
+    -- An open request by someone else is joined with a +1, which is free.
+    assert public.media_request_add(bob, 'movie', 157336, 0) = 'exists',
+        'an open request is reported as existing, even with no quota left';
+    assert (select requested_by from public.media_request where tmdb_id = 157336) = alice,
+        'the existing request is untouched';
+
+    -- Cancelled requests and ones older than a week don't count.
+    update public.media_request set status = 'cancelled' where tmdb_id = 1001;
+    update public.media_request set created_at = now() - interval '8 days' where tmdb_id = 27205;
+    assert public.media_request_add(bob, 'movie', 1003, 1) = 'requested',
+        'cancelled and week-old requests are not counted';
+
+    -- A cancelled request is reopened as the new requester's, as if new.
+    update public.media_request
+       set status = 'cancelled', status_detail = 'old', attempts = 3,
+           created_at = now() - interval '30 days'
+     where tmdb_id = 157336;
+    assert public.media_request_add(bob, 'movie', 157336, null) = 'reopened',
+        'a cancelled request is reopened';
+    select * into r from public.media_request where tmdb_id = 157336;
+    assert r.requested_by = bob and r.status = 'wanted' and r.status_detail is null
+           and r.attempts = 0 and r.created_at = now(),
+        'the reopened request is bob''s and starts over';
+
+    -- Reopening counts against the quota too. bob now has 1003 and 157336.
+    insert into public.media_request (media_type, tmdb_id, requested_by, status)
+        values ('movie', 2002, alice, 'cancelled');
+    assert public.media_request_add(bob, 'movie', 2002, 2) = 'quota_exceeded',
+        'reopening over the quota is refused';
+    assert (select status from public.media_request where tmdb_id = 2002) = 'cancelled',
+        'the cancelled request stays cancelled';
+
+    -- No quota means no limit.
+    assert public.media_request_add(bob, 'movie', 1004, null) = 'requested',
+        'a null quota has no limit';
+end $$;
+rollback;
+
+-- ---------------------------------------------------------------------------
 \echo '== integrity: a request outlives its requester (runs last: deletes alice)'
 delete from auth.users where id = '00000000-0000-0000-0000-0000000000b1';
 do $$ begin

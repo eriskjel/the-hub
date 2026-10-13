@@ -52,3 +52,27 @@ for file in "$root"/supabase/migrations/*media_request*.sql; do
     as_postgres < "$file"
 done
 as_admin < "$here/rls.test.sql"
+
+# Two calls for the same user at the same time: the second must wait for the
+# first and count it. Without the lock both would see 0 and pass a quota of 1.
+echo "== media_request_add: parallel calls stay within the quota"
+user="00000000-0000-0000-0000-0000000000f1"
+as_admin -c "insert into auth.users (id) values ('$user')" </dev/null
+first_out="$(mktemp)"
+as_admin -tA </dev/null >"$first_out" -c "begin;
+    set local role service_role;
+    select public.media_request_add('$user', 'movie', 900001, 1);
+    select pg_sleep(3);
+    commit;" &
+first=$!
+sleep 1
+second="$(as_admin -tA </dev/null -c "set role service_role;
+    select public.media_request_add('$user', 'movie', 900002, 1)")"
+wait "$first"
+first_result="$(grep -E '^[a-z_]+$' "$first_out" | head -1)"
+rm -f "$first_out"
+if [ "$first_result" != "requested" ] || [ "$second" != "quota_exceeded" ]; then
+    echo "parallel calls: expected requested + quota_exceeded, got '$first_result' + '$second'" >&2
+    exit 1
+fi
+echo "== all media_request_add tests passed"

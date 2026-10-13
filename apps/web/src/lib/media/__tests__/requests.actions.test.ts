@@ -3,8 +3,11 @@ import { fakeDb, type FakeDb, type Row } from "@/tests/fakeSupabase";
 
 /**
  * Tests for the members' request actions against an in-memory database: the
- * session, membership and quota checks, and what each action leaves behind.
- * The real membership helpers run against the same fake tables; TMDB is mocked.
+ * session and membership checks, and what each action leaves behind. The real
+ * membership helpers run against the same fake tables; TMDB is mocked.
+ * media_request_add (quota check and write in one step) is a stand-in that
+ * mirrors the SQL function; the function itself is tested in
+ * supabase/tests/media_requests.
  */
 
 const ME = "00000000-0000-0000-0000-0000000000a1";
@@ -14,6 +17,7 @@ const MOVIE = 157336;
 const DAY = 24 * 60 * 60 * 1000;
 
 let db: FakeDb;
+let addCalls: Record<string, unknown>[];
 let signedIn: { id: string; app_metadata?: Record<string, unknown> } | null;
 let tmdbDown: boolean;
 
@@ -31,7 +35,10 @@ vi.mock("@/utils/supabase/server", () => ({
     }),
 }));
 vi.mock("@/utils/supabase/admin", () => ({
-    createAdminClient: () => ({ from: (table: string) => db.from(table) }),
+    createAdminClient: () => ({
+        from: (table: string) => db.from(table),
+        rpc: (fn: string, args: Record<string, unknown>) => db.rpc(fn, args),
+    }),
 }));
 vi.mock("@/lib/media/tmdb.server", () => ({ getMovie: getMovieMock }));
 
@@ -74,6 +81,7 @@ function setup(rows: { members?: Row[]; requests?: Row[]; followers?: Row[] } = 
                 media_request_follower: [["request_id", "user_id"]],
             },
             identity: ["media_request"],
+            rpc: { media_request_add: mediaRequestAdd },
             defaults: {
                 media_request: {
                     status: "wanted",
@@ -86,10 +94,42 @@ function setup(rows: { members?: Row[]; requests?: Row[]; followers?: Row[] } = 
     );
 }
 
+/** Mirrors public.media_request_add. */
+function mediaRequestAdd(args: Record<string, unknown>, tables: Record<string, Row[]>) {
+    addCalls.push(args);
+    const { p_user, p_media_type, p_tmdb_id, p_weekly_quota } = args;
+    const rows = tables.media_request;
+    const same = rows.find((r) => r.media_type === p_media_type && r.tmdb_id === p_tmdb_id);
+    if (same && same.status !== "cancelled") return "exists";
+    if (p_weekly_quota !== null) {
+        const used = rows.filter(
+            (r) =>
+                r.requested_by === p_user &&
+                r.status !== "cancelled" &&
+                Date.parse(r.created_at as string) >= Date.now() - 7 * DAY
+        ).length;
+        if (used >= (p_weekly_quota as number)) return "quota_exceeded";
+    }
+    const fresh = {
+        requested_by: p_user,
+        status: "wanted",
+        status_detail: null,
+        attempts: 0,
+        created_at: new Date().toISOString(),
+    };
+    if (same) {
+        Object.assign(same, fresh);
+        return "reopened";
+    }
+    rows.push({ id: ++lastId, media_type: p_media_type, tmdb_id: p_tmdb_id, ...fresh });
+    return "requested";
+}
+
 const requests = () => db.tables.media_request;
 const followers = () => db.tables.media_request_follower;
 
 beforeEach(() => {
+    addCalls = [];
     signedIn = { id: ME };
     tmdbDown = false;
     refreshMock.mockReset();
@@ -114,6 +154,15 @@ describe("requestMovie", () => {
             status: "wanted",
         });
         expect(refreshMock).toHaveBeenCalledOnce();
+    });
+
+    it("lets the database check the member's quota as it adds the request", async () => {
+        setup({ members: [member(ME, { weekly_quota: 3 })] });
+        await requestMovie(MOVIE);
+
+        expect(addCalls).toEqual([
+            { p_user: ME, p_media_type: "movie", p_tmdb_id: MOVIE, p_weekly_quota: 3 },
+        ]);
     });
 
     it.each([
@@ -144,6 +193,7 @@ describe("requestMovie", () => {
 
         expect(await requestMovie(MOVIE)).toEqual({ ok: true, outcome: "requested" });
         expect(requests().find((r) => r.tmdb_id === MOVIE)).toMatchObject({ requested_by: ME });
+        expect(addCalls[0].p_weekly_quota).toBeNull();
     });
 
     it("keeps an admin's access even if a membership row was revoked", async () => {
@@ -286,7 +336,7 @@ describe("requestMovie", () => {
         });
 
         it("adds a +1 when someone else creates the request at the same moment", async () => {
-            db.beforeNext("media_request", "insert", () =>
+            db.beforeNext("media_request_add", "rpc", () =>
                 requests().push(request({ id: 9, requested_by: OTHER, created_at: ago(0) }))
             );
 
@@ -297,7 +347,7 @@ describe("requestMovie", () => {
     });
 
     it("reports a database error without changing anything", async () => {
-        db.failNext("media_request", "insert");
+        db.failNext("media_request_add", "rpc");
 
         expect(await requestMovie(MOVIE)).toEqual({ ok: false, error: "failed" });
         expect(requests()).toHaveLength(0);
