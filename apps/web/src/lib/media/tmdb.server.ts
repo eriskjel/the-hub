@@ -22,14 +22,16 @@ export type TmdbMovie = {
     posterPath: string | null;
 };
 
-const movieSchema = z.object({
-    id: z.number().int().positive(),
-    title: z.string().catch(""),
-    original_title: z.string().catch(""),
-    release_date: z.string().nullish(),
-    poster_path: z.string().nullish(),
-    adult: z.boolean().catch(false),
-});
+const movieSchema = z
+    .object({
+        id: z.number().int().positive(),
+        title: z.string().trim().catch(""),
+        original_title: z.string().trim().catch(""),
+        release_date: z.string().nullish(),
+        poster_path: z.string().nullish(),
+        adult: z.boolean(),
+    })
+    .refine((movie) => movie.title.length > 0 || movie.original_title.length > 0);
 type RawMovie = z.infer<typeof movieSchema>;
 
 const searchSchema = z.object({ results: z.array(z.unknown()) });
@@ -85,7 +87,7 @@ function toMovie(raw: RawMovie): TmdbMovie {
     const year = raw.release_date?.slice(0, 4);
     return {
         id: raw.id,
-        title: raw.title || raw.original_title || `#${raw.id}`,
+        title: raw.title || raw.original_title,
         year: year && /^\d{4}$/.test(year) ? year : null,
         // Goes into an image URL, so accept only TMDB's plain "/abc.jpg" shape.
         posterPath:

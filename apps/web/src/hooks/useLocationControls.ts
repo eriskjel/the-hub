@@ -39,7 +39,7 @@ export function useLocationControls(
     const [mode, setMode] = useState<"gps" | "city" | null>(null);
     const [fromSuggestion, setFromSuggestion] = useState(false);
 
-    const debounce = useDebouncedCallback(CITY_SEARCH_DEBOUNCE_MS);
+    const { debounce } = useDebouncedCallback(CITY_SEARCH_DEBOUNCE_MS);
     const activeCityRequest = useRef<AbortController | null>(null);
 
     // keep latest mode in a ref for async callbacks

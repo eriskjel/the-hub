@@ -3,9 +3,9 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Locale } from "@/i18n/routing";
 import { getMovie } from "@/lib/media/tmdb.server";
-import type { RequestRole, RequestStatus } from "@/lib/media/request";
+import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 
-/** Most recent entries shown on the page; plenty for a small group. */
+/** Separate limits for the oldest open work and the newest history. */
 const QUEUE_LIMIT = 200;
 
 export type QueueItem = {
@@ -46,17 +46,28 @@ export async function getQueue(
     userId: string,
     locale: Locale
 ): Promise<QueueItem[]> {
-    const { data, error } = await supabase
-        .from("media_request")
-        .select(
-            "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)"
-        )
-        .eq("media_type", "movie")
-        .neq("status", "cancelled")
-        .order("created_at", { ascending: false })
-        .limit(QUEUE_LIMIT);
+    const read = () =>
+        supabase
+            .from("media_request")
+            .select(
+                "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)"
+            )
+            .eq("media_type", "movie");
+    const [open, history] = await Promise.all([
+        read()
+            .in("status", OPEN_STATUSES)
+            .order("created_at", { ascending: true })
+            .order("id", { ascending: true })
+            .limit(QUEUE_LIMIT),
+        read()
+            .in("status", ["available", "failed", "declined"])
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .limit(QUEUE_LIMIT),
+    ]);
+    const error = open.error ?? history.error;
     if (error) throw new Error(`media queue read failed: ${error.message}`);
-    const rows = (data ?? []) as Row[];
+    const rows = [...(open.data ?? []), ...(history.data ?? [])] as Row[];
 
     const names = await getNames(
         supabase,

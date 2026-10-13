@@ -5,8 +5,7 @@ import { fakeDb, type FakeDb, type Row } from "@/tests/fakeSupabase";
  * Tests for the members' request actions against an in-memory database: the
  * session and membership checks, and what each action leaves behind. The real
  * membership helpers run against the same fake tables; TMDB is mocked.
- * media_request_add (quota check and write in one step) is a stand-in that
- * mirrors the SQL function; the function itself is tested in
+ * The database functions use state stand-ins here; their transactions are tested in
  * supabase/tests/media_requests.
  */
 
@@ -68,9 +67,10 @@ function follower(requestId: unknown, userId: string, createdAt = ago(DAY)): Row
     return { request_id: requestId, user_id: userId, created_at: createdAt };
 }
 
-function setup(rows: { members?: Row[]; requests?: Row[]; followers?: Row[] } = {}) {
+function setup(rows: { members?: Row[]; requests?: Row[]; followers?: Row[]; users?: Row[] } = {}) {
     db = fakeDb(
         {
+            auth_users: rows.users ?? [],
             media_member: rows.members ?? [member(ME), member(OTHER), member(THIRD)],
             media_request: rows.requests ?? [],
             media_request_follower: rows.followers ?? [],
@@ -81,7 +81,11 @@ function setup(rows: { members?: Row[]; requests?: Row[]; followers?: Row[] } = 
                 media_request_follower: [["request_id", "user_id"]],
             },
             identity: ["media_request"],
-            rpc: { media_request_add: mediaRequestAdd },
+            rpc: {
+                media_request_add: mediaRequestAdd,
+                media_request_cancel: mediaRequestCancel,
+                media_request_unfollow: mediaRequestUnfollow,
+            },
             defaults: {
                 media_request: {
                     status: "wanted",
@@ -100,7 +104,20 @@ function mediaRequestAdd(args: Record<string, unknown>, tables: Record<string, R
     const { p_user, p_media_type, p_tmdb_id, p_weekly_quota } = args;
     const rows = tables.media_request;
     const same = rows.find((r) => r.media_type === p_media_type && r.tmdb_id === p_tmdb_id);
-    if (same && same.status !== "cancelled") return "exists";
+    if (same && same.status !== "cancelled") {
+        if (same.status === "available") return "available";
+        if (same.status === "failed" || same.status === "declined") return "closed";
+        if (same.requested_by === p_user) return "already_requested";
+        if (
+            tables.media_request_follower.some(
+                (f) => f.request_id === same.id && f.user_id === p_user
+            )
+        ) {
+            return "already_following";
+        }
+        tables.media_request_follower.push(follower(same.id, p_user as string, ago(0)));
+        return "followed";
+    }
     if (p_weekly_quota !== null) {
         const used = rows.filter(
             (r) =>
@@ -119,10 +136,58 @@ function mediaRequestAdd(args: Record<string, unknown>, tables: Record<string, R
     };
     if (same) {
         Object.assign(same, fresh);
+        tables.media_request_follower = tables.media_request_follower.filter(
+            (f) => f.request_id !== same.id || f.user_id !== p_user
+        );
         return "reopened";
     }
     rows.push({ id: ++lastId, media_type: p_media_type, tmdb_id: p_tmdb_id, ...fresh });
     return "requested";
+}
+
+/** State stand-ins; transaction behavior is tested against Postgres. */
+function mediaRequestCancel(args: Record<string, unknown>, tables: Record<string, Row[]>) {
+    const { p_user, p_request_id } = args;
+    const row = tables.media_request.find((r) => r.id === p_request_id);
+    if (
+        !row ||
+        row.requested_by !== p_user ||
+        !["wanted", "proposed"].includes(row.status as string)
+    ) {
+        return "not_cancellable";
+    }
+    const eligible = (id: unknown) => {
+        const user = tables.auth_users.find((u) => u.id === id);
+        const meta = (user?.raw_app_meta_data ?? {}) as { role?: string; roles?: string[] };
+        return (
+            tables.media_member.some((m) => m.user_id === id && m.revoked_at === null) ||
+            meta.role?.toLowerCase() === "admin" ||
+            meta.roles?.some((role) => role.toLowerCase() === "admin")
+        );
+    };
+    const next = tables.media_request_follower
+        .filter((f) => f.request_id === p_request_id && f.user_id !== p_user && eligible(f.user_id))
+        .sort(
+            (a, b) =>
+                String(a.created_at).localeCompare(String(b.created_at)) ||
+                String(a.user_id).localeCompare(String(b.user_id))
+        )[0];
+    if (!next) {
+        row.status = "cancelled";
+        return "cancelled";
+    }
+    row.requested_by = next.user_id;
+    tables.media_request_follower = tables.media_request_follower.filter((f) => f !== next);
+    return "handed_over";
+}
+
+function mediaRequestUnfollow(args: Record<string, unknown>, tables: Record<string, Row[]>) {
+    const { p_user, p_request_id } = args;
+    const before = tables.media_request_follower.length;
+    tables.media_request_follower = tables.media_request_follower.filter(
+        (f) => f.request_id !== p_request_id || f.user_id !== p_user
+    );
+    return tables.media_request_follower.length < before ? "unfollowed" : "changed";
 }
 
 const requests = () => db.tables.media_request;
@@ -400,6 +465,41 @@ describe("cancelRequest", () => {
         expect(await cancelRequest(7)).toEqual({ ok: true, outcome: "handed_over" });
         expect(requests()[0]).toMatchObject({ status: "wanted", requested_by: OTHER });
         expect(followers()).toEqual([expect.objectContaining({ user_id: THIRD })]);
+    });
+
+    it("hands the request to an admin follower without a membership row", async () => {
+        setup({
+            members: [member(ME)],
+            users: [{ id: OTHER, raw_app_meta_data: { roles: ["ADMIN"] } }],
+            requests: [request({ id: 7, requested_by: ME })],
+            followers: [follower(7, OTHER)],
+        });
+
+        expect(await cancelRequest(7)).toEqual({ ok: true, outcome: "handed_over" });
+        expect(requests()[0]).toMatchObject({ status: "wanted", requested_by: OTHER });
+        expect(followers()).toHaveLength(0);
+    });
+
+    it("rechecks cancellation eligibility inside the database write", async () => {
+        setup({ requests: [request({ id: 7, requested_by: ME })] });
+        db.beforeNext("media_request_cancel", "rpc", () => {
+            requests()[0].status = "searching";
+        });
+
+        expect(await cancelRequest(7)).toEqual({ ok: false, error: "not_cancellable" });
+        expect(requests()[0].status).toBe("searching");
+    });
+
+    it("reports a handover transaction failure without changing ownership", async () => {
+        setup({
+            requests: [request({ id: 7, requested_by: ME })],
+            followers: [follower(7, OTHER)],
+        });
+        db.failNext("media_request_cancel", "rpc");
+
+        expect(await cancelRequest(7)).toEqual({ ok: false, error: "failed" });
+        expect(requests()[0].requested_by).toBe(ME);
+        expect(followers()).toHaveLength(1);
     });
 
     it("skips followers who no longer have access", async () => {

@@ -79,9 +79,17 @@ describe("searchMovies", () => {
                 posterPath: "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
             },
             { id: 3, title: "Interstellar", year: "2014", posterPath: null },
-            { id: 4, title: "#4", year: "2014", posterPath: null },
         ]);
     });
+
+    it.each([undefined, null, "true", 0])(
+        "drops results with an invalid adult flag (%j)",
+        async (adult) => {
+            vi.stubGlobal("fetch", respond(200, { results: [raw({ adult })] }));
+
+            expect(await searchMovies("x", "en")).toEqual([]);
+        }
+    );
 
     it("throws on a TMDB error, without the token in the message", async () => {
         vi.stubGlobal("fetch", respond(401, { status_message: "Invalid API key" }));
@@ -117,10 +125,19 @@ describe("getMovie", () => {
         ["unknown to TMDB", 404, { status_code: 34 }],
         ["an adult title", 200, raw({ adult: true })],
         ["a different movie", 200, raw({ id: 1 })],
+        ["a missing adult flag", 200, raw({ adult: undefined })],
+        ["a malformed adult flag", 200, raw({ adult: "true" })],
+        ["no usable title", 200, raw({ title: "  ", original_title: null })],
     ])("returns null for %s", async (_label, status, body) => {
         vi.stubGlobal("fetch", respond(status, body));
 
         expect(await getMovie(157336, "en")).toBeNull();
+    });
+
+    it("uses the original title when the localized title is missing", async () => {
+        vi.stubGlobal("fetch", respond(200, raw({ title: null, original_title: " Original " })));
+
+        expect(await getMovie(157336, "en")).toMatchObject({ title: "Original" });
     });
 
     it("throws when TMDB fails", async () => {

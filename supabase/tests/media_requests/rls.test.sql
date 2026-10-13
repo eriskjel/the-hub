@@ -437,8 +437,8 @@ begin
         'nothing is created over the quota';
 
     -- An open request by someone else is joined with a +1, which is free.
-    assert public.media_request_add(bob, 'movie', 157336, 0) = 'exists',
-        'an open request is reported as existing, even with no quota left';
+    assert public.media_request_add(bob, 'movie', 157336, 0) = 'already_following',
+        'an existing +1 is reported even with no quota left';
     assert (select requested_by from public.media_request where tmdb_id = 157336) = alice,
         'the existing request is untouched';
 
@@ -471,6 +471,136 @@ begin
     -- No quota means no limit.
     assert public.media_request_add(bob, 'movie', 1004, null) = 'requested',
         'a null quota has no limit';
+end $$;
+rollback;
+
+-- ---------------------------------------------------------------------------
+\echo '== request transitions: service-role access only'
+do $$
+declare
+    fn text;
+    denied_role text;
+begin
+    foreach fn in array array[
+        'public.media_request_has_access(uuid)',
+        'public.media_request_cancel(uuid,bigint)',
+        'public.media_request_unfollow(uuid,bigint)'
+    ] loop
+        foreach denied_role in array array['anon', 'authenticated', 'media_worker'] loop
+            assert not has_function_privilege(denied_role, fn, 'EXECUTE'),
+                format('%s must not execute %s', denied_role, fn);
+        end loop;
+        assert has_function_privilege('service_role', fn, 'EXECUTE'),
+            format('service_role must execute %s', fn);
+    end loop;
+end $$;
+
+\echo '== request transitions: status, ownership, handover and admin eligibility'
+begin;
+-- This admin has never been granted a membership row.
+update auth.users set raw_app_meta_data = '{"roles":["ADMIN"]}'::jsonb
+ where id = '00000000-0000-0000-0000-0000000000e1';
+update auth.users set raw_user_meta_data = '{"role":"admin"}'::jsonb
+ where id = '00000000-0000-0000-0000-0000000000d1';
+set local role service_role;
+do $$
+declare
+    alice constant uuid := '00000000-0000-0000-0000-0000000000b1';
+    bob constant uuid := '00000000-0000-0000-0000-0000000000c1';
+    revoked constant uuid := '00000000-0000-0000-0000-0000000000d1';
+    admin constant uuid := '00000000-0000-0000-0000-0000000000e1';
+    rid bigint;
+    s text;
+begin
+    assert public.media_request_has_access(admin), 'an admin without membership has access';
+    assert not public.media_request_has_access(revoked), 'user metadata cannot grant admin access';
+    assert public.media_request_add(alice, 'movie', 3001, null) = 'requested';
+    select id into rid from public.media_request where tmdb_id = 3001;
+    assert public.media_request_add(alice, 'movie', 3001, 0) = 'already_requested';
+    assert public.media_request_add(admin, 'movie', 3001, 0) = 'followed', 'admin +1 is free';
+    assert public.media_request_add(admin, 'movie', 3001, 0) = 'already_following';
+    assert public.media_request_cancel(bob, rid) = 'not_cancellable', 'only the requester cancels';
+    assert public.media_request_cancel(alice, rid) = 'handed_over', 'admin can inherit a request';
+    assert (select requested_by from public.media_request where id = rid) = admin;
+    assert not exists (select 1 from public.media_request_follower where request_id = rid),
+        'handover removes the successor''s +1';
+    assert public.media_request_unfollow(admin, rid) = 'changed', 'a requester has no +1 to remove';
+    assert public.media_request_cancel(admin, rid) = 'cancelled';
+
+    assert public.media_request_add(alice, 'movie', 3001, null) = 'reopened';
+    insert into public.media_request_follower (request_id, user_id, created_at) values
+        (rid, revoked, now() - interval '3 days'),
+        (rid, admin, now() - interval '2 days'),
+        (rid, bob, now() - interval '1 day');
+    assert public.media_request_unfollow(admin, rid) = 'unfollowed';
+    assert public.media_request_cancel(alice, rid) = 'handed_over',
+        'withdrawn and revoked followers are skipped';
+    assert (select requested_by from public.media_request where id = rid) = bob;
+
+    -- A revoked follower does not keep the request alive.
+    assert public.media_request_cancel(bob, rid) = 'cancelled';
+    assert public.media_request_add(revoked, 'movie', 3001, null) = 'reopened';
+    assert not exists (select 1 from public.media_request_follower
+                        where request_id = rid and user_id = revoked),
+        'reopening removes the new requester''s previous +1';
+
+    foreach s in array array['searching', 'approved', 'downloading', 'available', 'failed', 'declined', 'cancelled'] loop
+        update public.media_request set status = s where id = rid;
+        assert public.media_request_cancel(revoked, rid) = 'not_cancellable';
+    end loop;
+    foreach s in array array['wanted', 'proposed'] loop
+        update public.media_request set status = s where id = rid;
+        assert public.media_request_cancel(revoked, rid) = 'cancelled';
+    end loop;
+
+    update public.media_request set status = 'available' where id = rid;
+    assert public.media_request_add(bob, 'movie', 3001, 0) = 'available';
+    foreach s in array array['failed', 'declined'] loop
+        update public.media_request set status = s where id = rid;
+        assert public.media_request_add(bob, 'movie', 3001, 0) = 'closed';
+    end loop;
+    assert not exists (select 1 from public.media_request_follower where request_id = rid),
+        'terminal requests gain no followers';
+    assert public.media_request_cancel(alice, -1) = 'not_cancellable';
+    assert public.media_request_unfollow(alice, -1) = 'changed';
+end $$;
+reset role;
+
+-- Both supported admin metadata shapes are case-insensitive, including a revoked member.
+update auth.users set raw_app_meta_data = '{"role":"AdMiN"}'::jsonb
+ where id = '00000000-0000-0000-0000-0000000000d1';
+set local role service_role;
+do $$ begin
+    assert public.media_request_has_access('00000000-0000-0000-0000-0000000000d1'),
+        'a revoked membership does not remove admin access';
+end $$;
+rollback;
+
+\echo '== request transitions: a follower cleanup error rolls back the handover'
+begin;
+create function pg_temp.reject_follower_delete() returns trigger language plpgsql as $$
+begin raise exception 'test cleanup failure'; end $$;
+create trigger test_reject_follower_delete before delete on public.media_request_follower
+    for each row execute function pg_temp.reject_follower_delete();
+set local role service_role;
+do $$
+declare
+    alice constant uuid := '00000000-0000-0000-0000-0000000000b1';
+    bob constant uuid := '00000000-0000-0000-0000-0000000000c1';
+    rid bigint;
+begin
+    select id into rid from public.media_request where tmdb_id = 157336;
+    update public.media_request set status = 'wanted' where id = rid;
+    begin
+        perform public.media_request_cancel(alice, rid);
+        raise exception 'handover should have failed';
+    exception when raise_exception then
+        assert sqlerrm = 'test cleanup failure', format('expected cleanup error, got %s', sqlerrm);
+    end;
+    assert (select requested_by from public.media_request where id = rid) = alice,
+        'failed cleanup rolls back the requester update';
+    assert exists (select 1 from public.media_request_follower where request_id = rid and user_id = bob),
+        'failed cleanup keeps the original +1';
 end $$;
 rollback;
 

@@ -22,7 +22,7 @@ export default function RequestSearch(): ReactElement {
     const [input, setInput] = useState("");
     const [query, setQuery] = useState("");
     const [showAll, setShowAll] = useState(false);
-    const debounce = useDebouncedCallback(DEBOUNCE_MS);
+    const { debounce, cancel: cancelSearch } = useDebouncedCallback(DEBOUNCE_MS);
     const inputId = useId();
 
     const enabled = query.length >= SEARCH_MIN_LENGTH;
@@ -46,6 +46,7 @@ export default function RequestSearch(): ReactElement {
 
     // Requesting a movie is done in one go: clear the search, ready for the next one.
     const reset = () => {
+        cancelSearch();
         setInput("");
         setQuery("");
         setShowAll(false);

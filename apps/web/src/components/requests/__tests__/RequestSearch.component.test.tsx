@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "sonner";
@@ -135,6 +135,33 @@ describe("RequestSearch", () => {
         await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
         expect(screen.getByText("Movie 1")).toBeInTheDocument();
         expect(screen.getByLabelText("Search for a movie")).toHaveValue("inter");
+    });
+
+    it("cancels a pending search when a request clears the input", async () => {
+        vi.mocked(requestMovie).mockResolvedValueOnce({ ok: true, outcome: "requested" });
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        vi.useFakeTimers();
+        try {
+            type("new query");
+            await act(async () => {
+                fireEvent.click(within(row("Movie 1")).getByRole("button"));
+                await vi.advanceTimersByTimeAsync(0);
+            });
+            expect(screen.getByLabelText("Search for a movie")).toHaveValue("");
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(400);
+            });
+            expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+            expect(fetchMock.mock.calls.some(([url]) => String(url).includes("new+query"))).toBe(
+                false
+            );
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it("sends the request id to take back a +1", async () => {

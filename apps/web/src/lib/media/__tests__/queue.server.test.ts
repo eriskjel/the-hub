@@ -63,10 +63,35 @@ beforeEach(() => {
 });
 
 describe("getQueue", () => {
-    it("lists movie requests newest first, without cancelled ones", async () => {
+    it("lists open movie requests oldest first, then history, without cancelled ones", async () => {
         const queue = await getQueue(client(), ME, "en");
 
-        expect(queue.map((q) => q.id)).toEqual([4, 3, 2, 1]);
+        expect(queue.map((q) => q.id)).toEqual([1, 2, 4, 3]);
+    });
+
+    it("keeps the oldest open request when 200 newer completed titles exist", async () => {
+        db.tables.media_request = [
+            req(1, 101, ME, "wanted", "2020-01-01"),
+            ...Array.from({ length: 200 }, (_, i) =>
+                req(i + 2, i + 102, OTHER, "available", "2026-10-01")
+            ),
+        ];
+
+        const queue = await getQueue(client(), ME, "en");
+        expect(queue).toHaveLength(201);
+        expect(queue[0]).toMatchObject({ id: 1, status: "wanted" });
+        expect(queue.slice(1).map((q) => q.id)).toEqual(
+            Array.from({ length: 200 }, (_, i) => 201 - i)
+        );
+    });
+
+    it("prioritizes the oldest open work when the open queue itself exceeds the limit", async () => {
+        db.tables.media_request = Array.from({ length: 201 }, (_, i) =>
+            req(i + 1, i + 101, ME, "wanted", "2026-10-01")
+        );
+
+        const queue = await getQueue(client(), ME, "en");
+        expect(queue.map((q) => q.id)).toEqual(Array.from({ length: 200 }, (_, i) => i + 1));
     });
 
     it("names the requester and shows your part in each request", async () => {
@@ -114,6 +139,14 @@ describe("getQueue", () => {
 
     it("throws when the queue itself can't be read", async () => {
         db.failNext("media_request", "select");
+
+        await expect(getQueue(client(), ME, "en")).rejects.toThrow("media queue read failed");
+    });
+
+    it("throws when the history can't be read", async () => {
+        db.beforeNext("media_request", "select", () => {
+            db.beforeNext("media_request", "select", () => db.failNext("media_request", "select"));
+        });
 
         await expect(getQueue(client(), ME, "en")).rejects.toThrow("media queue read failed");
     });

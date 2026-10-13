@@ -51,7 +51,7 @@ export default async function RequestsPage({
     const shown = mine ? queue.filter((item) => item.role !== null) : queue;
 
     // The queue in the order it's worked: oldest first. Everything else, newest first.
-    const open = shown.filter((item) => isOpenStatus(item.status)).reverse();
+    const open = shown.filter((item) => isOpenStatus(item.status));
     const available = shown.filter((item) => item.status === "available");
     const closed = shown.filter((item) => item.status === "failed" || item.status === "declined");
 
