@@ -436,7 +436,7 @@
                         "account_required": "A library account is required for users who aren't admins.",
                         "account_taken": "That library account is already linked to another user.",
                         "already_active": "This user already has access, so nothing was changed.",
-                        "not_active": "Access isn't active any more, so nothing was changed.",
+                        "changed": "Access changed in the meantime, so nothing was saved. Check the current settings and try again.",
                         "not_found": "User not found.",
                         "failed": "Something went wrong. Try again."
                     }

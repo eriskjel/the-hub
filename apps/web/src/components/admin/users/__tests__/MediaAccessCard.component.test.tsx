@@ -21,9 +21,13 @@ function member(overrides: Partial<MediaMember> = {}): MediaMember {
     };
 }
 
+function card(m: MediaMember | null) {
+    return <MediaAccessCard userId={USER_ID} member={m} targetIsAdmin={false} />;
+}
+
 function renderCard(m: MediaMember | null) {
     setIntl({ locale: "en", messages: enMessages });
-    render(<MediaAccessCard userId={USER_ID} member={m} targetIsAdmin={false} />);
+    return render(card(m));
 }
 
 describe("MediaAccessCard", () => {
@@ -67,7 +71,28 @@ describe("MediaAccessCard", () => {
         const formData = vi.mocked(mediaMemberAction).mock.calls[0][1] as FormData;
         expect(formData.get("intent")).toBe("update");
         expect(formData.get("userId")).toBe(USER_ID);
+        expect(formData.get("grantedAt")).toBe(member().grantedAt);
         expect(formData.get("libraryAccount")).toBe("fredrik");
+    });
+
+    it("shows the stored values again when the membership changes", () => {
+        const { rerender } = renderCard(member());
+        fireEvent.change(screen.getByLabelText("Library account"), { target: { value: "draft" } });
+
+        // E.g. a refresh after someone else changed it.
+        rerender(card(member({ libraryAccount: "other", weeklyQuota: 9 })));
+
+        expect(screen.getByLabelText("Library account")).toHaveValue("other");
+        expect(screen.getByLabelText("Requests per week")).toHaveValue(9);
+    });
+
+    it("keeps the admin's input while the membership is unchanged", () => {
+        const { rerender } = renderCard(member());
+        fireEvent.change(screen.getByLabelText("Library account"), { target: { value: "draft" } });
+
+        rerender(card(member()));
+
+        expect(screen.getByLabelText("Library account")).toHaveValue("draft");
     });
 
     it("edits or revokes an active member", () => {

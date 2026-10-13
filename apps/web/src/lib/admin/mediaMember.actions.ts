@@ -14,18 +14,23 @@ import {
 const PG_UNIQUE_VIOLATION = "23505";
 const PG_FOREIGN_KEY_VIOLATION = "23503";
 
+// The grant a form was rendered for, as Postgres returned it.
+const grantedAtSchema = z.string().datetime({ offset: true });
+
 /**
  * Admin form action for request access:
  * - `grant` gives access to someone without it: a revoked row becomes a fresh
  *   grant, or a new row is created. An active membership is never overwritten
  *   (`already_active`).
  * - `update` changes the account and quota of an active member, keeping the
- *   original grant (`not_active` if there is none, e.g. revoked meanwhile).
- * - `revoke` ends access but keeps the row as history (`not_active` likewise).
- * Each write is conditional on the membership's state, so a stale form can't
- * undo someone else's change. Users never write media_member themselves (RLS
- * has no write policies), so this goes through the service role after
- * requireAdmin.
+ *   original grant.
+ * - `revoke` ends access but keeps the row as history.
+ * The card sends `grantedAt` of the grant it shows, and `update` and `revoke`
+ * only match that grant while it's active. If it was revoked or replaced since
+ * the page loaded, nothing is written (`changed`). Two admins editing the same
+ * active grant at once is still last-write-wins. Users never write
+ * media_member themselves (RLS has no write policies), so this goes through the
+ * service role after requireAdmin.
  */
 export async function mediaMemberAction(
     _prev: MemberActionState,
@@ -97,14 +102,17 @@ async function save(
             if (!created?.length) return unchanged("already_active");
         }
     } else {
+        const grantedAt = grantedAtSchema.safeParse(formData.get("grantedAt"));
+        if (!grantedAt.success) return fail("failed");
         const { data, error } = await admin
             .from("media_member")
             .update({ library_account: libraryAccount, weekly_quota: weeklyQuota })
             .eq("user_id", userId)
+            .eq("granted_at", grantedAt.data)
             .is("revoked_at", null)
             .select("user_id");
         if (error) return writeFailure(error);
-        if (!data?.length) return unchanged("not_active");
+        if (!data?.length) return unchanged("changed");
     }
 
     refresh();
@@ -114,18 +122,21 @@ async function save(
 async function revoke(formData: FormData): Promise<MemberActionState> {
     const userId = z.string().uuid().safeParse(formData.get("userId"));
     if (!userId.success) return fail("not_found");
+    const grantedAt = grantedAtSchema.safeParse(formData.get("grantedAt"));
+    if (!grantedAt.success) return fail("failed");
 
     const { data, error } = await createAdminClient()
         .from("media_member")
         .update({ revoked_at: new Date().toISOString() })
         .eq("user_id", userId.data)
+        .eq("granted_at", grantedAt.data)
         .is("revoked_at", null)
         .select("user_id");
     if (error) {
         console.error("media member: revoke failed:", error.message);
         return fail("failed");
     }
-    if (!data?.length) return unchanged("not_active");
+    if (!data?.length) return unchanged("changed");
 
     refresh();
     return { status: "revoked" };
@@ -139,7 +150,7 @@ function writeFailure(error: { code?: string; message: string }): MemberActionSt
 }
 
 /** Nothing changed because the membership wasn't in the expected state: show the current one. */
-function unchanged(error: "already_active" | "not_active"): MemberActionState {
+function unchanged(error: "already_active" | "changed"): MemberActionState {
     refresh();
     return fail(error);
 }

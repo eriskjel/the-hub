@@ -19,7 +19,7 @@ type Write = {
 let isAdmin = true;
 let targetUser: { id: string; app_metadata: Record<string, unknown> } | null = null;
 // The user's media_member row as the database has it, or null for none.
-let existingRow: { revoked_at: string | null } | null = null;
+let existingRow: { granted_at: string; revoked_at: string | null } | null = null;
 let writeError: { code: string; message: string } | null = null;
 let writes: Write[] = [];
 
@@ -78,7 +78,8 @@ function fakeAdminClient() {
 /**
  * An update builder like supabase-js: records .eq()/.is()/.not() filters, and
  * .select() returns the rows that matched: `revoked_at is null` matches only an
- * active row, `revoked_at not is null` only a revoked one.
+ * active row, `revoked_at not is null` only a revoked one, and `granted_at=…`
+ * only that grant.
  */
 function filteredUpdate(payload: Record<string, unknown>) {
     const write: Write = { op: "update", payload, filters: [] };
@@ -99,8 +100,10 @@ function filteredUpdate(payload: Record<string, unknown>) {
         select: async () => {
             if (writeError) return { data: null, error: writeError };
             const active = existingRow?.revoked_at === null;
+            const grantFilter = write.filters.find((f) => f.startsWith("granted_at="));
             const matches =
                 existingRow &&
+                (!grantFilter || grantFilter === `granted_at=${existingRow.granted_at}`) &&
                 (write.filters.includes("revoked_at is null")
                     ? active
                     : write.filters.includes("revoked_at not is null")
@@ -120,8 +123,12 @@ vi.mock("next/cache", () => ({ refresh: refreshMock, revalidatePath: vi.fn() }))
 import { mediaMemberAction } from "../mediaMember.actions";
 
 const IDLE = { status: "idle" } as const;
-const ACTIVE = { revoked_at: null };
-const REVOKED = { revoked_at: "2026-10-01T00:00:00Z" };
+// As PostgREST returns a timestamptz.
+const GRANTED_AT = "2026-09-01T10:00:00.123456+00:00";
+const ACTIVE = { granted_at: GRANTED_AT, revoked_at: null };
+const REVOKED = { granted_at: GRANTED_AT, revoked_at: "2026-10-01T00:00:00+00:00" };
+// Revoked and granted again after the form loaded.
+const REGRANTED = { granted_at: "2026-10-02T08:00:00.5+00:00", revoked_at: null };
 
 function form(fields: Record<string, string>): FormData {
     const fd = new FormData();
@@ -142,8 +149,12 @@ function memberForm(intent: string, overrides: Record<string, string> = {}): For
 const grant = (overrides?: Record<string, string>) =>
     mediaMemberAction(IDLE, memberForm("grant", overrides));
 const update = (overrides?: Record<string, string>) =>
-    mediaMemberAction(IDLE, memberForm("update", overrides));
-const revoke = (userId = USER_ID) => mediaMemberAction(IDLE, form({ intent: "revoke", userId }));
+    mediaMemberAction(IDLE, memberForm("update", { grantedAt: GRANTED_AT, ...overrides }));
+const revoke = (overrides?: Record<string, string>) =>
+    mediaMemberAction(
+        IDLE,
+        form({ intent: "revoke", userId: USER_ID, grantedAt: GRANTED_AT, ...overrides })
+    );
 
 beforeEach(() => {
     isAdmin = true;
@@ -247,27 +258,42 @@ describe("mediaMemberAction", () => {
                 {
                     op: "update",
                     payload: { library_account: "fredrik2", weekly_quota: 10 },
-                    filters: [`user_id=${USER_ID}`, "revoked_at is null"],
+                    filters: [
+                        `user_id=${USER_ID}`,
+                        `granted_at=${GRANTED_AT}`,
+                        "revoked_at is null",
+                    ],
                 },
             ]);
             expect(refreshMock).toHaveBeenCalledOnce();
         });
 
-        it("changes nothing once access has been revoked, and says so", async () => {
-            existingRow = REVOKED;
+        it.each([
+            ["revoked", REVOKED],
+            ["revoked and granted again", REGRANTED],
+        ])("changes nothing once the grant was %s, and says so", async (_label, row) => {
+            existingRow = row;
             const state = await update();
 
-            expect(state).toEqual({ status: "error", error: "not_active" });
+            expect(state).toEqual({ status: "error", error: "changed" });
             expect(writes.map((w) => w.op)).toEqual(["update"]);
-            // The card re-renders with the current (revoked) state.
+            // The card re-renders with the current state.
             expect(refreshMock).toHaveBeenCalledOnce();
         });
 
         it("never grants access to someone without a membership", async () => {
             const state = await update();
 
-            expect(state).toEqual({ status: "error", error: "not_active" });
+            expect(state).toEqual({ status: "error", error: "changed" });
             expect(writes.some((w) => w.op === "upsert")).toBe(false);
+        });
+
+        it.each(["", "yesterday"])("refuses a missing or invalid grant (%j)", async (grantedAt) => {
+            existingRow = ACTIVE;
+            const state = await update({ grantedAt });
+
+            expect(state).toEqual({ status: "error", error: "failed" });
+            expect(writes).toHaveLength(0);
         });
 
         it("reports a library account that is already linked", async () => {
@@ -344,23 +370,36 @@ describe("mediaMemberAction", () => {
             expect(writes).toHaveLength(1);
             expect(writes[0].op).toBe("update");
             expect(Object.keys(writes[0].payload)).toEqual(["revoked_at"]);
-            expect(writes[0].filters).toEqual([`user_id=${USER_ID}`, "revoked_at is null"]);
+            expect(writes[0].filters).toEqual([
+                `user_id=${USER_ID}`,
+                `granted_at=${GRANTED_AT}`,
+                "revoked_at is null",
+            ]);
             expect(refreshMock).toHaveBeenCalledOnce();
         });
 
         it.each([
             ["already revoked", REVOKED],
+            ["revoked and granted again", REGRANTED],
             ["never a member", null],
-        ])("reports when there was nothing to revoke (%s)", async (_label, row) => {
+        ])("changes nothing when the grant isn't active any more (%s)", async (_label, row) => {
             existingRow = row;
             const state = await revoke();
 
-            expect(state).toEqual({ status: "error", error: "not_active" });
+            expect(state).toEqual({ status: "error", error: "changed" });
             expect(refreshMock).toHaveBeenCalledOnce();
         });
 
+        it("refuses a missing grant", async () => {
+            existingRow = ACTIVE;
+            const state = await revoke({ grantedAt: "" });
+
+            expect(state).toEqual({ status: "error", error: "failed" });
+            expect(createAdminClientMock).not.toHaveBeenCalled();
+        });
+
         it("rejects a user id that isn't a uuid", async () => {
-            const state = await revoke("nope");
+            const state = await revoke({ userId: "nope" });
 
             expect(state).toEqual({ status: "error", error: "not_found" });
             expect(createAdminClientMock).not.toHaveBeenCalled();

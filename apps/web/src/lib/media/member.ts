@@ -1,7 +1,11 @@
 import { z } from "zod";
 
-/** Mirrors the media_member checks in the database. */
-export const LIBRARY_ACCOUNT_PATTERN = "[A-Za-z0-9._-]{1,64}";
+/**
+ * Mirrors the media_member checks in the database. The hyphen is escaped
+ * because browsers compile the input's `pattern` with the `v` flag, where a
+ * bare `-` in a class is a syntax error and the whole pattern is ignored.
+ */
+export const LIBRARY_ACCOUNT_PATTERN = "[A-Za-z0-9._\\-]{1,64}";
 export const LIBRARY_ACCOUNT_MAX_LENGTH = 64;
 export const MAX_WEEKLY_QUOTA = 50;
 export const DEFAULT_WEEKLY_QUOTA = 5;
@@ -26,7 +30,7 @@ export type MemberActionError =
     | "account_required"
     | "account_taken"
     | "already_active"
-    | "not_active"
+    | "changed"
     | "not_found"
     | "failed";
 

@@ -436,7 +436,7 @@
                         "account_required": "Bibliotekskonto er påkrevd for brukere som ikke er administratorer.",
                         "account_taken": "Den bibliotekskontoen er allerede koblet til en annen bruker.",
                         "already_active": "Brukeren har allerede tilgang, så ingenting ble endret.",
-                        "not_active": "Tilgangen er ikke aktiv lenger, så ingenting ble endret.",
+                        "changed": "Tilgangen ble endret i mellomtiden, så ingenting ble lagret. Sjekk innstillingene og prøv igjen.",
                         "not_found": "Fant ikke brukeren.",
                         "failed": "Noe gikk galt. Prøv igjen."
                     }

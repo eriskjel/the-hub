@@ -42,6 +42,19 @@ export default function MediaAccessCard({
     const [account, setAccount] = useState(member?.libraryAccount ?? "");
     const [quota, setQuota] = useState(String(member?.weeklyQuota ?? DEFAULT_WEEKLY_QUOTA));
 
+    // A refresh keeps this component's state, so when the stored membership
+    // changes (a save, or someone else's change) show its values again. A
+    // rejected input doesn't change it, so the admin's typing stays.
+    const stored = member
+        ? [member.grantedAt, member.revokedAt, member.libraryAccount, member.weeklyQuota].join("|")
+        : "";
+    const [shownStored, setShownStored] = useState(stored);
+    if (stored !== shownStored) {
+        setShownStored(stored);
+        setAccount(member?.libraryAccount ?? "");
+        setQuota(String(member?.weeklyQuota ?? DEFAULT_WEEKLY_QUOTA));
+    }
+
     const active = isActiveMember(member);
     const formatDate = (iso: string) =>
         new Date(iso).toLocaleDateString(locale, { dateStyle: "medium", timeZone: OSLO_TZ });
@@ -66,6 +79,7 @@ export default function MediaAccessCard({
 
             <form action={dispatch} className="space-y-3">
                 <input type="hidden" name="userId" value={userId} />
+                {active && <input type="hidden" name="grantedAt" value={member.grantedAt} />}
                 <FieldText
                     label={t("library_account")}
                     help={t("library_account_help")}
