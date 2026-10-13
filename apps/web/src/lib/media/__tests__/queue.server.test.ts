@@ -63,6 +63,11 @@ beforeEach(() => {
 });
 
 describe("getQueue", () => {
+    it("includes cancelled requests for the admin queue only", async () => {
+        const queue = await getQueue(client(), ME, "en", { includeCancelled: true });
+        expect(queue.find((item) => item.id === 5)?.status).toBe("cancelled");
+        expect((await getQueue(client(), ME, "en")).some((item) => item.id === 5)).toBe(false);
+    });
     it("lists open movie requests oldest first, then history, without cancelled ones", async () => {
         const queue = await getQueue(client(), ME, "en");
 

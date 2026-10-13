@@ -33,7 +33,7 @@ run_pair() (
     trap 'rm -f "$first_out" "$second_out"' EXIT
     as_admin -c "insert into public.request_test_gate values ('$label', false)" </dev/null
     as_admin -tA -c "set application_name = '$label-first'; begin; set local role service_role;
-        $first_sql;
+        $first_sql; set local role service_role;
         do \$\$ declare deadline timestamptz := clock_timestamp() + interval '15 seconds'; begin
             while not (select released from public.request_test_gate where name = '$label') loop
                 if clock_timestamp() >= deadline then raise exception 'test gate timed out'; end if;

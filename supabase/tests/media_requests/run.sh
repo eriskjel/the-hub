@@ -4,6 +4,7 @@
 # MIGRATION=<file> swaps in a different media migration (used to check that the
 # tests catch a broken one).
 # TRANSITION_MIGRATION=<file> does the same for the request transition functions.
+# ADMIN_QUEUE_MIGRATION=<file> does the same for the admin queue functions.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -46,19 +47,26 @@ for file in "$root"/supabase/migrations/*.sql; do
     if [ "$(basename "$file")" = "20261013191028_media_request_add.sql" ]; then
         file="${TRANSITION_MIGRATION:-$file}"
     fi
+    if [ "$(basename "$file")" = "20261013202716_media_admin_queue.sql" ]; then
+        file="${ADMIN_QUEUE_MIGRATION:-$file}"
+    fi
     as_postgres < "$file"
 done
 echo "== media migrations again, to check they are idempotent"
-for file in "$root"/supabase/migrations/*media_request*.sql; do
+for file in "$root"/supabase/migrations/*media_*.sql; do
     if [ "$(basename "$file")" = "20261007000000_media_requests.sql" ]; then
         file="$migration"
     fi
     if [ "$(basename "$file")" = "20261013191028_media_request_add.sql" ]; then
         file="${TRANSITION_MIGRATION:-$file}"
     fi
+    if [ "$(basename "$file")" = "20261013202716_media_admin_queue.sql" ]; then
+        file="${ADMIN_QUEUE_MIGRATION:-$file}"
+    fi
     as_postgres < "$file"
 done
 as_admin < "$here/rls.test.sql"
+as_admin < "$here/admin_queue.test.sql"
 
 # Two calls for the same user at the same time: the second must wait for the
 # first and count it. Without the lock both would see 0 and pass a quota of 1.
@@ -85,3 +93,4 @@ fi
 echo "== all media_request_add tests passed"
 
 source "$here/concurrency.test.sh"
+source "$here/admin_concurrency.test.sh"

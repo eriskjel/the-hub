@@ -1,0 +1,56 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { requireAdmin } from "@/lib/auth/requireAdmin.server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { getQueue } from "@/lib/media/queue.server";
+import { getWorkerStatus } from "@/lib/media/worker.server";
+import { isOpenStatus } from "@/lib/media/request";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
+import { WorkerStatusCard } from "@/components/admin/requests/WorkerStatusCard";
+import { AdminQueueList } from "@/components/admin/requests/AdminQueueList";
+import { QueueRefresh } from "@/components/requests/QueueRefresh";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminRequestsPage({
+    params,
+}: {
+    params: Promise<{ locale: string }>;
+}) {
+    const { locale: rawLocale } = await params;
+    const locale = isLocale(rawLocale) ? rawLocale : DEFAULT_LOCALE;
+    setRequestLocale(locale);
+    const { user } = await requireAdmin(locale);
+    const client = createAdminClient();
+    const [queue, worker, t] = await Promise.all([
+        getQueue(client, user.id, locale, { includeCancelled: true }),
+        getWorkerStatus(client),
+        getTranslations({ locale, namespace: "admin.requests" }),
+    ]);
+    return (
+        <div className="mx-auto max-w-5xl space-y-6 p-6">
+            <QueueRefresh />
+            <header className="space-y-1">
+                <h1 className="text-2xl font-semibold">{t("title")}</h1>
+                <p className="text-muted text-sm">{t("intro")}</p>
+            </header>
+            <WorkerStatusCard worker={worker} locale={locale} />
+            <AdminQueueList
+                items={queue.filter((item) => isOpenStatus(item.status))}
+                heading={t("open")}
+                locale={locale}
+            />
+            <AdminQueueList
+                items={queue.filter((item) => item.status === "available")}
+                heading={t("available")}
+                locale={locale}
+            />
+            <AdminQueueList
+                items={queue.filter((item) =>
+                    ["failed", "declined", "cancelled"].includes(item.status)
+                )}
+                heading={t("closed")}
+                locale={locale}
+            />
+        </div>
+    );
+}

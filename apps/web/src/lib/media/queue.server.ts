@@ -44,7 +44,8 @@ type Row = {
 export async function getQueue(
     supabase: SupabaseClient,
     userId: string,
-    locale: Locale
+    locale: Locale,
+    options: { includeCancelled?: boolean } = {}
 ): Promise<QueueItem[]> {
     const read = () =>
         supabase
@@ -60,7 +61,12 @@ export async function getQueue(
             .order("id", { ascending: true })
             .limit(QUEUE_LIMIT),
         read()
-            .in("status", ["available", "failed", "declined"])
+            .in(
+                "status",
+                options.includeCancelled
+                    ? ["available", "failed", "declined", "cancelled"]
+                    : ["available", "failed", "declined"]
+            )
             .order("created_at", { ascending: false })
             .order("id", { ascending: false })
             .limit(QUEUE_LIMIT),
