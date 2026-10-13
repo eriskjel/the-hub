@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { ReactElement } from "react";
+import type { User } from "@supabase/supabase-js";
 import { isAdminFromUser } from "@/lib/auth/isAdmin";
 import { getOwnMembership } from "@/lib/media/membership.server";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -21,7 +22,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
         data: { user },
     } = await supabase.auth.getUser();
 
-    const isMediaMember = user ? await hasMediaAccess(user.id) : false;
+    const isMediaMember = user ? await hasMediaAccess(user) : false;
 
     const position = mode === "fixed" ? "fixed" : "sticky";
     const base = `${position} top-0 z-50 h-16 w-full backdrop-blur-sm`;
@@ -56,10 +57,10 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
     );
 }
 
-/** Only members see the Requests link. A failed lookup just hides it. */
-async function hasMediaAccess(userId: string): Promise<boolean> {
+/** Only members (and admins) see the Requests link. A failed lookup just hides it. */
+async function hasMediaAccess(user: User): Promise<boolean> {
     try {
-        return (await getOwnMembership(userId))?.active ?? false;
+        return (await getOwnMembership(user))?.active ?? false;
     } catch (e) {
         console.error("header:", (e as Error).message);
         return false;

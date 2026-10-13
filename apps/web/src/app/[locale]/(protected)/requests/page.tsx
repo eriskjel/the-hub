@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
 import { createClient } from "@/utils/supabase/server";
-import { countRecentRequests, getOwnMembership } from "@/lib/media/membership.server";
+import { countRecentRequests, getOwnMembership, queueReader } from "@/lib/media/membership.server";
 import { getQueue } from "@/lib/media/queue.server";
 import { isOpenStatus } from "@/lib/media/request";
 import RequestSearch from "@/components/requests/RequestSearch";
@@ -30,7 +30,7 @@ export default async function RequestsPage({
     } = await supabase.auth.getUser();
     if (!user) redirect(`/${locale}/login`);
 
-    const membership = await getOwnMembership(user.id);
+    const membership = await getOwnMembership(user);
     if (!membership?.active) {
         return (
             <div className="mx-auto max-w-3xl p-6">
@@ -43,9 +43,10 @@ export default async function RequestsPage({
     }
 
     const mine = (await searchParams).mine === "1";
+    const reader = queueReader(membership, supabase);
     const [queue, used] = await Promise.all([
-        getQueue(supabase, user.id, locale),
-        countRecentRequests(supabase, user.id),
+        getQueue(reader, user.id, locale),
+        countRecentRequests(reader, user.id),
     ]);
     const shown = mine ? queue.filter((item) => item.role !== null) : queue;
 
@@ -60,12 +61,14 @@ export default async function RequestsPage({
                 <h1 className="text-foreground text-2xl font-semibold">{t("pageTitle")}</h1>
                 <p className="text-muted text-sm">{t("intro")}</p>
                 <p className="text-muted text-sm">
-                    {membership.weeklyQuota === 0
-                        ? t("quotaNone")
-                        : t("quota", {
-                              used: String(Math.min(used, membership.weeklyQuota)),
-                              quota: String(membership.weeklyQuota),
-                          })}
+                    {membership.weeklyQuota === null
+                        ? t("quotaAdmin")
+                        : membership.weeklyQuota === 0
+                          ? t("quotaNone")
+                          : t("quota", {
+                                used: String(Math.min(used, membership.weeklyQuota)),
+                                quota: String(membership.weeklyQuota),
+                            })}
                 </p>
             </header>
 

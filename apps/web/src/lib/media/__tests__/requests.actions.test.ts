@@ -14,7 +14,7 @@ const MOVIE = 157336;
 const DAY = 24 * 60 * 60 * 1000;
 
 let db: FakeDb;
-let signedIn: { id: string } | null;
+let signedIn: { id: string; app_metadata?: Record<string, unknown> } | null;
 let tmdbDown: boolean;
 
 const { refreshMock, getMovieMock } = vi.hoisted(() => ({
@@ -131,6 +131,26 @@ describe("requestMovie", () => {
     it.each([0, -1, 1.5, Number.NaN, 2 ** 31, "157336"])("rejects the id %j", async (id) => {
         expect(await requestMovie(id as number)).toEqual({ ok: false, error: "not_found" });
         expect(getMovieMock).not.toHaveBeenCalled();
+    });
+
+    it("lets an admin request without a membership row or a quota", async () => {
+        signedIn = { id: ME, app_metadata: { roles: ["admin"] } };
+        setup({
+            members: [member(OTHER)],
+            requests: Array.from({ length: 20 }, (_, i) =>
+                request({ tmdb_id: 5000 + i, requested_by: ME, created_at: ago(DAY) })
+            ),
+        });
+
+        expect(await requestMovie(MOVIE)).toEqual({ ok: true, outcome: "requested" });
+        expect(requests().find((r) => r.tmdb_id === MOVIE)).toMatchObject({ requested_by: ME });
+    });
+
+    it("keeps an admin's access even if a membership row was revoked", async () => {
+        signedIn = { id: ME, app_metadata: { role: "admin" } };
+        setup({ members: [member(ME, { revoked_at: ago(DAY), weekly_quota: 0 })] });
+
+        expect(await requestMovie(MOVIE)).toEqual({ ok: true, outcome: "requested" });
     });
 
     it("rejects a title TMDB doesn't know", async () => {

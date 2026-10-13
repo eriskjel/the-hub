@@ -30,11 +30,24 @@ function renderCard(m: MediaMember | null) {
     return render(card(m));
 }
 
+describe("MediaAccessCard for an admin", () => {
+    it("says admins always have access, with nothing to grant", () => {
+        setIntl({ locale: "en", messages: enMessages });
+        render(<MediaAccessCard userId={USER_ID} member={null} targetIsAdmin />);
+
+        expect(
+            screen.getByText("Admins always have access, with no weekly limit.")
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("button")).toBeNull();
+        expect(screen.queryByRole("textbox")).toBeNull();
+    });
+});
+
 describe("MediaAccessCard", () => {
     it("labels its inputs", () => {
         renderCard(member());
 
-        expect(screen.getByLabelText("Library account")).toHaveValue("fredrik");
+        expect(screen.getByLabelText("Streaming username")).toHaveValue("fredrik");
         expect(screen.getByLabelText("Requests per week")).toHaveValue(5);
     });
 
@@ -63,8 +76,10 @@ describe("MediaAccessCard", () => {
         fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
         const alert = await screen.findByRole("alert");
-        expect(alert).toHaveTextContent("That library account is already linked to another user.");
-        const input = screen.getByLabelText("Library account");
+        expect(alert).toHaveTextContent(
+            "That streaming username is already linked to another user."
+        );
+        const input = screen.getByLabelText("Streaming username");
         expect(input).toHaveAttribute("aria-invalid", "true");
         expect(input).toHaveAccessibleDescription(expect.stringContaining("already linked"));
 
@@ -77,22 +92,26 @@ describe("MediaAccessCard", () => {
 
     it("shows the stored values again when the membership changes", () => {
         const { rerender } = renderCard(member());
-        fireEvent.change(screen.getByLabelText("Library account"), { target: { value: "draft" } });
+        fireEvent.change(screen.getByLabelText("Streaming username"), {
+            target: { value: "draft" },
+        });
 
         // E.g. a refresh after someone else changed it.
         rerender(card(member({ libraryAccount: "other", weeklyQuota: 9 })));
 
-        expect(screen.getByLabelText("Library account")).toHaveValue("other");
+        expect(screen.getByLabelText("Streaming username")).toHaveValue("other");
         expect(screen.getByLabelText("Requests per week")).toHaveValue(9);
     });
 
     it("keeps the admin's input while the membership is unchanged", () => {
         const { rerender } = renderCard(member());
-        fireEvent.change(screen.getByLabelText("Library account"), { target: { value: "draft" } });
+        fireEvent.change(screen.getByLabelText("Streaming username"), {
+            target: { value: "draft" },
+        });
 
         rerender(card(member()));
 
-        expect(screen.getByLabelText("Library account")).toHaveValue("draft");
+        expect(screen.getByLabelText("Streaming username")).toHaveValue("draft");
     });
 
     it("edits or revokes an active member", () => {

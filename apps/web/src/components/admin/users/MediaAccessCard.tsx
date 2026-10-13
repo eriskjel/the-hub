@@ -70,6 +70,16 @@ export default function MediaAccessCard({
     const quotaError = error === "invalid_quota" ? t(`errors.${error}`) : undefined;
     const formError = error && !accountError && !quotaError ? t(`errors.${error}`) : undefined;
 
+    // Admins have access through their role; there's nothing to grant.
+    if (targetIsAdmin) {
+        return (
+            <div className="border-border bg-surface rounded-lg border p-4">
+                <h2 className="text-foreground mb-1 font-semibold">{t("title")}</h2>
+                <p className="text-muted text-sm">{t("status_admin")}</p>
+            </div>
+        );
+    }
+
     return (
         <div className="border-border bg-surface rounded-lg border p-4">
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
@@ -88,7 +98,7 @@ export default function MediaAccessCard({
                     onChange={(e) => setAccount(e.target.value)}
                     pattern={LIBRARY_ACCOUNT_PATTERN}
                     maxLength={LIBRARY_ACCOUNT_MAX_LENGTH}
-                    required={!targetIsAdmin}
+                    required
                     autoComplete="off"
                     spellCheck={false}
                     error={accountError}

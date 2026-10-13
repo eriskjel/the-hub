@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
-import { getOwnMembership } from "@/lib/media/membership.server";
+import { getOwnMembership, queueReader } from "@/lib/media/membership.server";
 import { searchMovies } from "@/lib/media/tmdb.server";
 import {
     SEARCH_MAX_LENGTH,
@@ -15,8 +15,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/media/search?q=…&locale=en|no
- * Members only. Searches TMDB for movies and marks the ones already in the
- * request queue, read with the member's own session (RLS).
+ * Members (and admins) only. Searches TMDB for movies and marks the ones
+ * already in the request queue.
  */
 export async function GET(req: NextRequest) {
     const supabase = await createClient();
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     let membership;
     try {
-        membership = await getOwnMembership(user.id);
+        membership = await getOwnMembership(user);
     } catch (e) {
         console.error("media search:", (e as Error).message);
         return NextResponse.json({ error: "server_error" }, { status: 500 });
@@ -49,9 +49,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "search_unavailable" }, { status: 502 });
     }
 
+    const reader = queueReader(membership, supabase);
     const queued = new Map<number, NonNullable<SearchResult["request"]>>();
     if (movies.length > 0) {
-        const { data: requests, error } = await supabase
+        const { data: requests, error } = await reader
             .from("media_request")
             .select("id, tmdb_id, status, requested_by")
             .eq("media_type", "movie")
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
         }[];
         let following = new Set<number>();
         if (rows.length > 0) {
-            const { data: follows, error: followError } = await supabase
+            const { data: follows, error: followError } = await reader
                 .from("media_request_follower")
                 .select("request_id")
                 .eq("user_id", user.id)

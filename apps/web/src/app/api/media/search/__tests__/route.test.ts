@@ -8,16 +8,25 @@ const ME = "00000000-0000-0000-0000-0000000000a1";
 const OTHER = "00000000-0000-0000-0000-0000000000b1";
 
 let db: FakeDb;
-let signedIn: { id: string } | null;
+let signedIn: { id: string; app_metadata?: Record<string, unknown> } | null;
 
 const { searchMoviesMock } = vi.hoisted(() => ({ searchMoviesMock: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
+// Like RLS: the session sees queue rows only with an active membership row.
+const hasActiveRow = () =>
+    db.tables.media_member.some((m) => m.user_id === signedIn?.id && m.revoked_at === null);
 vi.mock("@/utils/supabase/server", () => ({
     createClient: async () => ({
         auth: { getUser: async () => ({ data: { user: signedIn } }) },
-        from: (table: string) => db.from(table),
+        from: (table: string) =>
+            table.startsWith("media_request") && !hasActiveRow()
+                ? fakeDb({}).from(table)
+                : db.from(table),
     }),
+}));
+vi.mock("@/utils/supabase/admin", () => ({
+    createAdminClient: () => ({ from: (table: string) => db.from(table) }),
 }));
 vi.mock("@/lib/media/tmdb.server", () => ({ searchMovies: searchMoviesMock }));
 
@@ -137,6 +146,22 @@ describe("GET /api/media/search", () => {
             year: "2014",
             posterPath: "/p.jpg",
         });
+    });
+
+    it("lets an admin without a membership row search and see the queue", async () => {
+        signedIn = { id: ME, app_metadata: { roles: ["admin"] } };
+        setup({
+            members: [],
+            requests: [
+                { id: 11, media_type: "movie", tmdb_id: 1, status: "wanted", requested_by: OTHER },
+            ],
+            followers: [{ request_id: 11, user_id: ME }],
+        });
+        const res = await get({ q: "inter" });
+
+        expect(res.status).toBe(200);
+        const { results } = await res.json();
+        expect(results[0].request).toEqual({ id: 11, status: "wanted", role: "follower" });
     });
 
     it("reports TMDB being down as a bad gateway", async () => {

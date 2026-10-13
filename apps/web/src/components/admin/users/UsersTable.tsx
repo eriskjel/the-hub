@@ -123,8 +123,13 @@ function mapUsersToRows(
             name: pickDisplayName(user),
             email: user.auth.email,
             roleKey: user.auth.effective_role,
-            // The linked library account, a check mark for an admin without one, or a dash.
-            requests: isActiveMember(member) ? (member.libraryAccount ?? "✓") : "—",
+            // The linked streaming username, a check mark for access without one
+            // (admins always have access), or a dash.
+            requests: isActiveMember(member)
+                ? (member.libraryAccount ?? "✓")
+                : user.auth.effective_role === "admin"
+                  ? "✓"
+                  : "—",
         };
     });
 }

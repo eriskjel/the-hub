@@ -19,7 +19,8 @@ import {
 
 const PG_UNIQUE_VIOLATION = "23505";
 
-type Member = { id: string; weeklyQuota: number };
+/** `weeklyQuota` null: no limit (admins). */
+type Member = { id: string; weeklyQuota: number | null };
 type ExistingRequest = { id: number; status: RequestStatus; requested_by: string | null };
 
 /*
@@ -231,16 +232,18 @@ async function currentMember(): Promise<Member | null> {
         data: { user },
     } = await supabase.auth.getUser();
     if (!user) return null;
-    const membership = await getOwnMembership(user.id);
+    const membership = await getOwnMembership(user);
     if (!membership?.active) return null;
     return { id: user.id, weeklyQuota: membership.weeklyQuota };
 }
 
 /** A quota_exceeded (or failed) result if the member can't create a request now, else null. */
 async function checkQuota(member: Member): Promise<RequestActionResult | null> {
+    if (member.weeklyQuota === null) return null;
+    const quota = member.weeklyQuota;
     try {
         const used = await countRecentRequests(createAdminClient(), member.id);
-        return used >= member.weeklyQuota ? fail("quota_exceeded") : null;
+        return used >= quota ? fail("quota_exceeded") : null;
     } catch (e) {
         console.error("media request:", (e as Error).message);
         return fail("failed");
