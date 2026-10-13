@@ -75,10 +75,24 @@ describe("RequestSearch", () => {
         expect(fetchMock.mock.calls[0][0]).toBe("/api/media/search?q=inter&locale=en");
     });
 
+    it("shows the top five results, and the rest on request", async () => {
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        expect(screen.getAllByRole("listitem")).toHaveLength(5);
+        expect(screen.queryByText("Movie 6")).toBeNull();
+
+        fireEvent.click(screen.getByRole("button", { name: "Show 1 more" }));
+        expect(screen.getAllByRole("listitem")).toHaveLength(6);
+        expect(screen.queryByRole("button", { name: /^Show/ })).toBeNull();
+    });
+
     it("offers what fits each title", async () => {
         renderSearch();
         type("inter");
         await screen.findByText("Movie 1");
+        fireEvent.click(screen.getByRole("button", { name: "Show 1 more" }));
 
         const button = (title: string) => within(row(title)).queryByRole("button");
         expect(button("Movie 1")).toHaveAccessibleName("Request Movie 1");
@@ -91,7 +105,7 @@ describe("RequestSearch", () => {
         expect(button("Movie 6")).toBeNull();
     });
 
-    it("requests a title by its TMDB id and refreshes the results", async () => {
+    it("requests a title by its TMDB id, then clears the search for the next one", async () => {
         vi.mocked(requestMovie).mockResolvedValueOnce({ ok: true, outcome: "requested" });
         renderSearch();
         type("inter");
@@ -101,7 +115,26 @@ describe("RequestSearch", () => {
 
         await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Requested."));
         expect(requestMovie).toHaveBeenCalledWith(1);
+        await waitFor(() => expect(screen.queryByRole("listitem")).toBeNull());
+        const input = screen.getByLabelText("Search for a movie");
+        expect(input).toHaveValue("");
+        expect(input).toHaveFocus();
+    });
+
+    it("keeps the results, refreshed, when nothing changed", async () => {
+        vi.mocked(requestMovie).mockResolvedValueOnce({ ok: true, outcome: "already_requested" });
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+
+        await waitFor(() =>
+            expect(toast.info).toHaveBeenCalledWith("You've already requested this.")
+        );
         await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+        expect(screen.getByText("Movie 1")).toBeInTheDocument();
+        expect(screen.getByLabelText("Search for a movie")).toHaveValue("inter");
     });
 
     it("sends the request id to take back a +1", async () => {

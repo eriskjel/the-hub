@@ -16,16 +16,24 @@ export function RequestControls({
     tmdbId,
     title,
     request,
+    onChanged,
 }: {
     tmdbId: number;
     title: string;
     request: { id: number; status: RequestStatus; role: RequestRole } | null;
+    /** Called after an action here changed something. */
+    onChanged?: () => void;
 }): ReactElement | null {
     const t = useTranslations("requests.actions");
 
     if (!request) {
         return (
-            <RequestButton action="request" id={tmdbId} label={t("requestTitle", { title })}>
+            <RequestButton
+                action="request"
+                id={tmdbId}
+                label={t("requestTitle", { title })}
+                onChanged={onChanged}
+            >
                 {t("request")}
             </RequestButton>
         );
@@ -37,6 +45,7 @@ export function RequestControls({
                 id={request.id}
                 variant="ghost"
                 label={t("cancelTitle", { title })}
+                onChanged={onChanged}
             >
                 {t("cancel")}
             </RequestButton>
@@ -49,13 +58,19 @@ export function RequestControls({
                 id={request.id}
                 variant="ghost"
                 label={t("unfollowTitle", { title })}
+                onChanged={onChanged}
             >
                 {t("unfollow")}
             </RequestButton>
         );
     }
     return isOpenStatus(request.status) ? (
-        <RequestButton action="request" id={tmdbId} label={t("plusOneTitle", { title })}>
+        <RequestButton
+            action="request"
+            id={tmdbId}
+            label={t("plusOneTitle", { title })}
+            onChanged={onChanged}
+        >
             {t("plusOne")}
         </RequestButton>
     ) : null;

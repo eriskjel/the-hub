@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { useId, useState, type ReactElement } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/Button";
 import { FieldText } from "@/components/ui/Fields";
 import { Poster } from "@/components/requests/Poster";
 import { RequestControls } from "@/components/requests/RequestControls";
@@ -12,13 +13,17 @@ import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, type SearchResult } from "@/lib/media/request";
 
 const DEBOUNCE_MS = 300;
+/** People usually know the title they want, so the top few results are enough at first. */
+const RESULTS_SHOWN = 5;
 
 export default function RequestSearch(): ReactElement {
     const t = useTranslations("requests.search");
     const locale = useLocale();
     const [input, setInput] = useState("");
     const [query, setQuery] = useState("");
+    const [showAll, setShowAll] = useState(false);
     const debounce = useDebouncedCallback(DEBOUNCE_MS);
+    const inputId = useId();
 
     const enabled = query.length >= SEARCH_MIN_LENGTH;
     const search = useQuery({
@@ -36,6 +41,17 @@ export default function RequestSearch(): ReactElement {
         retry: false,
     });
 
+    const results = (enabled && search.data) || [];
+    const shown = showAll ? results : results.slice(0, RESULTS_SHOWN);
+
+    // Requesting a movie is done in one go: clear the search, ready for the next one.
+    const reset = () => {
+        setInput("");
+        setQuery("");
+        setShowAll(false);
+        document.getElementById(inputId)?.focus();
+    };
+
     const status = !enabled
         ? null
         : search.isError
@@ -49,13 +65,17 @@ export default function RequestSearch(): ReactElement {
     return (
         <section className="space-y-3">
             <FieldText
+                id={inputId}
                 label={t("label")}
                 type="search"
                 value={input}
                 onChange={(e) => {
                     const value = e.target.value;
                     setInput(value);
-                    debounce(() => setQuery(value.trim()));
+                    debounce(() => {
+                        setQuery(value.trim());
+                        setShowAll(false);
+                    });
                 }}
                 placeholder={t("placeholder")}
                 maxLength={SEARCH_MAX_LENGTH}
@@ -65,9 +85,9 @@ export default function RequestSearch(): ReactElement {
             <p role="status" aria-live="polite" className="text-muted min-h-5 text-sm">
                 {status}
             </p>
-            {enabled && search.data && search.data.length > 0 && (
+            {shown.length > 0 && (
                 <ul className="divide-border divide-y">
-                    {search.data.map((r) => (
+                    {shown.map((r) => (
                         <li key={r.tmdbId} className="flex items-center gap-3 py-2">
                             <Poster path={r.posterPath} />
                             <div className="min-w-0 flex-1">
@@ -83,10 +103,16 @@ export default function RequestSearch(): ReactElement {
                                 tmdbId={r.tmdbId}
                                 title={r.title}
                                 request={r.request}
+                                onChanged={reset}
                             />
                         </li>
                     ))}
                 </ul>
+            )}
+            {results.length > shown.length && (
+                <Button type="button" variant="ghost" onClick={() => setShowAll(true)}>
+                    {t("showMore", { count: String(results.length - shown.length) })}
+                </Button>
             )}
         </section>
     );

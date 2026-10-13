@@ -461,7 +461,8 @@
             "placeholder": "Tittel",
             "loading": "Søker…",
             "empty": "Fant ingen filmer.",
-            "failed": "Søket virker ikke akkurat nå. Prøv igjen senere."
+            "failed": "Søket virker ikke akkurat nå. Prøv igjen senere.",
+            "showMore": "Vis {count} til"
         },
         "actions": {
             "request": "Ønsk",

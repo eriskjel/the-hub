@@ -33,6 +33,7 @@ export function RequestButton({
     id,
     variant = "primary",
     label,
+    onChanged,
     children,
 }: {
     action: keyof typeof ACTIONS;
@@ -41,6 +42,8 @@ export function RequestButton({
     variant?: ButtonVariant;
     /** Accessible name when the visible text alone is ambiguous (e.g. "+1"). */
     label?: string;
+    /** Called after the action changed something (not for errors or "already done"). */
+    onChanged?: () => void;
     children: ReactNode;
 }): ReactElement {
     const t = useTranslations("requests");
@@ -55,11 +58,16 @@ export function RequestButton({
             } catch {
                 result = { ok: false, error: "failed" };
             }
-            if (!result.ok) toast.error(t(`errors.${result.error}`));
-            else if (NO_CHANGE.includes(result.outcome))
+            const changed = result.ok && !NO_CHANGE.includes(result.outcome);
+            if (!result.ok) {
+                toast.error(t(`errors.${result.error}`));
+            } else if (changed) {
+                toast.success(t(`outcomes.${result.outcome}`));
+            } else {
                 toast.info(t(`outcomes.${result.outcome}`));
-            else toast.success(t(`outcomes.${result.outcome}`));
+            }
             await queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
+            if (changed) onChanged?.();
         });
 
     return (

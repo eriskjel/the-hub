@@ -461,7 +461,8 @@
             "placeholder": "Title",
             "loading": "Searching…",
             "empty": "No movies found.",
-            "failed": "Search isn't working right now. Try again later."
+            "failed": "Search isn't working right now. Try again later.",
+            "showMore": "Show {count} more"
         },
         "actions": {
             "request": "Request",
