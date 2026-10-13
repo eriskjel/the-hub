@@ -445,10 +445,10 @@
                 }
             },
             "search": {
-                "label": "S?k etter brukere",
+                "label": "Søk etter brukere",
                 "placeholder": "E-post, navn eller brukernavn",
-                "submit": "S?k",
-                "clear": "T?m s?ket"
+                "submit": "Søk",
+                "clear": "Tøm søket"
             }
         }
     },
