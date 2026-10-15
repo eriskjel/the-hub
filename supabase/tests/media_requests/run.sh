@@ -5,6 +5,7 @@
 # tests catch a broken one).
 # TRANSITION_MIGRATION=<file> does the same for the request transition functions.
 # ADMIN_QUEUE_MIGRATION=<file> does the same for the admin queue functions.
+# WORKER_ACCESS_MIGRATION=<file> does the same for the worker's access check.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -50,6 +51,9 @@ for file in "$root"/supabase/migrations/*.sql; do
     if [ "$(basename "$file")" = "20261013202716_media_admin_queue.sql" ]; then
         file="${ADMIN_QUEUE_MIGRATION:-$file}"
     fi
+    if [ "$(basename "$file")" = "20261015190030_media_worker_access.sql" ]; then
+        file="${WORKER_ACCESS_MIGRATION:-$file}"
+    fi
     as_postgres < "$file"
 done
 echo "== media migrations again, to check they are idempotent"
@@ -63,10 +67,14 @@ for file in "$root"/supabase/migrations/*media_*.sql; do
     if [ "$(basename "$file")" = "20261013202716_media_admin_queue.sql" ]; then
         file="${ADMIN_QUEUE_MIGRATION:-$file}"
     fi
+    if [ "$(basename "$file")" = "20261015190030_media_worker_access.sql" ]; then
+        file="${WORKER_ACCESS_MIGRATION:-$file}"
+    fi
     as_postgres < "$file"
 done
 as_admin < "$here/rls.test.sql"
 as_admin < "$here/admin_queue.test.sql"
+as_admin < "$here/worker_access.test.sql"
 
 # Two calls for the same user at the same time: the second must wait for the
 # first and count it. Without the lock both would see 0 and pass a quota of 1.
