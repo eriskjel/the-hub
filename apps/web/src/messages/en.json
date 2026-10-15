@@ -443,6 +443,12 @@
                         "failed": "Something went wrong. Try again."
                     }
                 }
+            },
+            "search": {
+                "label": "Search users",
+                "placeholder": "Email, name or username",
+                "submit": "Search",
+                "clear": "Clear search"
             }
         }
     },
