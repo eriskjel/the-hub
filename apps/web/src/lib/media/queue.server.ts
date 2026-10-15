@@ -5,8 +5,30 @@ import type { Locale } from "@/i18n/routing";
 import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 
-/** Separate limits for the oldest open work and the newest history. */
+/** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
+
+type Section = {
+    statuses: readonly RequestStatus[];
+    orderBy: "created_at" | "updated_at";
+    ascending: boolean;
+};
+
+/** Open work in the order it's worked, then the newest history. */
+const MEMBER_SECTIONS: Section[] = [
+    { statuses: OPEN_STATUSES, orderBy: "created_at", ascending: true },
+    { statuses: ["available", "failed", "declined"], orderBy: "created_at", ascending: false },
+];
+
+/**
+ * Admins also see cancelled requests. Closed requests are listed by their last
+ * change, apart from available titles, so one that just failed comes first.
+ */
+const ADMIN_SECTIONS: Section[] = [
+    { statuses: OPEN_STATUSES, orderBy: "created_at", ascending: true },
+    { statuses: ["failed", "declined", "cancelled"], orderBy: "updated_at", ascending: false },
+    { statuses: ["available"], orderBy: "updated_at", ascending: false },
+];
 
 export type QueueItem = {
     id: number;
@@ -37,43 +59,33 @@ type Row = {
 };
 
 /**
- * The shared queue (movies, cancelled ones left out), read with the member's
- * session so RLS applies. Titles and posters come from TMDB through the data
- * cache; nothing about a title is stored but its id.
+ * The shared queue (movies, cancelled ones left out for members), read with the
+ * member's session so RLS applies. Titles and posters come from TMDB through
+ * the data cache; nothing about a title is stored but its id.
  */
 export async function getQueue(
     supabase: SupabaseClient,
     userId: string,
     locale: Locale,
-    options: { includeCancelled?: boolean } = {}
+    options: { admin?: boolean } = {}
 ): Promise<QueueItem[]> {
-    const read = () =>
-        supabase
-            .from("media_request")
-            .select(
-                "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)"
-            )
-            .eq("media_type", "movie");
-    const [open, history] = await Promise.all([
-        read()
-            .in("status", OPEN_STATUSES)
-            .order("created_at", { ascending: true })
-            .order("id", { ascending: true })
-            .limit(QUEUE_LIMIT),
-        read()
-            .in(
-                "status",
-                options.includeCancelled
-                    ? ["available", "failed", "declined", "cancelled"]
-                    : ["available", "failed", "declined"]
-            )
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .limit(QUEUE_LIMIT),
-    ]);
-    const error = open.error ?? history.error;
+    const results = await Promise.all(
+        (options.admin ? ADMIN_SECTIONS : MEMBER_SECTIONS).map(({ statuses, orderBy, ascending }) =>
+            supabase
+                .from("media_request")
+                .select(
+                    "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)"
+                )
+                .eq("media_type", "movie")
+                .in("status", statuses)
+                .order(orderBy, { ascending })
+                .order("id", { ascending })
+                .limit(QUEUE_LIMIT)
+        )
+    );
+    const error = results.find((r) => r.error)?.error;
     if (error) throw new Error(`media queue read failed: ${error.message}`);
-    const rows = [...(open.data ?? []), ...(history.data ?? [])] as Row[];
+    const rows = results.flatMap((r) => r.data ?? []) as Row[];
 
     const names = await getNames(
         supabase,

@@ -22,7 +22,7 @@ export default async function AdminRequestsPage({
     const { user } = await requireAdmin(locale);
     const client = createAdminClient();
     const [queue, worker, t] = await Promise.all([
-        getQueue(client, user.id, locale, { includeCancelled: true }),
+        getQueue(client, user.id, locale, { admin: true }),
         getWorkerStatus(client),
         getTranslations({ locale, namespace: "admin.requests" }),
     ]);
