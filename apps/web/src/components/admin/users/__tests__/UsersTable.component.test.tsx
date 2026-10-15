@@ -218,6 +218,23 @@ it("restores cached results and search input on browser history navigation", asy
     expect(fetchMock).toHaveBeenCalledTimes(2);
 });
 
+it("drops an unsent search when Back returns to another page", async () => {
+    fetchMock.mockResolvedValueOnce(response(second));
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await screen.findByRole("link", { name: "Bob" });
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Bo" } });
+    await act(async () => {
+        window.history.back();
+    });
+    await waitFor(() => expect(screen.getByRole("searchbox")).toHaveValue(""));
+    expect(screen.getByRole("link", { name: "Alice" })).toBeInTheDocument();
+    // Past the debounce, the restored entry is still the unfiltered first page.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 400)));
+    expect(window.location.search).toBe("");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
 it("clears a search right away and shows the cached full list", async () => {
     fetchMock.mockResolvedValue(response({ ...second, page: 1, q: "Bob", total: 1 }));
     mount();

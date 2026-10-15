@@ -40,11 +40,13 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
     });
     const [searchText, setSearchText] = useState(query.q);
     const [composing, setComposing] = useState(false);
-    const [urlQ, setUrlQ] = useState(query.q);
-    // Back/Forward and links replace the draft, without remounting the input. The debounced
-    // update below lands here too, so keep a draft it already matches, e.g. "erik " mid-typing.
-    if (urlQ !== query.q) {
-        setUrlQ(query.q);
+    const urlState = usersSearchParams(query).toString();
+    const [seenUrlState, setSeenUrlState] = useState(urlState);
+    // Any URL change (Back/Forward, paging, links) replaces an unsent draft, which also cancels
+    // its pending search, without remounting the input. The debounced update below lands here
+    // too, so keep a draft it already matches, e.g. "erik " mid-typing.
+    if (seenUrlState !== urlState) {
+        setSeenUrlState(urlState);
         if (cleanSearch(searchText) !== query.q) setSearchText(query.q);
     }
     useEffect(() => {

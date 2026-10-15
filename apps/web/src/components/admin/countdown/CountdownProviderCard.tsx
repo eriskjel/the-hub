@@ -34,6 +34,8 @@ export default function CountdownProviderCard({
     const [confirmDeny, setConfirmDeny] = useState(false);
 
     async function run(action: () => Promise<void>) {
+        // Any action may change the next date, so an open flag prompt needs a new confirmation.
+        setConfirmDeny(false);
         setLoading(true);
         setError(false);
         setSaved(false);
@@ -77,7 +79,6 @@ export default function CountdownProviderCard({
     async function deny() {
         if (!status?.nextIso) return;
         const date = osloDate(status.nextIso);
-        setConfirmDeny(false);
         await run(async () => {
             await fetchJson<void>(API.admin.countdown.denied(providerId, date), {
                 method: "POST",

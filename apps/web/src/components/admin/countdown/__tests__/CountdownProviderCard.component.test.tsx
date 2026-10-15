@@ -66,3 +66,22 @@ it("refreshes both status and flagged dates after a successful change", async ()
     expect(screen.getByRole("status")).toHaveTextContent("Up to date.");
     expect(fetchJson).toHaveBeenCalledTimes(3);
 });
+
+it("closes an open flag prompt when another action starts, so a changed date needs a new confirmation", async () => {
+    vi.mocked(fetchJson)
+        .mockResolvedValueOnce({ ...status, nextIso: "2026-11-12T08:00:00Z" })
+        .mockResolvedValueOnce([]);
+    render(
+        <CountdownProviderCard
+            providerId="trippel-trumf"
+            initialStatus={status}
+            initialDenied={[]}
+        />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Flag as wrong" }));
+    expect(screen.getByText(en.admin.widgets.countdown.denyConfirm)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh Trippel-Trumf" }));
+    expect(screen.queryByText(en.admin.widgets.countdown.denyConfirm)).toBeNull();
+    expect(await screen.findByText(/November 12/)).toBeInTheDocument();
+    expect(fetchJson).toHaveBeenCalledTimes(2);
+});
