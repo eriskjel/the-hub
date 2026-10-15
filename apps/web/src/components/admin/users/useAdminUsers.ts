@@ -17,6 +17,8 @@ class UsersFetchError extends Error {
     }
 }
 
+const cleanSearch = (value: string) => value.trim().slice(0, 100);
+
 function updateUrl(query: AdminUsersQuery, replace = false) {
     const url = new URL(window.location.href);
     const next = usersSearchParams(query);
@@ -36,6 +38,35 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
         per: params.get("per") ?? undefined,
         q: params.get("q") ?? undefined,
     });
+    const [searchText, setSearchText] = useState(query.q);
+    const [composing, setComposing] = useState(false);
+    const [urlQ, setUrlQ] = useState(query.q);
+    // Back/Forward and links replace the draft, without remounting the input. The debounced
+    // update below lands here too, so keep a draft it already matches, e.g. "erik " mid-typing.
+    if (urlQ !== query.q) {
+        setUrlQ(query.q);
+        if (cleanSearch(searchText) !== query.q) setSearchText(query.q);
+    }
+    useEffect(() => {
+        const q = cleanSearch(searchText);
+        if (composing || q === query.q) return;
+        const timer = setTimeout(() => {
+            // Typing edits the current entry rather than adding a history entry per pause.
+            updateUrl({ page: 1, perPage: query.perPage, q }, true);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchText, composing, query.q, query.perPage]);
+
+    function clearSearch() {
+        setSearchText("");
+        if (query.q) updateUrl({ ...query, q: "", page: 1 }, true);
+    }
+
+    /** Enter searches right away instead of waiting for the pause. */
+    function submitSearch() {
+        const q = cleanSearch(searchText);
+        if (!composing && q !== query.q) updateUrl({ ...query, q, page: 1 }, true);
+    }
     const client = useQueryClient();
     const [lastResult, setLastResult] = useState(initialData);
     const matchesInitial =
@@ -111,5 +142,10 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
         totalPages,
         returnQuery,
         updateUrl,
+        searchText,
+        setSearchText,
+        setComposing,
+        clearSearch,
+        submitSearch,
     };
 }

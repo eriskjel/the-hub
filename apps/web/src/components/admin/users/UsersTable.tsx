@@ -28,6 +28,11 @@ export default function UsersTable({
         totalPages,
         returnQuery,
         updateUrl,
+        searchText,
+        setSearchText,
+        setComposing,
+        clearSearch,
+        submitSearch,
     } = useAdminUsers(initialData, initialQuery);
 
     return (
@@ -37,15 +42,11 @@ export default function UsersTable({
         >
             <div className="border-border flex flex-wrap items-end justify-between gap-4 border-b p-4 sm:p-5">
                 <form
-                    key={query.q}
+                    role="search"
                     className="flex w-full flex-wrap items-end gap-2 sm:w-auto sm:flex-1"
                     onSubmit={(event) => {
                         event.preventDefault();
-                        const q = String(new FormData(event.currentTarget).get("q") ?? "")
-                            .trim()
-                            .slice(0, 100);
-                        if (q === query.q && query.page === 1) void result.refetch();
-                        else updateUrl({ ...query, q, page: 1 });
+                        submitSearch();
                     }}
                 >
                     <div className="min-w-0 flex-1 sm:max-w-md">
@@ -65,21 +66,17 @@ export default function UsersTable({
                                 name="q"
                                 type="search"
                                 maxLength={100}
-                                defaultValue={query.q}
+                                value={searchText}
+                                onChange={(event) => setSearchText(event.target.value)}
+                                onCompositionStart={() => setComposing(true)}
+                                onCompositionEnd={() => setComposing(false)}
                                 placeholder={t("search.placeholder")}
                                 className="border-border bg-background text-foreground focus-visible:ring-primary h-10 w-full rounded-lg border pr-3 pl-9 text-sm outline-none focus-visible:ring-2"
                             />
                         </div>
                     </div>
-                    <Button type="submit" variant="primary" className="h-10">
-                        {t("search.submit")}
-                    </Button>
-                    {query.q && (
-                        <Button
-                            type="button"
-                            className="h-10"
-                            onClick={() => updateUrl({ ...query, q: "", page: 1 })}
-                        >
+                    {searchText && (
+                        <Button type="button" className="h-10" onClick={clearSearch}>
                             {t("search.clear")}
                         </Button>
                     )}

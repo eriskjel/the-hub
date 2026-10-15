@@ -135,28 +135,50 @@ it("does not keep sensitive rows visible after an authorization failure", async 
     expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
 });
 
-it("searches all users, resets pagination, and preserves the search in detail links", async () => {
+it("searches all users once typing pauses, resets pagination, and keeps the search in detail links", async () => {
     window.history.replaceState(null, "", "/en/admin/users?page=2&per=10");
     fetchMock.mockResolvedValue(response({ ...initial, q: "Alice", total: 1 }));
     mount(second);
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: " Alice " } });
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(screen.queryByRole("button", { name: "Search" })).toBeNull();
+    for (const value of ["A", "Al", " Alice "]) {
+        fireEvent.change(screen.getByRole("searchbox"), { target: { value } });
+    }
     const link = await screen.findByRole("link", { name: "Alice" });
     expect(link).toHaveAttribute("href", "/admin/users/alice?page=1&per=10&q=Alice");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe("/api/admin/users?page=1&per=10&q=Alice");
+    // The URL gets the trimmed search; the field keeps what was typed so far.
+    expect(screen.getByRole("searchbox")).toHaveValue(" Alice ");
 });
 
 it("restores cached results and search input on browser history navigation", async () => {
-    fetchMock.mockResolvedValue(response({ ...second, page: 1, q: "Bob", total: 1 }));
+    fetchMock
+        .mockResolvedValueOnce(response(second))
+        .mockResolvedValueOnce(response({ ...second, page: 1, q: "Bob", total: 1 }));
     mount();
-    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Bob" } });
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await screen.findByRole("link", { name: "Bob" });
+    // The search replaces the page-2 entry, so Back returns to the unfiltered first page.
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Bob" } });
+    await waitFor(() => expect(window.location.search).toBe("?page=1&per=10&q=Bob"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     await act(async () => {
         window.history.back();
     });
     await waitFor(() => expect(screen.getByRole("searchbox")).toHaveValue(""));
     expect(screen.getByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+it("clears a search right away and shows the cached full list", async () => {
+    fetchMock.mockResolvedValue(response({ ...second, page: 1, q: "Bob", total: 1 }));
+    mount();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Bob" } });
+    await screen.findByRole("link", { name: "Bob" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+    expect(await screen.findByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(window.location.search).toBe("?page=1&per=10");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
@@ -194,7 +216,6 @@ it("cancels an obsolete page fetch when a newer search starts", async () => {
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     await waitFor(() => expect(pageSignal).toBeDefined());
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Alice" } });
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
     await waitFor(() => expect(pageSignal?.aborted).toBe(true));
     await waitFor(() =>
         expect(screen.getByRole("link", { name: "Alice" })).toHaveAttribute(

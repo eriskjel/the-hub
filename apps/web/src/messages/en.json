@@ -458,7 +458,6 @@
             "search": {
                 "label": "Search users",
                 "placeholder": "Email, name or username",
-                "submit": "Search",
                 "clear": "Clear search"
             },
             "description": "Find people, review their accounts, and manage request access.",

@@ -458,7 +458,6 @@
             "search": {
                 "label": "Søk etter brukere",
                 "placeholder": "E-post, navn eller brukernavn",
-                "submit": "Søk",
                 "clear": "Tøm søket"
             },
             "description": "Finn brukere, se kontodetaljer og administrer tilgang til forespørsler.",
