@@ -372,7 +372,8 @@
         "items": {
             "users": "Brukere",
             "widgets": "Nedtelling-widgets",
-            "settings": "Innstillinger"
+            "settings": "Innstillinger",
+            "requests": "Ønsker"
         },
         "users": {
             "title": "Brukere",
@@ -450,6 +451,53 @@
                 "submit": "Søk",
                 "clear": "Tøm søket"
             }
+        },
+        "requests": {
+            "title": "Administrer ønsker",
+            "intro": "Administrer den felles køen. Ønsker som behandles er beskyttet mot endringer.",
+            "open": "Kø",
+            "available": "Tilgjengelig",
+            "closed": "Lukket",
+            "actions": {
+                "available": "Merk tilgjengelig",
+                "availableTitle": "Merk {title} tilgjengelig",
+                "decline": "Avslå",
+                "declineTitle": "Avslå {title}",
+                "requeue": "Sett i kø igjen",
+                "requeueTitle": "Sett {title} i kø igjen"
+            },
+            "outcomes": {
+                "available": "Merket tilgjengelig.",
+                "declined": "Ønsket er avslått.",
+                "requeued": "Ønsket er satt i kø igjen.",
+                "paused": "Behandlingen er satt på pause.",
+                "resumed": "Behandlingen er startet igjen."
+            },
+            "errors": {
+                "changed": "Dette ble endret i mellomtiden. Sjekk den oppdaterte listen og prøv igjen.",
+                "not_allowed": "Denne handlingen er ikke tilgjengelig med gjeldende status.",
+                "failed": "Noe gikk galt. Prøv igjen."
+            },
+            "worker": {
+                "title": "Behandling",
+                "state": "Status",
+                "mode": "Modus",
+                "lastRun": "Siste oppdatering (Oslo-tid)",
+                "never": "Ingen oppdateringer ennå",
+                "notStarted": "Venter på første oppdatering",
+                "running": "Kjører",
+                "paused": "Satt på pause av en administrator",
+                "stale": "Ingen nylig oppdatering",
+                "staleHelp": "Ingen oppdatering på over en time. Sjekk at behandlingen kjører.",
+                "pause": "Sett behandling på pause",
+                "resume": "Start behandling igjen",
+                "modes": {
+                    "dry": "Forhåndsvisning",
+                    "review": "Gjennomgang",
+                    "auto": "Automatisk",
+                    "unknown": "Ikke rapportert"
+                }
+            }
         }
     },
     "requests": {
@@ -526,6 +574,11 @@
             "changed": "Dette ble endret i mellomtiden. Listen er oppdatert nå.",
             "failed": "Noe gikk galt. Prøv igjen."
         },
-        "attribution": "Filmdata og bilder fra TMDB. Dette produktet bruker TMDB-API-et, men er ikke godkjent eller sertifisert av TMDB."
+        "attribution": "Filmdata og bilder fra TMDB. Dette produktet bruker TMDB-API-et, men er ikke godkjent eller sertifisert av TMDB.",
+        "processing": {
+            "paused": "Behandlingen er satt på pause akkurat nå.",
+            "notStarted": "Vi jobber fortsatt med automatisk behandling. Foreløpig samles ønskene i køen.",
+            "active": "Ønsker behandles automatisk."
+        }
     }
 }

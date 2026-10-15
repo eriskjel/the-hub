@@ -63,6 +63,26 @@ beforeEach(() => {
 });
 
 describe("getQueue", () => {
+    it("includes cancelled requests for the admin queue only", async () => {
+        const queue = await getQueue(client(), ME, "en", { admin: true });
+        expect(queue.find((item) => item.id === 5)?.status).toBe("cancelled");
+        expect((await getQueue(client(), ME, "en")).some((item) => item.id === 5)).toBe(false);
+    });
+
+    it("lists closed requests for admins by last change, apart from available titles", async () => {
+        db.tables.media_request = [
+            // Requested long ago, failed just now.
+            { ...req(1, 101, ME, "failed", "2020-01-01"), updated_at: "2026-10-10" },
+            { ...req(2, 102, ME, "declined", "2026-09-01"), updated_at: "2026-09-02" },
+            ...Array.from({ length: 200 }, (_, i) =>
+                req(i + 3, i + 103, OTHER, "available", "2026-10-01")
+            ),
+        ];
+
+        const queue = await getQueue(client(), ME, "en", { admin: true });
+        expect(queue.filter((q) => q.status !== "available").map((q) => q.id)).toEqual([1, 2]);
+        expect(queue.filter((q) => q.status === "available")).toHaveLength(200);
+    });
     it("lists open movie requests oldest first, then history, without cancelled ones", async () => {
         const queue = await getQueue(client(), ME, "en");
 

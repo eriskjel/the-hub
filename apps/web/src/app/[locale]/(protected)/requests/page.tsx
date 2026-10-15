@@ -1,3 +1,5 @@
+import { getWorkerStatus } from "@/lib/media/worker.server";
+import { workerState } from "@/lib/media/admin";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -7,10 +9,19 @@ import { countRecentRequests, getOwnMembership, queueReader } from "@/lib/media/
 import { getQueue } from "@/lib/media/queue.server";
 import { isOpenStatus } from "@/lib/media/request";
 import RequestSearch from "@/components/requests/RequestSearch";
+import { QueueRefresh } from "@/components/requests/QueueRefresh";
 import { QueueList } from "@/components/requests/QueueList";
 import { cn } from "@/utils/cn";
 
 export const dynamic = "force-dynamic";
+
+/** Members see whether requests are processed, without the admin details. */
+const PROCESSING_MESSAGE = {
+    paused: "processing.paused",
+    stale: "processing.paused",
+    notStarted: "processing.notStarted",
+    running: "processing.active",
+} as const;
 
 export default async function RequestsPage({
     params,
@@ -44,9 +55,10 @@ export default async function RequestsPage({
 
     const mine = (await searchParams).mine === "1";
     const reader = queueReader(membership, supabase);
-    const [queue, used] = await Promise.all([
+    const [queue, used, worker] = await Promise.all([
         getQueue(reader, user.id, locale),
         countRecentRequests(reader, user.id),
+        getWorkerStatus(reader),
     ]);
     const shown = mine ? queue.filter((item) => item.role !== null) : queue;
 
@@ -57,9 +69,13 @@ export default async function RequestsPage({
 
     return (
         <div className="mx-auto max-w-3xl space-y-6 p-6">
+            <QueueRefresh />
             <header className="space-y-1">
                 <h1 className="text-foreground text-2xl font-semibold">{t("pageTitle")}</h1>
                 <p className="text-muted text-sm">{t("intro")}</p>
+                <p role="status" className="text-muted text-sm">
+                    {t(PROCESSING_MESSAGE[workerState(worker)])}
+                </p>
                 <p className="text-muted text-sm">
                     {membership.weeklyQuota === null
                         ? t("quotaAdmin")

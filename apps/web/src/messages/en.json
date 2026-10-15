@@ -372,7 +372,8 @@
         "items": {
             "users": "Users",
             "widgets": "Countdown Widgets",
-            "settings": "Settings"
+            "settings": "Settings",
+            "requests": "Requests"
         },
         "users": {
             "title": "Users",
@@ -450,6 +451,53 @@
                 "submit": "Search",
                 "clear": "Clear search"
             }
+        },
+        "requests": {
+            "title": "Manage requests",
+            "intro": "Manage the shared queue. Requests being processed are protected from changes.",
+            "open": "Queue",
+            "available": "Available",
+            "closed": "Closed",
+            "actions": {
+                "available": "Mark available",
+                "availableTitle": "Mark {title} available",
+                "decline": "Decline",
+                "declineTitle": "Decline {title}",
+                "requeue": "Re-queue",
+                "requeueTitle": "Re-queue {title}"
+            },
+            "outcomes": {
+                "available": "Marked available.",
+                "declined": "Request declined.",
+                "requeued": "Request re-queued.",
+                "paused": "Processing paused.",
+                "resumed": "Processing resumed."
+            },
+            "errors": {
+                "changed": "This changed in the meantime. Check the updated list and try again.",
+                "not_allowed": "This action is not available for the current status.",
+                "failed": "Something went wrong. Try again."
+            },
+            "worker": {
+                "title": "Processing",
+                "state": "Status",
+                "mode": "Mode",
+                "lastRun": "Last update (Oslo time)",
+                "never": "No updates yet",
+                "notStarted": "Waiting for the first update",
+                "running": "Running",
+                "paused": "Paused by an admin",
+                "stale": "No recent update",
+                "staleHelp": "No update in over an hour. Check that processing is running.",
+                "pause": "Pause processing",
+                "resume": "Resume processing",
+                "modes": {
+                    "dry": "Preview",
+                    "review": "Review",
+                    "auto": "Automatic",
+                    "unknown": "Not reported"
+                }
+            }
         }
     },
     "requests": {
@@ -526,6 +574,11 @@
             "changed": "This changed in the meantime. The list is up to date now.",
             "failed": "Something went wrong. Try again."
         },
-        "attribution": "Movie data and images from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB."
+        "attribution": "Movie data and images from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
+        "processing": {
+            "paused": "Processing is paused right now.",
+            "notStarted": "We're still building automatic processing. For now, requests are collected in the queue.",
+            "active": "Requests are processed automatically."
+        }
     }
 }
