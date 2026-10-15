@@ -42,9 +42,13 @@ export default function MediaAccessCard({
     const [state, dispatch, pending] = useActionState(mediaMemberAction, IDLE);
     const queryClient = useQueryClient();
     useEffect(() => {
-        if (state.status === "saved" || state.status === "revoked") {
-            void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-        }
+        // Each of these refreshes the membership on this page, so the cached list is out of date.
+        const changed =
+            state.status === "saved" ||
+            state.status === "revoked" ||
+            (state.status === "error" &&
+                (state.error === "changed" || state.error === "already_active"));
+        if (changed) void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     }, [queryClient, state]);
     const [account, setAccount] = useState(member?.libraryAccount ?? "");
     const [quota, setQuota] = useState(String(member?.weeklyQuota ?? DEFAULT_WEEKLY_QUOTA));

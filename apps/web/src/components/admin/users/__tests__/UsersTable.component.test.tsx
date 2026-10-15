@@ -135,6 +135,54 @@ it("does not keep sensitive rows visible after an authorization failure", async 
     expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
 });
 
+it("keeps rows hidden after a denial through a new search and a failed retry", async () => {
+    fetchMock
+        .mockResolvedValueOnce({ ok: false, status: 403 })
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce(response({ ...initial, q: "Alice", total: 1 }));
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("no longer have access");
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Alice" } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled());
+    expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("no longer have access");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("does not restore a cached page on history navigation after a denial", async () => {
+    fetchMock.mockResolvedValueOnce(response(second)).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+    });
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await screen.findByRole("link", { name: "Bob" });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("no longer have access");
+    await act(async () => {
+        window.history.back();
+    });
+    await screen.findByText(/^Page 1 of/);
+    expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("no longer have access");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+it("disables paging while the shown rows are from an earlier search", async () => {
+    window.history.replaceState(null, "", "/en/admin/users?page=2&per=10");
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    mount(second);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "Bo" } });
+    expect(await screen.findByRole("alert")).toHaveTextContent("last loaded users");
+    expect(screen.getByRole("link", { name: "Bob" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+});
+
 it("searches all users once typing pauses, resets pagination, and keeps the search in detail links", async () => {
     window.history.replaceState(null, "", "/en/admin/users?page=2&per=10");
     fetchMock.mockResolvedValue(response({ ...initial, q: "Alice", total: 1 }));

@@ -73,6 +73,9 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
         query.page === initialQuery.page &&
         query.perPage === initialQuery.perPage &&
         query.q === initialQuery.q;
+    // Any denial hides the directory, including cached pages and retained rows, until a later
+    // request is authorized again. Per-query error state alone would show them on the next key.
+    const [forbidden, setForbidden] = useState(false);
     const result = useQuery({
         queryKey: queryKeys.adminUsers(initialData.viewerId, query.page, query.perPage, query.q),
         queryFn: async ({ signal }) => {
@@ -80,9 +83,14 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
                 signal,
                 cache: "no-store",
             });
+            if (response.status === 401 || response.status === 403) setForbidden(true);
             if (!response.ok) throw new UsersFetchError(response.status);
             const data: AdminUsersResult = await response.json();
-            if (data.viewerId !== initialData.viewerId) throw new UsersFetchError(403);
+            if (data.viewerId !== initialData.viewerId) {
+                setForbidden(true);
+                throw new UsersFetchError(403);
+            }
+            setForbidden(false);
             return data;
         },
         initialData: matchesInitial ? initialData : undefined,
@@ -93,8 +101,6 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
 
     if (result.data && !result.isPlaceholderData && result.data !== lastResult)
         setLastResult(result.data);
-    const forbidden =
-        result.error instanceof UsersFetchError && [401, 403].includes(result.error.status);
     const shown = forbidden ? undefined : (result.data ?? lastResult);
     const fetching = result.isFetching;
     const waiting = result.isPlaceholderData || result.isPending;

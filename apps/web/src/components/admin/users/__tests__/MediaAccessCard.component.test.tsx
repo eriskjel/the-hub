@@ -55,11 +55,15 @@ describe("MediaAccessCard for an admin", () => {
 });
 
 describe("MediaAccessCard", () => {
-    it("invalidates cached user lists after saving access", async () => {
+    it.each([
+        { status: "saved" },
+        { status: "error", error: "changed" },
+        { status: "error", error: "already_active" },
+    ] as const)("invalidates cached user lists when access changed: %o", async (outcome) => {
         setIntl({ locale: "en", messages: enMessages });
         const client = new QueryClient();
         const invalidate = vi.spyOn(client, "invalidateQueries");
-        vi.mocked(mediaMemberAction).mockResolvedValueOnce({ status: "saved" });
+        vi.mocked(mediaMemberAction).mockResolvedValueOnce(outcome);
         renderUI(<QueryClientProvider client={client}>{card(member())}</QueryClientProvider>);
         fireEvent.click(screen.getByRole("button", { name: "Save" }));
         await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["admin-users"] }));

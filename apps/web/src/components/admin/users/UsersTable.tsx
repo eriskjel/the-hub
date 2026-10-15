@@ -34,6 +34,9 @@ export default function UsersTable({
         clearSearch,
         submitSearch,
     } = useAdminUsers(initialData, initialQuery);
+    // A failed search or page-size change keeps the previous rows up; paging from them would
+    // mix the old page number with the new query and skip pages.
+    const canPage = !fetching && shown?.q === query.q && shown?.perPage === query.perPage;
 
     return (
         <section
@@ -104,7 +107,7 @@ export default function UsersTable({
                     {fetching ? t("updating") : result.isPaused ? t("offline") : ""}
                 </span>
             </div>
-            {result.isError && (
+            {(result.isError || forbidden) && (
                 <div
                     role="alert"
                     className="border-error/20 bg-error/5 text-error mx-5 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm"
@@ -266,7 +269,7 @@ export default function UsersTable({
                     <Button
                         type="button"
                         aria-label={t("pagination.prev")}
-                        disabled={fetching || !shown || shown.page <= 1}
+                        disabled={!canPage || shown.page <= 1}
                         onClick={() =>
                             updateUrl({ ...query, page: Math.max(1, (shown?.page ?? 1) - 1) })
                         }
@@ -277,7 +280,7 @@ export default function UsersTable({
                     <Button
                         type="button"
                         aria-label={t("pagination.next")}
-                        disabled={fetching || !shown || shown.page >= totalPages}
+                        disabled={!canPage || shown.page >= totalPages}
                         onClick={() => updateUrl({ ...query, page: (shown?.page ?? 1) + 1 })}
                     >
                         <span className="hidden sm:inline">{t("pagination.next")}</span>

@@ -57,6 +57,7 @@ export default function AdminSidebarClient() {
         const next = !collapsed;
         try {
             localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+            setFallback(null);
             window.dispatchEvent(new Event(CHANGE_EVENT));
         } catch {
             setFallback(next);

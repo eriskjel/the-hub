@@ -10,7 +10,7 @@ const variantStyles: Record<ButtonVariant, string> = {
     secondary: "bg-surface-subtle text-muted hover:bg-surface-light hover:text-foreground",
     success: "bg-success/15 text-foreground hover:bg-success/25",
     ghost: "text-muted hover:bg-surface-light hover:text-foreground",
-    destructive: "bg-error/10 text-error hover:bg-error/20",
+    destructive: "bg-error/10 text-error-strong hover:bg-error/20",
 };
 
 export function Button({
