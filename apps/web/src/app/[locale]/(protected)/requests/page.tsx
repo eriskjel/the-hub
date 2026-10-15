@@ -1,5 +1,5 @@
 import { getWorkerStatus } from "@/lib/media/worker.server";
-import { workerState } from "@/lib/media/admin";
+import { memberProcessingMessage } from "@/lib/media/processing";
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -14,14 +14,6 @@ import { QueueList } from "@/components/requests/QueueList";
 import { cn } from "@/utils/cn";
 
 export const dynamic = "force-dynamic";
-
-/** Members see whether requests are processed, without the admin details. */
-const PROCESSING_MESSAGE = {
-    paused: "processing.paused",
-    stale: "processing.paused",
-    notStarted: "processing.notStarted",
-    running: "processing.active",
-} as const;
 
 export default async function RequestsPage({
     params,
@@ -74,7 +66,7 @@ export default async function RequestsPage({
                 <h1 className="text-foreground text-2xl font-semibold">{t("pageTitle")}</h1>
                 <p className="text-muted text-sm">{t("intro")}</p>
                 <p role="status" className="text-muted text-sm">
-                    {t(PROCESSING_MESSAGE[workerState(worker)])}
+                    {t(memberProcessingMessage(worker))}
                 </p>
                 <p className="text-muted text-sm">
                     {membership.weeklyQuota === null
