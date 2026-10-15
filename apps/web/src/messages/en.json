@@ -577,6 +577,7 @@
         "attribution": "Movie data and images from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
         "processing": {
             "paused": "Processing is paused right now.",
+            "notStarted": "We're still building automatic processing. For now, requests are collected in the queue.",
             "active": "Requests are processed automatically."
         }
     }

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { adminRequestIntents, processingPaused, type WorkerStatus } from "../admin";
+import { adminRequestIntents, workerState, type WorkerStatus } from "../admin";
 import { REQUEST_STATUSES } from "../request";
 
 const now = Date.parse("2026-10-13T20:00:00Z");
@@ -22,21 +22,16 @@ it("protects active processing and available titles from admin changes", () => {
     }
 });
 
-it("reports processing paused for a manual pause, missing heartbeat or update older than an hour", () => {
-    expect(processingPaused(worker, now)).toBe(false);
-    expect(processingPaused({ ...worker, paused: true }, now)).toBe(true);
-    expect(processingPaused({ ...worker, lastRunAt: null }, now)).toBe(true);
-    expect(processingPaused({ ...worker, lastRunAt: "bad-date" }, now)).toBe(true);
+it("tells a manual pause, a missing heartbeat and an update older than an hour apart", () => {
+    expect(workerState(worker, now)).toBe("running");
+    expect(workerState({ ...worker, paused: true }, now)).toBe("paused");
+    expect(workerState({ ...worker, paused: true, lastRunAt: null }, now)).toBe("paused");
+    expect(workerState({ ...worker, lastRunAt: null }, now)).toBe("notStarted");
+    expect(workerState({ ...worker, lastRunAt: "bad-date" }, now)).toBe("stale");
     expect(
-        processingPaused(
-            { ...worker, lastRunAt: new Date(now - 60 * 60 * 1000).toISOString() },
-            now
-        )
-    ).toBe(false);
+        workerState({ ...worker, lastRunAt: new Date(now - 60 * 60 * 1000).toISOString() }, now)
+    ).toBe("running");
     expect(
-        processingPaused(
-            { ...worker, lastRunAt: new Date(now - 60 * 60 * 1000 - 1).toISOString() },
-            now
-        )
-    ).toBe(true);
+        workerState({ ...worker, lastRunAt: new Date(now - 60 * 60 * 1000 - 1).toISOString() }, now)
+    ).toBe("stale");
 });

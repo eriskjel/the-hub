@@ -577,6 +577,7 @@
         "attribution": "Filmdata og bilder fra TMDB. Dette produktet bruker TMDB-API-et, men er ikke godkjent eller sertifisert av TMDB.",
         "processing": {
             "paused": "Behandlingen er satt på pause akkurat nå.",
+            "notStarted": "Vi jobber fortsatt med automatisk behandling. Foreløpig samles ønskene i køen.",
             "active": "Ønsker behandles automatisk."
         }
     }

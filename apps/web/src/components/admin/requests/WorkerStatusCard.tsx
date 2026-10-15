@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { processingPaused, type WorkerStatus } from "@/lib/media/admin";
+import { workerState, type WorkerStatus } from "@/lib/media/admin";
 import { ProcessingToggle } from "@/components/admin/requests/QueueControls";
 import type { Locale } from "@/i18n/routing";
 
@@ -11,13 +11,7 @@ export async function WorkerStatusCard({
     locale: Locale;
 }) {
     const t = await getTranslations({ locale, namespace: "admin.requests.worker" });
-    const status = worker.paused
-        ? "paused"
-        : !worker.lastRunAt
-          ? "notStarted"
-          : processingPaused(worker)
-            ? "stale"
-            : "running";
+    const status = workerState(worker);
     const lastRun = worker.lastRunAt
         ? new Intl.DateTimeFormat(locale === "no" ? "nb-NO" : "en-GB", {
               dateStyle: "medium",

@@ -27,9 +27,14 @@ export type WorkerStatus = {
     detail: string | null;
 };
 
+export type WorkerState = "paused" | "notStarted" | "stale" | "running";
+
 const HEARTBEAT_MAX_AGE_MS = 60 * 60 * 1000;
 
-export function processingPaused(worker: WorkerStatus, now = Date.now()): boolean {
-    const lastRun = worker.lastRunAt ? Date.parse(worker.lastRunAt) : Number.NaN;
-    return worker.paused || !Number.isFinite(lastRun) || now - lastRun > HEARTBEAT_MAX_AGE_MS;
+/** Paused by an admin, no update yet, no update for over an hour, or running. */
+export function workerState(worker: WorkerStatus, now = Date.now()): WorkerState {
+    if (worker.paused) return "paused";
+    if (!worker.lastRunAt) return "notStarted";
+    const lastRun = Date.parse(worker.lastRunAt);
+    return !Number.isFinite(lastRun) || now - lastRun > HEARTBEAT_MAX_AGE_MS ? "stale" : "running";
 }
