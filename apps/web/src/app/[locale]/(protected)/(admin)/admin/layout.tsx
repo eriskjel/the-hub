@@ -24,11 +24,12 @@ export default async function AdminLayout({
             {/* Fixed sidebar — position:fixed, never participates in page layout */}
             <AdminSidebarClient />
             {/* Content area. Padding handled by .admin-content in globals.css */}
-            <main className="admin-content">{children}</main>
-            {/* Mobile overlay — visibility handled by .admin-mobile in globals.css */}
-            <div className="admin-mobile">
-                <AdminMobileMenu />
-            </div>
+            <main id="admin-main" className="admin-content bg-background">
+                <div className="admin-mobile">
+                    <AdminMobileMenu />
+                </div>
+                {children}
+            </main>
         </>
     );
 }

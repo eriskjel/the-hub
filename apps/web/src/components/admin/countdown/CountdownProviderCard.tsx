@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { CheckCircle, CircleDashed, Ban, Undo2 } from "lucide-react";
+import { CheckCircle, CircleDashed, Ban, Undo2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { fetchJson } from "@/lib/widgets/fetchJson";
 import { API } from "@/lib/apiRoutes";
@@ -29,6 +29,24 @@ export default function CountdownProviderCard({
     const [status, setStatus] = useState(initialStatus);
     const [denied, setDenied] = useState(initialDenied);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [confirmDeny, setConfirmDeny] = useState(false);
+
+    async function run(action: () => Promise<void>) {
+        setLoading(true);
+        setError(false);
+        setSaved(false);
+        try {
+            await action();
+            await refresh();
+            setSaved(true);
+        } catch {
+            setError(true);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const nextDate = status?.nextIso
         ? new Date(status.nextIso).toLocaleString(locale, {
@@ -49,48 +67,34 @@ export default function CountdownProviderCard({
 
     async function toggleConfirm() {
         if (!status) return;
-        setLoading(true);
-        try {
+        await run(async () => {
             await fetchJson<void>(API.admin.countdown.confirm(providerId), {
                 method: status.adminConfirmed ? "DELETE" : "POST",
             });
-            await refresh();
-        } finally {
-            setLoading(false);
-        }
+        });
     }
 
     async function deny() {
         if (!status?.nextIso) return;
-        if (!confirm(t("denyConfirm"))) return;
         const date = osloDate(status.nextIso);
-        setLoading(true);
-        try {
+        setConfirmDeny(false);
+        await run(async () => {
             await fetchJson<void>(API.admin.countdown.denied(providerId, date), {
                 method: "POST",
             });
-            await refresh();
-        } catch {
-            alert(t("denyFailed"));
-        } finally {
-            setLoading(false);
-        }
+        });
     }
 
     async function undeny(date: string) {
-        setLoading(true);
-        try {
+        await run(async () => {
             await fetchJson<void>(API.admin.countdown.denied(providerId, date), {
                 method: "DELETE",
             });
-            await refresh();
-        } finally {
-            setLoading(false);
-        }
+        });
     }
 
     return (
-        <div className="bg-surface w-72 shrink-0 rounded-xl border p-4">
+        <div className="border-border bg-surface rounded-2xl border p-6" aria-busy={loading}>
             <div className="mb-3 flex items-center justify-between">
                 <span className="font-semibold">{t(`providers.${providerId}`)}</span>
                 {status?.adminConfirmed ? (
@@ -106,7 +110,9 @@ export default function CountdownProviderCard({
             </div>
 
             <p className="text-muted mb-4 text-sm">
-                {nextDate ? (
+                {status === null ? (
+                    t("unavailable")
+                ) : nextDate ? (
                     <>
                         {t("next")}: <span className="text-foreground font-medium">{nextDate}</span>
                     </>
@@ -135,13 +141,56 @@ export default function CountdownProviderCard({
                         )}
                     </Button>
                     {status.nextIso && (
-                        <Button variant="destructive" disabled={loading} onClick={deny}>
+                        <Button
+                            variant="destructive"
+                            disabled={loading}
+                            onClick={() => setConfirmDeny(true)}
+                        >
                             <Ban className="h-3.5 w-3.5" />
                             {t("deny")}
                         </Button>
                     )}
                 </div>
             )}
+
+            {confirmDeny && (
+                <div className="border-border bg-surface-subtle mt-4 space-y-3 rounded-lg border p-4">
+                    <p className="text-sm">{t("denyConfirm")}</p>
+                    <div className="flex gap-2">
+                        <Button variant="destructive" disabled={loading} onClick={deny}>
+                            {t("deny")}
+                        </Button>
+                        <Button disabled={loading} onClick={() => setConfirmDeny(false)}>
+                            {t("cancel")}
+                        </Button>
+                    </div>
+                </div>
+            )}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p
+                    role={error ? "alert" : "status"}
+                    className={`min-h-5 text-sm ${error ? "text-error" : "text-muted"}`}
+                >
+                    {error
+                        ? t("updateFailed")
+                        : loading
+                          ? t("updating")
+                          : saved
+                            ? t("updated")
+                            : ""}
+                </p>
+                <Button
+                    disabled={loading}
+                    onClick={() => run(async () => {})}
+                    aria-label={t("refreshProvider", { provider: t(`providers.${providerId}`) })}
+                >
+                    <RefreshCw
+                        aria-hidden="true"
+                        className={`h-4 w-4 ${loading ? "motion-safe:animate-spin" : ""}`}
+                    />
+                    {t("refresh")}
+                </Button>
+            </div>
 
             {denied.length > 0 && (
                 <div className="border-border mt-4 border-t pt-3">

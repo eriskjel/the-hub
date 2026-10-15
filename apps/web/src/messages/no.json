@@ -343,7 +343,8 @@
                 "title": "Nedtelling – leverandørstatus",
                 "description": "Bekreft en dato manuelt for å fjerne «Ubekreftet dato»-merket. Bekreftelsen nullstilles automatisk når neste dato endres.",
                 "next": "Neste",
-                "noDate": "Ingen dato i cache.",
+                "noDate": "Ingen kommende dato er tilgjengelig.",
+                "unavailable": "Leverandørstatus er utilgjengelig. Prøv å oppdatere.",
                 "confirm": "Bekreft dato",
                 "unconfirm": "Fjern bekreftelse",
                 "confirmed": "Bekreftet",
@@ -356,7 +357,13 @@
                 "providers": {
                     "trippel-trumf": "Trippel-Trumf",
                     "dnb-supertilbud": "DNB Supertilbud"
-                }
+                },
+                "cancel": "Avbryt",
+                "updateFailed": "Kunne ikke oppdatere tilbyderen. Oppdater for å sjekke status, og prøv igjen.",
+                "updating": "Oppdaterer…",
+                "updated": "Oppdatert.",
+                "refresh": "Oppdater",
+                "refreshProvider": "Oppdater {provider}"
             }
         },
         "nav": {
@@ -371,7 +378,7 @@
         },
         "items": {
             "users": "Brukere",
-            "widgets": "Nedtelling-widgets",
+            "widgets": "Nedtellinger",
             "settings": "Innstillinger",
             "requests": "Ønsker"
         },
@@ -383,7 +390,8 @@
                 "email": "E-post",
                 "role": "Rolle",
                 "requests": "Ønsker",
-                "actions": "Handlinger"
+                "actions": "Handlinger",
+                "lastLogin": "Sist innlogget"
             },
             "actions": {
                 "edit": "Rediger",
@@ -402,10 +410,11 @@
                 "prev": "Forrige",
                 "next": "Neste",
                 "first": "Første",
-                "last": "Siste"
+                "last": "Siste",
+                "label": "Brukersider"
             },
             "detail": {
-                "back": "Tilbake",
+                "back": "Tilbake til brukere",
                 "edit": "Rediger bruker",
                 "cards": {
                     "account": {
@@ -443,13 +452,32 @@
                         "not_found": "Fant ikke brukeren.",
                         "failed": "Noe gikk galt. Prøv igjen."
                     }
-                }
+                },
+                "never": "Aldri"
             },
             "search": {
                 "label": "Søk etter brukere",
                 "placeholder": "E-post, navn eller brukernavn",
                 "submit": "Søk",
                 "clear": "Tøm søket"
+            },
+            "description": "Finn brukere, se kontodetaljer og administrer tilgang til forespørsler.",
+            "loading": "Laster brukere…",
+            "updating": "Oppdaterer brukere…",
+            "offline": "Frakoblet. Venter på nettforbindelse.",
+            "refresh": "Oppdater",
+            "retry": "Prøv igjen",
+            "loadError": "Kunne ikke laste resultatene. Sist innlastede brukere vises fortsatt.",
+            "forbidden": "Adminøkten er avsluttet, eller du har ikke lenger tilgang. Logg inn igjen for å fortsette.",
+            "view": "Vis",
+            "viewUser": "Vis {name}",
+            "noEmail": "Ingen e-postadresse",
+            "never": "Aldri",
+            "emptySearch": "Prøv et annet navn eller en annen e-postadresse, eller tøm søket.",
+            "emptyDirectory": "Kontoer vises her når nye brukere registrerer seg.",
+            "access": {
+                "active": "Tillatt",
+                "none": "Ingen tilgang"
             }
         },
         "requests": {
@@ -498,6 +526,14 @@
                     "unknown": "Ikke rapportert"
                 }
             }
+        },
+        "workspace": "Administrasjon",
+        "workspaceDescription": "Arbeidsområde for The Hub",
+        "loading": "Laster administrasjon…",
+        "error": {
+            "title": "Kunne ikke laste siden",
+            "description": "Noe gikk galt under lasting av administrasjonssiden. Prøv igjen.",
+            "retry": "Prøv igjen"
         }
     },
     "requests": {

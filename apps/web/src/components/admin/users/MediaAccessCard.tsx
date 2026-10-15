@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, type ReactElement } from "react";
+import { useActionState, useEffect, useState, type ReactElement } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/Button";
 import { FieldText } from "@/components/ui/Fields";
@@ -39,6 +40,12 @@ export default function MediaAccessCard({
     const t = useTranslations("admin.users.detail.media");
     const locale = useLocale();
     const [state, dispatch, pending] = useActionState(mediaMemberAction, IDLE);
+    const queryClient = useQueryClient();
+    useEffect(() => {
+        if (state.status === "saved" || state.status === "revoked") {
+            void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+        }
+    }, [queryClient, state]);
     const [account, setAccount] = useState(member?.libraryAccount ?? "");
     const [quota, setQuota] = useState(String(member?.weeklyQuota ?? DEFAULT_WEEKLY_QUOTA));
 
@@ -73,7 +80,7 @@ export default function MediaAccessCard({
     // Admins have access through their role; there's nothing to grant.
     if (targetIsAdmin) {
         return (
-            <div className="border-border bg-surface rounded-lg border p-4">
+            <div className="border-border bg-surface rounded-2xl border p-6">
                 <h2 className="text-foreground mb-1 font-semibold">{t("title")}</h2>
                 <p className="text-muted text-sm">{t("status_admin")}</p>
             </div>
@@ -81,7 +88,7 @@ export default function MediaAccessCard({
     }
 
     return (
-        <div className="border-border bg-surface rounded-lg border p-4">
+        <div className="border-border bg-surface rounded-2xl border p-6">
             <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="text-foreground font-semibold">{t("title")}</h2>
                 <span className="text-muted text-sm">{status}</span>

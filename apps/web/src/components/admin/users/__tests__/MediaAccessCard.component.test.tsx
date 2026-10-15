@@ -1,4 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render as renderUI, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
 import enMessages from "@/messages/en.json";
@@ -9,6 +11,15 @@ import { mediaMemberAction } from "@/lib/admin/mediaMember.actions";
 vi.mock("@/lib/admin/mediaMember.actions", () => ({ mediaMemberAction: vi.fn() }));
 
 const USER_ID = "00000000-0000-0000-0000-0000000000b1";
+
+function render(ui: ReactNode) {
+    const client = new QueryClient();
+    return renderUI(ui, {
+        wrapper: ({ children }) => (
+            <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        ),
+    });
+}
 
 function member(overrides: Partial<MediaMember> = {}): MediaMember {
     return {
@@ -44,6 +55,16 @@ describe("MediaAccessCard for an admin", () => {
 });
 
 describe("MediaAccessCard", () => {
+    it("invalidates cached user lists after saving access", async () => {
+        setIntl({ locale: "en", messages: enMessages });
+        const client = new QueryClient();
+        const invalidate = vi.spyOn(client, "invalidateQueries");
+        vi.mocked(mediaMemberAction).mockResolvedValueOnce({ status: "saved" });
+        renderUI(<QueryClientProvider client={client}>{card(member())}</QueryClientProvider>);
+        fireEvent.click(screen.getByRole("button", { name: "Save" }));
+        await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ["admin-users"] }));
+        client.clear();
+    });
     it("labels its inputs", () => {
         renderCard(member());
 

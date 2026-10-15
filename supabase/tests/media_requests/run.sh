@@ -11,7 +11,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../../.." && pwd)"
 migration="${MIGRATION:-$root/supabase/migrations/20261007000000_media_requests.sql}"
 image="supabase/postgres:17.11.0.004"
-name="hub-media-rls-test"
+name="${TEST_CONTAINER_NAME:-hub-media-rls-test}"
 
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker run -d --name "$name" -e POSTGRES_PASSWORD=localtest "$image" >/dev/null
@@ -67,6 +67,7 @@ for file in "$root"/supabase/migrations/*media_*.sql; do
 done
 as_admin < "$here/rls.test.sql"
 as_admin < "$here/admin_queue.test.sql"
+as_admin < "$here/../admin/users.test.sql"
 
 # Two calls for the same user at the same time: the second must wait for the
 # first and count it. Without the lock both would see 0 and pass a quota of 1.

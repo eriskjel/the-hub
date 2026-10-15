@@ -209,6 +209,13 @@ body {
     }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .admin-content,
+    .admin-sidebar {
+        transition: none;
+    }
+}
+
 .scroll-gutter-stable {
     scrollbar-gutter: stable both-edges;
 }

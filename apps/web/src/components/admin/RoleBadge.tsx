@@ -9,7 +9,9 @@ export function RoleBadge({ role }: { role: RoleKey }): ReactElement {
     const label = t(roleKeyToI18n(role));
 
     const styles =
-        role === "admin" ? "border-error/50 bg-error/10 text-error" : "border-border text-muted";
+        role === "admin"
+            ? "border-primary/20 bg-primary/10 text-primary"
+            : "border-border text-muted";
 
     return (
         <span
