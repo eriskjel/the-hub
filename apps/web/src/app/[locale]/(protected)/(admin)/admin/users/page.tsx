@@ -9,18 +9,23 @@ import UsersTable from "@/components/admin/users/UsersTable";
 
 export const dynamic = "force-dynamic";
 
+type QueryValue = string | string[] | undefined;
+
+/** A repeated query parameter arrives as an array; use its first value. */
+const firstValue = (value: QueryValue) => (Array.isArray(value) ? value[0] : value);
+
 export default async function AdminUsersPage({
     searchParams,
     params,
 }: {
-    searchParams: Promise<{ page?: string; per?: string; q?: string }>;
+    searchParams: Promise<{ page?: QueryValue; per?: QueryValue; q?: QueryValue }>;
     params: Promise<{ locale: string }>;
 }) {
     const { locale } = await params;
     const sp = await searchParams;
-    const requestedPage = Number(sp.page ?? 1);
-    const requestedPerPage = Number(sp.per ?? 5);
-    const q = (sp.q ?? "").trim().slice(0, 100);
+    const requestedPage = Number(firstValue(sp.page) ?? 1);
+    const requestedPerPage = Number(firstValue(sp.per) ?? 5);
+    const q = (firstValue(sp.q) ?? "").trim().slice(0, 100);
 
     const { users, total, page, perPage } = await listUsersAdmin({
         page: requestedPage,
@@ -59,7 +64,7 @@ export default async function AdminUsersPage({
                     </Link>
                 )}
             </Form>
-            {users.length === 0 && (
+            {total === 0 && (
                 <p role="status" className="text-muted mb-4">
                     {t("empty")}
                 </p>

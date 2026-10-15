@@ -64,3 +64,34 @@ it("passes the query to global search and renders its matching pagination", asyn
         "/admin/users?per=5"
     );
 });
+
+it("uses the first value of repeated query parameters", async () => {
+    const view = await Page({
+        params: Promise.resolve({ locale: "en" }),
+        searchParams: Promise.resolve({ q: ["alice", "bob"], page: ["2", "9"], per: ["10", "20"] }),
+    });
+    render(view);
+    expect(listUsersAdmin).toHaveBeenCalledWith({ q: "alice", page: 2, perPage: 10 });
+    expect(screen.getByLabelText("Search users")).toHaveValue("alice");
+});
+
+it("says no users were found only when nothing matches", async () => {
+    const { unmount } = render(
+        await Page({
+            params: Promise.resolve({ locale: "en" }),
+            searchParams: Promise.resolve({ q: "missing" }),
+        })
+    );
+    expect(screen.getByText(en.admin.users.empty)).toBeInTheDocument();
+    unmount();
+
+    // A page past the end is empty, but users exist.
+    listUsersAdmin.mockResolvedValue({ users: [], total: 105, page: 99, perPage: 5 });
+    render(
+        await Page({
+            params: Promise.resolve({ locale: "en" }),
+            searchParams: Promise.resolve({ page: "99" }),
+        })
+    );
+    expect(screen.queryByText(en.admin.users.empty)).toBeNull();
+});
