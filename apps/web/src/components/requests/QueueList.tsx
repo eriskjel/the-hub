@@ -59,7 +59,10 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
                             ` ${t("plusOthers", { count: String(item.followerCount) })}`}
                     </span>
                 </p>
-                {item.statusDetail && <p className="text-muted text-xs">{item.statusDetail}</p>}
+                {/* A proposal's details are for the admin; members see that it waits for approval. */}
+                {item.statusDetail && item.status !== "proposed" && (
+                    <p className="text-muted text-xs">{item.statusDetail}</p>
+                )}
             </div>
             <RequestControls
                 tmdbId={item.tmdbId}

@@ -10,7 +10,7 @@ const { getMovieMock } = vi.hoisted(() => ({ getMovieMock: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/media/tmdb.server", () => ({ getMovie: getMovieMock }));
 
-import { getQueue, getRequestOptions } from "../queue.server";
+import { countWaitingForAdmin, getQueue, getRequestOptions } from "../queue.server";
 
 let db: FakeDb;
 const client = () => db as unknown as SupabaseClient;
@@ -208,5 +208,29 @@ describe("getRequestOptions", () => {
         db.failNext("media_request_option", "select");
 
         await expect(getRequestOptions(client(), [1])).rejects.toThrow("media options read failed");
+    });
+});
+
+describe("countWaitingForAdmin", () => {
+    it("counts proposals and failed movie requests that the history list would leave out", async () => {
+        db.tables.media_request = [
+            // Requested long ago, failed just now, behind 200 newer available titles.
+            { ...req(1, 101, ME, "failed", "2020-01-01"), updated_at: "2026-10-16" },
+            req(2, 102, ME, "proposed"),
+            { ...req(3, 103, ME, "proposed"), media_type: "tv" },
+            req(4, 104, ME, "wanted"),
+            ...Array.from({ length: 200 }, (_, i) =>
+                req(i + 5, i + 105, OTHER, "available", "2026-10-01")
+            ),
+        ];
+
+        expect((await getQueue(client(), ME, "en")).some((item) => item.id === 1)).toBe(false);
+        expect(await countWaitingForAdmin(client())).toBe(2);
+    });
+
+    it("counts none when the count fails, so the page still renders", async () => {
+        db.failNext("media_request", "select");
+
+        expect(await countWaitingForAdmin(client())).toBe(0);
     });
 });

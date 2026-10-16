@@ -547,6 +547,8 @@
         "quota": "{used} av {quota} ønsker brukt denne uken",
         "quotaAdmin": "Som administrator har du ingen ukegrense.",
         "quotaNone": "Du kan gi +1 til ønsker, men ikke lage nye.",
+        "adminWaiting": "{count, plural, one {# ønske venter på deg} other {# ønsker venter på deg}}",
+        "adminOpen": "Åpne i admin",
         "noAccess": {
             "none": "Ønsker er bare for inviterte. Spør administratoren hvis du vil ha tilgang.",
             "revoked": "Tilgangen din til ønsker er avsluttet."

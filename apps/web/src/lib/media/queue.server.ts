@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Locale } from "@/i18n/routing";
 import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
+import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
 
 /** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
@@ -146,6 +147,23 @@ export async function getRequestOptions(
         options.set(request_id, [...(options.get(request_id) ?? []), option]);
     }
     return options;
+}
+
+/**
+ * Requests waiting for an admin, counted apart from the queue lists, whose
+ * limits can leave some out. Zero if the count fails: it only adds a pointer.
+ */
+export async function countWaitingForAdmin(client: SupabaseClient): Promise<number> {
+    const { count, error } = await client
+        .from("media_request")
+        .select("id", { count: "exact", head: true })
+        .eq("media_type", "movie")
+        .in("status", NEEDS_ADMIN_STATUSES);
+    if (error) {
+        console.error("media queue: waiting count failed:", error.message);
+        return 0;
+    }
+    return count ?? 0;
 }
 
 async function getNames(supabase: SupabaseClient, ids: string[]): Promise<Map<string, string>> {
