@@ -482,21 +482,27 @@
         "requests": {
             "title": "Administrer ønsker",
             "intro": "Administrer den felles køen. Ønsker som behandles er beskyttet mot endringer.",
-            "open": "Kø",
+            "needsYou": "Trenger deg",
+            "needsYouEmpty": "Ingenting venter på deg nå.",
+            "inProgress": "I arbeid",
             "available": "Tilgjengelig",
             "closed": "Lukket",
+            "empty": "Ingenting her.",
+            "options": "Forslag for {title}",
+            "recommended": "Anbefalt",
             "actions": {
                 "available": "Merk tilgjengelig",
                 "availableTitle": "Merk {title} tilgjengelig",
                 "decline": "Avslå",
                 "declineTitle": "Avslå {title}",
-                "requeue": "Sett i kø igjen",
-                "requeueTitle": "Sett {title} i kø igjen"
+                "requeue": "Søk på nytt",
+                "requeueTitle": "Søk etter {title} på nytt",
+                "more": "Flere valg for {title}"
             },
             "outcomes": {
                 "available": "Merket tilgjengelig.",
                 "declined": "Ønsket er avslått.",
-                "requeued": "Ønsket er satt i kø igjen.",
+                "requeued": "Sendt til nytt søk.",
                 "paused": "Behandlingen er satt på pause.",
                 "resumed": "Behandlingen er startet igjen."
             },
@@ -567,6 +573,7 @@
             "wanted": "I køen",
             "searching": "Søker",
             "proposed": "Venter på godkjenning",
+            "proposedAdmin": "Forslag klart",
             "approved": "Godkjent",
             "downloading": "Legges til",
             "available": "Tilgjengelig",

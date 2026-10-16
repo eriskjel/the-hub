@@ -121,6 +121,33 @@ export async function getQueue(
     });
 }
 
+/** A release the worker proposed. Rank 1 is its pick. */
+export type RequestOption = { rank: number; label: string; reason: string | null };
+
+/**
+ * The proposed releases per request, best first. Members have no access to
+ * them, so read with the service role.
+ */
+export async function getRequestOptions(
+    client: SupabaseClient,
+    requestIds: number[]
+): Promise<Map<number, RequestOption[]>> {
+    const options = new Map<number, RequestOption[]>();
+    if (requestIds.length === 0) return options;
+    const { data, error } = await client
+        .from("media_request_option")
+        .select("request_id, rank, label, reason")
+        .in("request_id", requestIds)
+        .order("rank");
+    if (error) throw new Error(`media options read failed: ${error.message}`);
+    for (const { request_id, ...option } of (data ?? []) as (RequestOption & {
+        request_id: number;
+    })[]) {
+        options.set(request_id, [...(options.get(request_id) ?? []), option]);
+    }
+    return options;
+}
+
 async function getNames(supabase: SupabaseClient, ids: string[]): Promise<Map<string, string>> {
     const unique = [...new Set(ids)];
     if (unique.length === 0) return new Map();

@@ -482,21 +482,27 @@
         "requests": {
             "title": "Manage requests",
             "intro": "Manage the shared queue. Requests being processed are protected from changes.",
-            "open": "Queue",
+            "needsYou": "Needs you",
+            "needsYouEmpty": "Nothing needs you right now.",
+            "inProgress": "In progress",
             "available": "Available",
             "closed": "Closed",
+            "empty": "Nothing here.",
+            "options": "Suggestions for {title}",
+            "recommended": "Recommended",
             "actions": {
                 "available": "Mark available",
                 "availableTitle": "Mark {title} available",
                 "decline": "Decline",
                 "declineTitle": "Decline {title}",
-                "requeue": "Re-queue",
-                "requeueTitle": "Re-queue {title}"
+                "requeue": "Search again",
+                "requeueTitle": "Search again for {title}",
+                "more": "More actions for {title}"
             },
             "outcomes": {
                 "available": "Marked available.",
                 "declined": "Request declined.",
-                "requeued": "Request re-queued.",
+                "requeued": "Queued for a new search.",
                 "paused": "Processing paused.",
                 "resumed": "Processing resumed."
             },
@@ -566,7 +572,8 @@
         "status": {
             "wanted": "In the queue",
             "searching": "Searching",
-            "proposed": "Awaiting approval",
+            "proposed": "Awaiting admin approval",
+            "proposedAdmin": "Suggestion ready",
             "approved": "Approved",
             "downloading": "Being added",
             "available": "Available",

@@ -1,12 +1,20 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Ban, Check, CircleCheck, Ellipsis, RotateCcw, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { adminRequestAction, setProcessingPaused } from "@/lib/admin/mediaQueue.actions";
-import { adminRequestIntents, type AdminMediaResult } from "@/lib/media/admin";
+import {
+    NEEDS_ADMIN_STATUSES,
+    adminRequestIntents,
+    type AdminMediaResult,
+    type AdminRequestIntent,
+} from "@/lib/media/admin";
 import type { QueueItem } from "@/lib/media/queue.server";
+import { cn } from "@/utils/cn";
 
 function useAdminUpdate() {
     const t = useTranslations("admin.requests");
@@ -24,26 +32,114 @@ function useAdminUpdate() {
     return { pending, run };
 }
 
+const INTENT_ICONS: Record<AdminRequestIntent, LucideIcon> = {
+    available: CircleCheck,
+    requeue: RotateCcw,
+    decline: Ban,
+};
+
+/**
+ * A request waiting for the admin gets one main action; everything else the
+ * status allows is an override in the row's menu.
+ */
 export function QueueControls({ item, title }: { item: QueueItem; title: string }) {
     const t = useTranslations("admin.requests.actions");
     const { pending, run } = useAdminUpdate();
+    const [open, setOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const menuId = useId();
+
+    useEffect(() => {
+        if (!open) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
+        };
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return;
+            setOpen(false);
+            menuRef.current?.querySelector<HTMLButtonElement>("[aria-expanded]")?.focus();
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleEscape);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleEscape);
+        };
+    }, [open]);
+
     const intents = adminRequestIntents(item.status);
     if (!intents.length) return null;
+    const primary: AdminRequestIntent | null = NEEDS_ADMIN_STATUSES.includes(item.status)
+        ? "available"
+        : null;
+    const overrides = intents.filter((intent) => intent !== primary);
+    const act = (intent: AdminRequestIntent) =>
+        run(() => adminRequestAction(item.id, intent, item.updatedAt));
+
     return (
-        <div className="flex flex-wrap gap-2">
-            {intents.map((intent) => (
+        <div className="flex shrink-0 items-center gap-1.5">
+            {primary && (
                 <Button
-                    key={intent}
                     type="button"
-                    variant={intent === "decline" ? "destructive" : "secondary"}
+                    variant="primary"
                     disabled={pending}
                     aria-busy={pending || undefined}
-                    aria-label={t(`${intent}Title`, { title })}
-                    onClick={() => run(() => adminRequestAction(item.id, intent, item.updatedAt))}
+                    aria-label={t(`${primary}Title`, { title })}
+                    onClick={() => act(primary)}
                 >
-                    {t(intent)}
+                    <Check aria-hidden className="h-4 w-4" />
+                    {t(primary)}
                 </Button>
-            ))}
+            )}
+            <div ref={menuRef} className="relative">
+                <IconButton
+                    type="button"
+                    disabled={pending}
+                    aria-label={t("more", { title })}
+                    aria-expanded={open}
+                    aria-controls={open ? menuId : undefined}
+                    onClick={() => setOpen(!open)}
+                    className="disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    <Ellipsis aria-hidden className="h-5 w-5" />
+                </IconButton>
+                {open && (
+                    <div
+                        id={menuId}
+                        className="border-border bg-surface absolute top-full right-0 z-10 mt-1 w-52 rounded-xl border py-1 shadow-lg"
+                    >
+                        {overrides.map((intent) => {
+                            const Icon = INTENT_ICONS[intent];
+                            return (
+                                <button
+                                    key={intent}
+                                    type="button"
+                                    aria-label={t(`${intent}Title`, { title })}
+                                    onClick={() => {
+                                        setOpen(false);
+                                        act(intent);
+                                    }}
+                                    className={cn(
+                                        "hover:bg-surface-subtle focus-visible:bg-surface-subtle flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left text-sm transition-colors focus:outline-none",
+                                        intent === "decline"
+                                            ? "text-error-strong"
+                                            : "text-foreground"
+                                    )}
+                                >
+                                    <Icon
+                                        aria-hidden
+                                        className={cn(
+                                            "h-4 w-4",
+                                            intent !== "decline" && "text-muted"
+                                        )}
+                                    />
+                                    {t(intent)}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

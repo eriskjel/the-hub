@@ -1,70 +1,161 @@
+import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import { ChevronRight } from "lucide-react";
 import { Poster } from "@/components/requests/Poster";
 import { StatusBadge } from "@/components/requests/StatusBadge";
 import { QueueControls } from "@/components/admin/requests/QueueControls";
-import type { QueueItem } from "@/lib/media/queue.server";
+import type { QueueItem, RequestOption } from "@/lib/media/queue.server";
 import type { Locale } from "@/i18n/routing";
+import { cn } from "@/utils/cn";
 
 export async function AdminQueueList({
     items,
     heading,
+    empty,
     locale,
+    options,
+    collapsed = false,
+    highlight = false,
 }: {
     items: QueueItem[];
     heading: string;
+    empty: string;
     locale: Locale;
+    /** The proposed releases per request, if this list shows them. */
+    options?: Map<number, RequestOption[]>;
+    /** Starts closed, with only the heading and count showing. */
+    collapsed?: boolean;
+    /** Draws attention to the count while the list has items. */
+    highlight?: boolean;
 }) {
     const t = await getTranslations({ locale, namespace: "requests.queue" });
-    return (
-        <section className="border-border bg-surface overflow-hidden rounded-2xl border">
-            <div className="border-border flex items-center gap-3 border-b px-5 py-4">
-                <h2 className="font-semibold">{heading}</h2>
-                <span className="bg-surface-subtle text-muted rounded-full px-2 py-0.5 text-xs">
-                    {items.length}
-                </span>
-            </div>
-            {items.length === 0 ? (
-                <p className="text-muted px-5 py-10 text-center text-sm">{t("empty")}</p>
-            ) : (
-                <ul className="divide-border divide-y">
-                    {items.map((item) => {
-                        const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
-                        const requester = item.requester?.name
-                            ? t("requestedBy", { name: item.requester.name })
-                            : item.requester
-                              ? t("unknownMember")
-                              : t("formerMember");
-                        return (
-                            <li key={item.id} className="flex flex-wrap items-center gap-4 p-5">
-                                <Poster path={item.posterPath} />
-                                <div className="min-w-0 flex-1 space-y-1">
-                                    <p className="font-medium">
-                                        {title}
-                                        {item.year && (
-                                            <span className="text-muted font-normal">
-                                                {" "}
-                                                ({item.year})
+    const tAdmin = await getTranslations({ locale, namespace: "admin.requests" });
+    const header: ReactNode = (
+        <>
+            <h2 className="font-semibold">{heading}</h2>
+            <span
+                className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                    highlight && items.length > 0
+                        ? "bg-primary/15 text-primary"
+                        : "bg-surface-subtle text-muted"
+                )}
+            >
+                {items.length}
+            </span>
+        </>
+    );
+    const body =
+        items.length === 0 ? (
+            <p className="text-muted px-5 py-8 text-center text-sm">{empty}</p>
+        ) : (
+            <ul className="divide-border divide-y">
+                {items.map((item) => {
+                    const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
+                    const requester = item.requester?.name
+                        ? t("requestedBy", { name: item.requester.name })
+                        : item.requester
+                          ? t("unknownMember")
+                          : t("formerMember");
+                    const proposed = options?.get(item.id) ?? [];
+                    return (
+                        <li key={item.id} className="flex gap-4 p-5">
+                            <Poster path={item.posterPath} />
+                            <div className="min-w-0 flex-1 space-y-3">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="min-w-0 grow basis-60 space-y-1">
+                                        <p className="font-medium break-words">
+                                            {title}
+                                            {item.year && (
+                                                <span className="text-muted font-normal">
+                                                    {" "}
+                                                    ({item.year})
+                                                </span>
+                                            )}
+                                        </p>
+                                        <p className="text-muted flex flex-wrap items-center gap-2 text-sm">
+                                            <StatusBadge status={item.status} admin />
+                                            <span>
+                                                {requester}
+                                                {item.followerCount > 0 &&
+                                                    ` ${t("plusOthers", { count: String(item.followerCount) })}`}
                                             </span>
+                                        </p>
+                                        {item.statusDetail && (
+                                            <p className="text-muted text-sm break-words">
+                                                {item.statusDetail}
+                                            </p>
                                         )}
-                                    </p>
-                                    <p className="text-muted flex flex-wrap items-center gap-2 text-sm">
-                                        <StatusBadge status={item.status} />
-                                        <span>
-                                            {requester}
-                                            {item.followerCount > 0 &&
-                                                ` ${t("plusOthers", { count: String(item.followerCount) })}`}
-                                        </span>
-                                    </p>
-                                    {item.statusDetail && (
-                                        <p className="text-muted text-xs">{item.statusDetail}</p>
-                                    )}
+                                    </div>
+                                    <QueueControls item={item} title={title} />
                                 </div>
-                                <QueueControls item={item} title={title} />
-                            </li>
-                        );
-                    })}
-                </ul>
-            )}
+                                {proposed.length > 0 && (
+                                    <ol
+                                        aria-label={tAdmin("options", { title })}
+                                        className="border-border divide-border divide-y overflow-hidden rounded-xl border text-sm"
+                                    >
+                                        {proposed.map((option) => (
+                                            <li
+                                                key={option.rank}
+                                                className={cn(
+                                                    "flex gap-3 px-3 py-2.5",
+                                                    option.rank === 1 && "bg-primary/5"
+                                                )}
+                                            >
+                                                <span
+                                                    className={cn(
+                                                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+                                                        option.rank === 1
+                                                            ? "bg-primary/15 text-primary"
+                                                            : "bg-surface-subtle text-muted"
+                                                    )}
+                                                >
+                                                    {option.rank}
+                                                </span>
+                                                <div className="min-w-0 space-y-0.5">
+                                                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium break-words">
+                                                        {option.label}
+                                                        {option.rank === 1 && (
+                                                            <span className="bg-primary/15 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+                                                                {tAdmin("recommended")}
+                                                            </span>
+                                                        )}
+                                                    </p>
+                                                    {option.reason && (
+                                                        <p className="text-muted text-xs break-words">
+                                                            {option.reason}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                )}
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+        );
+
+    if (collapsed) {
+        return (
+            <details className="group border-border bg-surface rounded-2xl border">
+                <summary className="focus-visible:ring-border flex cursor-pointer list-none items-center gap-3 rounded-2xl px-5 py-4 focus:outline-none focus-visible:ring-2 [&::-webkit-details-marker]:hidden">
+                    <ChevronRight
+                        aria-hidden
+                        className="text-muted h-4 w-4 transition-transform group-open:rotate-90"
+                    />
+                    {header}
+                </summary>
+                <div className="border-border border-t">{body}</div>
+            </details>
+        );
+    }
+    return (
+        <section className="border-border bg-surface rounded-2xl border">
+            <div className="border-border flex items-center gap-3 border-b px-5 py-4">{header}</div>
+            {body}
         </section>
     );
 }

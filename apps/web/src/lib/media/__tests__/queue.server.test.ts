@@ -10,7 +10,7 @@ const { getMovieMock } = vi.hoisted(() => ({ getMovieMock: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/media/tmdb.server", () => ({ getMovie: getMovieMock }));
 
-import { getQueue } from "../queue.server";
+import { getQueue, getRequestOptions } from "../queue.server";
 
 let db: FakeDb;
 const client = () => db as unknown as SupabaseClient;
@@ -169,5 +169,44 @@ describe("getQueue", () => {
         });
 
         await expect(getQueue(client(), ME, "en")).rejects.toThrow("media queue read failed");
+    });
+});
+
+describe("getRequestOptions", () => {
+    const option = (requestId: number, rank: number, reason: string | null = null) => ({
+        request_id: requestId,
+        rank,
+        label: `Group ${rank} · 2160p · ${50 - rank} GB`,
+        reason,
+    });
+
+    it("groups the options per request, best first, for the asked requests only", async () => {
+        db.tables.media_request_option = [
+            option(1, 2),
+            option(1, 1, "listed group"),
+            option(2, 1),
+            option(3, 1),
+        ];
+
+        const options = await getRequestOptions(client(), [1, 2]);
+        expect(options.get(1)).toEqual([
+            { rank: 1, label: "Group 1 · 2160p · 49 GB", reason: "listed group" },
+            { rank: 2, label: "Group 2 · 2160p · 48 GB", reason: null },
+        ]);
+        expect(options.get(2)).toHaveLength(1);
+        expect(options.has(3)).toBe(false);
+    });
+
+    it("skips the read when no request needs options", async () => {
+        db.failNext("media_request_option", "select");
+
+        await expect(getRequestOptions(client(), [])).resolves.toEqual(new Map());
+    });
+
+    it("throws when the options can't be read", async () => {
+        db.tables.media_request_option = [];
+        db.failNext("media_request_option", "select");
+
+        await expect(getRequestOptions(client(), [1])).rejects.toThrow("media options read failed");
     });
 });

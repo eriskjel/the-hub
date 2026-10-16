@@ -15,11 +15,18 @@ const TONE: Record<RequestStatus, string> = {
     cancelled: "bg-surface-subtle text-muted",
 };
 
-export function StatusBadge({ status }: { status: RequestStatus }): ReactElement {
+/** Members wait for a proposal to be approved; for the admin it's a suggestion to act on. */
+export function StatusBadge({
+    status,
+    admin = false,
+}: {
+    status: RequestStatus;
+    admin?: boolean;
+}): ReactElement {
     const t = useTranslations("requests.status");
     return (
         <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", TONE[status])}>
-            {t(status)}
+            {t(admin && status === "proposed" ? "proposedAdmin" : status)}
         </span>
     );
 }
