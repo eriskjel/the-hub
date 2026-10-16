@@ -1,10 +1,12 @@
 import { Suspense } from "react";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { getTranslations } from "next-intl/server";
 import { AdminPage } from "@/components/admin/AdminPage";
 import UsersTable from "@/components/admin/users/UsersTable";
 import UsersTableSkeleton from "@/components/admin/users/UsersTableSkeleton";
 import { listUsersAdmin } from "@/lib/admin/users.server";
 import { parseUsersQuery, type AdminUsersQuery } from "@/lib/admin/users";
+import { queryKeys } from "@/lib/queryKeys";
 
 export const dynamic = "force-dynamic";
 
@@ -33,5 +35,14 @@ export default async function AdminUsersPage({
 
 async function UsersData({ query }: { query: AdminUsersQuery }) {
     const initialData = await listUsersAdmin(query);
-    return <UsersTable key={initialData.viewerId} initialData={initialData} initialQuery={query} />;
+    const client = new QueryClient();
+    client.setQueryData(
+        queryKeys.adminUsers(initialData.viewerId, query.page, query.perPage, query.q),
+        initialData
+    );
+    return (
+        <HydrationBoundary state={dehydrate(client)}>
+            <UsersTable key={initialData.viewerId} viewerId={initialData.viewerId} />
+        </HydrationBoundary>
+    );
 }

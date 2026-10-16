@@ -1,10 +1,16 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+    dehydrate,
+    HydrationBoundary,
+    QueryClient,
+    QueryClientProvider,
+} from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { setIntl } from "@/tests/testUtils";
 import en from "@/messages/en.json";
-import type { AdminUsersResult } from "@/lib/admin/users";
+import type { AdminUsersQuery, AdminUsersResult } from "@/lib/admin/users";
+import { queryKeys } from "@/lib/queryKeys";
 import UsersTable from "../UsersTable";
 
 vi.mock("next/navigation", async () => {
@@ -55,13 +61,24 @@ const second: AdminUsersResult = {
 };
 let client: QueryClient;
 let fetchMock: ReturnType<typeof vi.fn>;
-function mount(data = initial) {
-    client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
-    return render(
+function table(data = initial, query: AdminUsersQuery = data, updatedAt = Date.now()) {
+    const serverClient = new QueryClient();
+    serverClient.setQueryData(
+        queryKeys.adminUsers(data.viewerId, query.page, query.perPage, query.q),
+        data,
+        { updatedAt }
+    );
+    return (
         <QueryClientProvider client={client}>
-            <UsersTable initialData={data} initialQuery={data} />
+            <HydrationBoundary state={dehydrate(serverClient)}>
+                <UsersTable key={data.viewerId} viewerId={data.viewerId} />
+            </HydrationBoundary>
         </QueryClientProvider>
     );
+}
+function mount(data = initial) {
+    client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+    return render(table(data));
 }
 const response = (data: AdminUsersResult) => ({ ok: true, json: async () => data });
 
@@ -123,8 +140,14 @@ it("keeps previous results and offers retry when a page request fails", async ()
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("last loaded users");
     expect(screen.getByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    const historyLength = window.history.length;
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(window.history.length).toBe(historyLength);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("link", { name: "Bob" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
 });
 
 it("does not keep sensitive rows visible after an authorization failure", async () => {
@@ -259,14 +282,101 @@ it("resets the page when changing page size and displays an empty result", async
 it("canonicalizes a page beyond the end without fetching it again", async () => {
     window.history.replaceState(null, "", "/en/admin/users?page=99");
     client = new QueryClient();
-    render(
-        <QueryClientProvider client={client}>
-            <UsersTable initialData={second} initialQuery={{ ...second, page: 99 }} />
-        </QueryClientProvider>
-    );
+    render(table(second, { ...second, page: 99 }));
     await waitFor(() => expect(window.location.search).toBe("?page=2&per=10"));
     expect(screen.getByRole("link", { name: "Bob" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("keeps a denial across remounts and server hydration until an API request succeeds", async () => {
+    fetchMock
+        .mockResolvedValueOnce({ ok: false, status: 403 })
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce(response(initial));
+    const view = mount();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("no longer have access");
+    view.unmount();
+
+    // Next can restore an earlier server payload while the root QueryClient survives.
+    render(table(initial));
+    expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled());
+    expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("no longer have access");
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("hydrates newer server results into an already cached page without another fetch", async () => {
+    const view = mount();
+    const fresh = { ...initial, users: [{ ...initial.users[0], name: "Alice Updated" }] };
+    view.rerender(table(fresh, fresh, Date.now() + 1000));
+    expect(await screen.findByRole("link", { name: "Alice Updated" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("uses the newer server page when an old bookmark has a cached clamped result", async () => {
+    const now = Date.now();
+    window.history.replaceState(null, "", "/en/admin/users?page=99&per=10");
+    client = new QueryClient();
+    client.setQueryData(queryKeys.adminUsers("admin", 99, 10, ""), second, {
+        updatedAt: now - 1000,
+    });
+    const fresh = { ...initial, page: 3 };
+    render(table(fresh, { ...fresh, page: 99 }, now));
+    await waitFor(() => expect(window.location.search).toBe("?page=3&per=10"));
+    expect(screen.getByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("does not overwrite newer client results when an old server payload is restored", async () => {
+    const snapshotTime = Date.now();
+    const view = mount();
+    const fresh = { ...initial, users: [{ ...initial.users[0], name: "Alice Updated" }] };
+    act(() => {
+        client.setQueryData(queryKeys.adminUsers("admin", 1, 10, ""), fresh, {
+            updatedAt: snapshotTime + 1000,
+        });
+    });
+    view.rerender(table(initial, initial, snapshotTime));
+    expect(await screen.findByRole("link", { name: "Alice Updated" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Alice" })).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("waits for a stale bookmark to refetch before correcting its page", async () => {
+    window.history.replaceState(null, "", "/en/admin/users?page=99&per=10");
+    let finish!: (value: unknown) => void;
+    fetchMock.mockReturnValue(
+        new Promise((resolve) => {
+            finish = resolve;
+        })
+    );
+    client = new QueryClient();
+    render(table(second, { ...second, page: 99 }, Date.now() - 60_000));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    expect(window.location.search).toBe("?page=99&per=10");
+    await act(async () => {
+        finish(response({ ...initial, page: 3 }));
+    });
+    await waitFor(() => expect(window.location.search).toBe("?page=3&per=10"));
+    expect(screen.getByRole("link", { name: "Alice" })).toBeInTheDocument();
+});
+
+it("does not reuse one viewer's denial for a different authorized viewer", async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 401 });
+    const view = mount();
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await screen.findByRole("alert");
+    view.rerender(table({ ...initial, viewerId: "another-admin" }));
+    expect(await screen.findByRole("link", { name: "Alice" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
 it("cancels an obsolete page fetch when a newer search starts", async () => {

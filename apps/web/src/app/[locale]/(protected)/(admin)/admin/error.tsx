@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/Button";
 import { AdminPage } from "@/components/admin/AdminPage";
 
 export default function AdminError({
-    reset,
+    retry,
 }: {
     error: Error & { digest?: string };
-    reset: () => void;
+    retry: () => void;
 }) {
     const t = useTranslations("admin");
     return (
         <AdminPage title={t("error.title")} description={t("error.description")}>
-            <Button type="button" variant="primary" onClick={reset}>
+            <Button type="button" variant="primary" onClick={retry}>
                 {t("error.retry")}
             </Button>
         </AdminPage>

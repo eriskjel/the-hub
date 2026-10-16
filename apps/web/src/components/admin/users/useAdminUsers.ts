@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { queryKeys } from "@/lib/queryKeys";
 import {
@@ -31,7 +31,7 @@ function updateUrl(query: AdminUsersQuery, replace = false) {
     window.history[replace ? "replaceState" : "pushState"](null, "", url);
 }
 
-export function useAdminUsers(initialData: AdminUsersResult, initialQuery: AdminUsersQuery) {
+export function useAdminUsers(viewerId: string) {
     const params = useSearchParams();
     const query = parseUsersQuery({
         page: params.get("page") ?? undefined,
@@ -70,34 +70,41 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
         if (!composing && q !== query.q) updateUrl({ ...query, q, page: 1 }, true);
     }
     const client = useQueryClient();
-    const [lastResult, setLastResult] = useState(initialData);
-    const matchesInitial =
-        query.page === initialQuery.page &&
-        query.perPage === initialQuery.perPage &&
-        query.q === initialQuery.q;
+    const [lastResult, setLastResult] = useState<AdminUsersResult>();
     // Any denial hides the directory, including cached pages and retained rows, until a later
     // request is authorized again. Per-query error state alone would show them on the next key.
-    const [forbidden, setForbidden] = useState(false);
+    // Keep this latch with the viewer's QueryClient, so remounting or restoring an old server
+    // payload cannot reveal rows after denial. Only a successful API response clears it.
+    const accessKey = queryKeys.adminUsersAccess(viewerId);
+    const { data: forbidden } = useQuery({
+        queryKey: accessKey,
+        queryFn: skipToken,
+        initialData: false,
+        gcTime: Infinity,
+    });
     const result = useQuery({
-        queryKey: queryKeys.adminUsers(initialData.viewerId, query.page, query.perPage, query.q),
+        queryKey: queryKeys.adminUsers(viewerId, query.page, query.perPage, query.q),
         queryFn: async ({ signal }) => {
             const response = await fetch(`/api/admin/users?${usersSearchParams(query)}`, {
                 signal,
                 cache: "no-store",
             });
-            if (response.status === 401 || response.status === 403) setForbidden(true);
+            signal.throwIfAborted();
+            if (response.status === 401 || response.status === 403)
+                client.setQueryData(accessKey, true);
             if (!response.ok) throw new UsersFetchError(response.status);
             const data: AdminUsersResult = await response.json();
-            if (data.viewerId !== initialData.viewerId) {
-                setForbidden(true);
+            signal.throwIfAborted();
+            if (data.viewerId !== viewerId) {
+                client.setQueryData(accessKey, true);
                 throw new UsersFetchError(403);
             }
-            setForbidden(false);
+            client.setQueryData(accessKey, false);
             return data;
         },
-        initialData: matchesInitial ? initialData : undefined,
         placeholderData: keepPreviousData,
         staleTime: 30_000,
+        refetchOnMount: forbidden ? "always" : true,
         retry: false,
     });
 
@@ -115,28 +122,40 @@ export function useAdminUsers(initialData: AdminUsersResult, initialQuery: Admin
     // Clamp old bookmarks after deletions, and cache the canonical page before changing its key.
     useEffect(() => {
         if (
+            forbidden ||
             !result.data ||
+            result.isFetching ||
             result.isPlaceholderData ||
             result.isError ||
             result.data.page === query.page
         )
             return;
-        client.setQueryData(
-            queryKeys.adminUsers(
-                initialData.viewerId,
-                result.data.page,
-                result.data.perPage,
-                result.data.q
-            ),
-            result.data
-        );
-        updateUrl(result.data, true);
+        const data = result.data;
+        // HydrationBoundary commits newer server data in a parent effect. Let it finish before
+        // correcting the URL, otherwise an older cached clamp can send us to the wrong page.
+        const timer = setTimeout(() => {
+            const current = client.getQueryState(
+                queryKeys.adminUsers(viewerId, query.page, query.perPage, query.q)
+            );
+            if (current?.data !== data || current.status !== "success") return;
+            client.setQueryData(
+                queryKeys.adminUsers(viewerId, data.page, data.perPage, data.q),
+                data,
+                { updatedAt: current.dataUpdatedAt }
+            );
+            updateUrl(data, true);
+        }, 0);
+        return () => clearTimeout(timer);
     }, [
         client,
-        initialData.viewerId,
+        viewerId,
+        forbidden,
         query.page,
+        query.perPage,
+        query.q,
         result.data,
         result.isError,
+        result.isFetching,
         result.isPlaceholderData,
     ]);
 

@@ -5,17 +5,11 @@ import { ArrowRight, ChevronLeft, ChevronRight, RefreshCw, Search, UsersRound } 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { RoleBadge } from "@/components/admin/RoleBadge";
-import { USER_PAGE_SIZES, type AdminUsersQuery, type AdminUsersResult } from "@/lib/admin/users";
+import { USER_PAGE_SIZES } from "@/lib/admin/users";
 import { UsersSkeletonRows } from "./UsersTableSkeleton";
 import { useAdminUsers } from "./useAdminUsers";
 
-export default function UsersTable({
-    initialData,
-    initialQuery,
-}: {
-    initialData: AdminUsersResult;
-    initialQuery: AdminUsersQuery;
-}) {
+export default function UsersTable({ viewerId }: { viewerId: string }) {
     const t = useTranslations("admin.users");
     const locale = useLocale();
     const {
@@ -33,10 +27,13 @@ export default function UsersTable({
         setComposing,
         clearSearch,
         submitSearch,
-    } = useAdminUsers(initialData, initialQuery);
-    // A failed search or page-size change keeps the previous rows up; paging from them would
-    // mix the old page number with the new query and skip pages.
-    const canPage = !fetching && shown?.q === query.q && shown?.perPage === query.perPage;
+    } = useAdminUsers(viewerId);
+    // Retained rows may belong to a failed page or search. Recover with Retry before paging.
+    const canPage =
+        !fetching &&
+        shown?.page === query.page &&
+        shown?.q === query.q &&
+        shown?.perPage === query.perPage;
 
     return (
         <section

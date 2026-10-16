@@ -1,7 +1,9 @@
-import { getTranslations } from "next-intl/server";
+"use client";
 
-export default async function Loading() {
-    const t = await getTranslations("admin");
+import { useTranslations } from "next-intl";
+
+export default function Loading() {
+    const t = useTranslations("admin");
     return (
         <div
             role="status"
