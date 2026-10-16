@@ -1,0 +1,35 @@
+name: Push migrations to dev
+
+# Run by hand from the Actions tab: pick a branch and its migrations are
+# applied to the dev project, so a preview can be tested before the
+# migration reaches production on merge (main.yml).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link and push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF_DEV }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_DEV }}
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          echo "Migrations to apply:"
+          supabase db push --dry-run
+          supabase db push
