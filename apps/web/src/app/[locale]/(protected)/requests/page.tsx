@@ -6,9 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
 import { createClient } from "@/utils/supabase/server";
 import { countRecentRequests, getOwnMembership, queueReader } from "@/lib/media/membership.server";
-import { getQueue } from "@/lib/media/queue.server";
+import { countWaitingForAdmin, getQueue } from "@/lib/media/queue.server";
 import { isOpenStatus } from "@/lib/media/request";
-import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
 import RequestSearch from "@/components/requests/RequestSearch";
 import { QueueRefresh } from "@/components/requests/QueueRefresh";
 import { QueueList } from "@/components/requests/QueueList";
@@ -49,16 +48,14 @@ export default async function RequestsPage({
 
     const mine = (await searchParams).mine === "1";
     const reader = queueReader(membership, supabase);
-    const [queue, used, worker] = await Promise.all([
+    // Admins decide on the admin page, where the proposals are; this only points there.
+    const [queue, used, worker, waitingForAdmin] = await Promise.all([
         getQueue(reader, user.id, locale),
         countRecentRequests(reader, user.id),
         getWorkerStatus(reader),
+        membership.viaAdmin ? countWaitingForAdmin(reader) : 0,
     ]);
     const shown = mine ? queue.filter((item) => item.role !== null) : queue;
-    // Admins decide on the admin page, where the proposals are; this only points there.
-    const waitingForAdmin = membership.viaAdmin
-        ? queue.filter((item) => NEEDS_ADMIN_STATUSES.includes(item.status)).length
-        : 0;
 
     // The queue in the order it's worked: oldest first. Everything else, newest first.
     const open = shown.filter((item) => isOpenStatus(item.status));
