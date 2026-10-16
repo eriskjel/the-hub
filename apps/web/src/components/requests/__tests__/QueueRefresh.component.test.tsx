@@ -38,3 +38,13 @@ it("skips hidden tabs and refreshes when returning to the queue", () => {
     act(() => document.dispatchEvent(new Event("visibilitychange")));
     expect(refresh).toHaveBeenCalledOnce();
 });
+
+it("refreshes at a page's own interval", () => {
+    vi.useFakeTimers();
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    render(<QueueRefresh intervalMs={15_000} />);
+    act(() => vi.advanceTimersByTime(14_999));
+    expect(refresh).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(refresh).toHaveBeenCalledOnce();
+});

@@ -40,6 +40,43 @@ it.each(["searching", "approved", "downloading", "available"] as const)(
     }
 );
 
+const proposal: QueueItem = { ...item, status: "proposed" };
+const openMenu = () =>
+    fireEvent.click(screen.getByRole("button", { name: "More actions for A movie" }));
+
+it("offers marking a proposal available first, with the overrides in the menu", () => {
+    render(<QueueControls item={proposal} title="A movie" />);
+    expect(screen.getByRole("button", { name: "Mark A movie available" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Decline A movie" })).toBeNull();
+
+    openMenu();
+    expect(screen.getByRole("button", { name: "Decline A movie" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search again for A movie" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Mark A movie available" })).toHaveLength(1);
+});
+
+it("keeps every action in the menu while the request waits for the worker", () => {
+    render(<QueueControls item={item} title="A movie" />);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+
+    openMenu();
+    for (const name of ["Mark A movie available", "Decline A movie", "Search again for A movie"]) {
+        expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+});
+
+it("closes the menu on Escape and returns focus to its button", () => {
+    render(<QueueControls item={item} title="A movie" />);
+    openMenu();
+    const trigger = screen.getByRole("button", { name: "More actions for A movie" });
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "Decline A movie" })).toBeNull();
+    expect(trigger).toHaveFocus();
+});
+
 it("sends the displayed request revision and disables all row actions while saving", async () => {
     let resolve!: (result: AdminMediaResult) => void;
     vi.mocked(adminRequestAction).mockReturnValueOnce(
@@ -47,9 +84,11 @@ it("sends the displayed request revision and disables all row actions while savi
             resolve = done;
         })
     );
-    render(<QueueControls item={item} title="A movie" />);
+    render(<QueueControls item={proposal} title="A movie" />);
+    openMenu();
     fireEvent.click(screen.getByRole("button", { name: "Decline A movie" }));
     expect(adminRequestAction).toHaveBeenCalledWith(7, "decline", item.updatedAt);
+    expect(screen.getAllByRole("button")).toHaveLength(2);
     for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled();
     await act(async () => {
         resolve({ ok: true, outcome: "declined" });
@@ -57,10 +96,24 @@ it("sends the displayed request revision and disables all row actions while savi
     expect(toast.success).toHaveBeenCalledWith("Request declined.");
 });
 
+it("closes an open menu when the main action starts from the keyboard", () => {
+    vi.mocked(adminRequestAction).mockReturnValueOnce(new Promise(() => {}));
+    render(<QueueControls item={proposal} title="A movie" />);
+    openMenu();
+    // A keyboard press fires no mousedown outside the menu.
+    fireEvent.click(screen.getByRole("button", { name: "Mark A movie available" }));
+
+    expect(screen.queryByRole("button", { name: "Decline A movie" })).toBeNull();
+    expect(screen.getByRole("button", { name: "More actions for A movie" })).toBeDisabled();
+    expect(adminRequestAction).toHaveBeenCalledOnce();
+});
+
 it("reports a stale action without success", async () => {
     vi.mocked(adminRequestAction).mockResolvedValueOnce({ ok: false, error: "changed" });
     render(<QueueControls item={item} title="A movie" />);
-    fireEvent.click(screen.getByRole("button", { name: "Re-queue A movie" }));
+    openMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Search again for A movie" }));
+    expect(adminRequestAction).toHaveBeenCalledWith(7, "requeue", item.updatedAt);
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(en.admin.requests.errors.changed));
     expect(toast.success).not.toHaveBeenCalled();
 });

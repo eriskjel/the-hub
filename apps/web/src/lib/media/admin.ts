@@ -5,6 +5,9 @@ export type AdminMediaResult =
     | { ok: true; outcome: "declined" | "requeued" | "available" | "paused" | "resumed" }
     | { ok: false; error: "changed" | "not_allowed" | "failed" };
 
+/** Waiting for an admin: a proposal to act on, or a search that gave up. */
+export const NEEDS_ADMIN_STATUSES: readonly RequestStatus[] = ["proposed", "failed"];
+
 /** Mirrors the state transitions allowed by media_request_admin_update. */
 export function adminRequestIntents(status: RequestStatus): AdminRequestIntent[] {
     switch (status) {

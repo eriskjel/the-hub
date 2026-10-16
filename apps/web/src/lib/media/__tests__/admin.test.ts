@@ -1,5 +1,10 @@
 import { expect, it } from "vitest";
-import { adminRequestIntents, workerState, type WorkerStatus } from "../admin";
+import {
+    NEEDS_ADMIN_STATUSES,
+    adminRequestIntents,
+    workerState,
+    type WorkerStatus,
+} from "../admin";
 import { REQUEST_STATUSES } from "../request";
 
 const now = Date.parse("2026-10-13T20:00:00Z");
@@ -34,4 +39,10 @@ it("tells a manual pause, a missing heartbeat and an update older than an hour a
     expect(
         workerState({ ...worker, lastRunAt: new Date(now - 60 * 60 * 1000 - 1).toISOString() }, now)
     ).toBe("stale");
+});
+
+it("lets every request that waits for the admin be marked available", () => {
+    for (const status of NEEDS_ADMIN_STATUSES) {
+        expect(adminRequestIntents(status)).toContain("available");
+    }
 });
