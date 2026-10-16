@@ -73,8 +73,11 @@ export function QueueControls({ item, title }: { item: QueueItem; title: string 
         ? "available"
         : null;
     const overrides = intents.filter((intent) => intent !== primary);
-    const act = (intent: AdminRequestIntent) =>
+    // Any action closes the menu, and its trigger stays disabled until the save ends.
+    const act = (intent: AdminRequestIntent) => {
+        setOpen(false);
         run(() => adminRequestAction(item.id, intent, item.updatedAt));
+    };
 
     return (
         <div className="flex shrink-0 items-center gap-1.5">
@@ -115,10 +118,7 @@ export function QueueControls({ item, title }: { item: QueueItem; title: string 
                                     key={intent}
                                     type="button"
                                     aria-label={t(`${intent}Title`, { title })}
-                                    onClick={() => {
-                                        setOpen(false);
-                                        act(intent);
-                                    }}
+                                    onClick={() => act(intent)}
                                     className={cn(
                                         "hover:bg-surface-subtle focus-visible:bg-surface-subtle flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left text-sm transition-colors focus:outline-none",
                                         intent === "decline"
