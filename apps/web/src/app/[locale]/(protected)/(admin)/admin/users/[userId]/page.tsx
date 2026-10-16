@@ -45,6 +45,7 @@ export default async function AdminUserDetailPage({
             eyebrow={
                 <Link
                     href={back}
+                    locale={locale}
                     className="hover:text-foreground inline-flex items-center gap-2 rounded py-1"
                 >
                     <ArrowLeft aria-hidden="true" className="h-4 w-4" />
