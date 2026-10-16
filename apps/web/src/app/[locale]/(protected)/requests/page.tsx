@@ -8,10 +8,12 @@ import { createClient } from "@/utils/supabase/server";
 import { countRecentRequests, getOwnMembership, queueReader } from "@/lib/media/membership.server";
 import { getQueue } from "@/lib/media/queue.server";
 import { isOpenStatus } from "@/lib/media/request";
+import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
 import RequestSearch from "@/components/requests/RequestSearch";
 import { QueueRefresh } from "@/components/requests/QueueRefresh";
 import { QueueList } from "@/components/requests/QueueList";
 import { cn } from "@/utils/cn";
+import { ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +55,10 @@ export default async function RequestsPage({
         getWorkerStatus(reader),
     ]);
     const shown = mine ? queue.filter((item) => item.role !== null) : queue;
+    // Admins decide on the admin page, where the proposals are; this only points there.
+    const waitingForAdmin = membership.viaAdmin
+        ? queue.filter((item) => NEEDS_ADMIN_STATUSES.includes(item.status)).length
+        : 0;
 
     // The queue in the order it's worked: oldest first. Everything else, newest first.
     const open = shown.filter((item) => isOpenStatus(item.status));
@@ -79,6 +85,22 @@ export default async function RequestsPage({
                             })}
                 </p>
             </header>
+
+            {waitingForAdmin > 0 && (
+                <Link
+                    href="/admin/requests"
+                    locale={locale}
+                    className="border-primary/30 bg-primary/5 hover:bg-primary/10 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border px-4 py-3 text-sm transition-colors"
+                >
+                    <span className="text-foreground font-medium">
+                        {t("adminWaiting", { count: waitingForAdmin })}
+                    </span>
+                    <span className="text-primary inline-flex items-center gap-1 font-medium">
+                        {t("adminOpen")}
+                        <ArrowRight aria-hidden className="h-4 w-4" />
+                    </span>
+                </Link>
+            )}
 
             <div className="border-border bg-surface rounded-lg border p-4">
                 <RequestSearch />

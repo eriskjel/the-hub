@@ -547,6 +547,8 @@
         "quota": "{used} of {quota} requests used this week",
         "quotaAdmin": "As an admin you have no weekly limit.",
         "quotaNone": "You can +1 requests, but not make new ones.",
+        "adminWaiting": "{count, plural, one {# request needs you} other {# requests need you}}",
+        "adminOpen": "Open in admin",
         "noAccess": {
             "none": "Requests are invite-only. Ask the admin if you'd like access.",
             "revoked": "Your access to requests has ended."
