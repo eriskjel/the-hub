@@ -13,7 +13,7 @@ export default function AdminMobileMenu() {
     return (
         <nav
             aria-label={t("nav.label")}
-            className="border-border bg-surface flex gap-1 overflow-x-auto border-b px-4 py-3"
+            className="border-border bg-surface flex justify-center-safe gap-1 overflow-x-auto border-b px-4 py-3"
         >
             {getAdminNavItems(t, locale).map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);

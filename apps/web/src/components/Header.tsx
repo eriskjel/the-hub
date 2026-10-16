@@ -30,8 +30,9 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
 
     return (
         <header className={`${base} ${look}`}>
-            <nav className="relative flex h-full w-full items-center justify-center px-8">
-                <ul className="flex gap-8">
+            {/* On phones, center the links in the space left of the user menu */}
+            <nav className="relative flex h-full w-full items-center justify-center pr-14 pl-4 sm:px-8">
+                <ul className="flex gap-4 sm:gap-8">
                     <NavItems
                         isLoggedIn={!!user}
                         isAdmin={isAdminFromUser(user)}
@@ -41,7 +42,7 @@ export default async function Header({ variant = "solid", mode = "sticky" }: Hea
                 </ul>
 
                 {/* Right: theme (wide) + user menu; theme also in dropdown on narrow */}
-                <div className="absolute right-8 flex items-center gap-1">
+                <div className="absolute right-4 flex items-center gap-1 sm:right-8">
                     <div className="max-sm:hidden">
                         <ThemeToggle />
                     </div>
