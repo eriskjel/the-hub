@@ -18,6 +18,7 @@
     --color-error: #dc2626;
     --color-error-muted: #f87171;
     --color-error-subtle: #fef2f2;
+    --color-error-strong: #b91c1c;
 
     --color-status-error: #eab308;
     --color-status-error-muted: #facc15;
@@ -66,6 +67,7 @@
     --color-error: #dc2626;
     --color-error-muted: #f87171;
     --color-error-subtle: #fef2f2;
+    --color-error-strong: #b91c1c; /* red text on red tints, e.g. destructive buttons */
 
     /* Status-error – yellow (cached/stale pill, degraded state) */
     --color-status-error: #eab308;
@@ -122,6 +124,7 @@
     --color-error: #f87171;
     --color-error-muted: #fca5a5;
     --color-error-subtle: #450a0a;
+    --color-error-strong: #fca5a5;
 
     --color-status-error: #facc15;
     --color-status-error-muted: #fde047;
@@ -206,6 +209,13 @@ body {
 @media (min-width: 768px) {
     .admin-mobile {
         display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-content,
+    .admin-sidebar {
+        transition: none;
     }
 }
 

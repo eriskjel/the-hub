@@ -7,25 +7,55 @@ import type { Profile } from "@/types/database";
 import type { ProfileWithAuth } from "@/types/users";
 import { deriveEffectiveRole, RoleKey } from "@/lib/auth/role";
 
-export type AdminUsersQuery = { page?: number; perPage?: number; q?: string };
+import { parseUsersQuery, type AdminUsersQuery, type AdminUsersResult } from "./users";
+import { getMediaMembers } from "./mediaMember.server";
+import { isActiveMember } from "@/lib/media/member";
+import { pickDisplayName } from "@/lib/auth/pickDisplayName";
+
+/** One page of the user directory, reduced to the fields the list shows. */
+export async function listUsersAdmin(input: Partial<AdminUsersQuery>): Promise<AdminUsersResult> {
+    const { user: viewer } = await requireAdmin();
+    const query = parseUsersQuery({
+        page: String(input.page ?? 1),
+        per: String(input.perPage ?? 10),
+        q: input.q,
+    });
+    const result = await listUsers(query);
+    const members = await getMediaMembers(result.users.map((user) => user.id));
+    return {
+        ...query,
+        page: result.page,
+        total: result.total,
+        viewerId: viewer.id,
+        users: result.users.map((user) => {
+            const member = members[user.id];
+            const active = isActiveMember(member);
+            return {
+                id: user.id,
+                name: pickDisplayName(user),
+                email: user.auth.email,
+                role: user.auth.effective_role,
+                lastSignIn: user.auth.last_sign_in_at,
+                hasAccess: active || user.auth.effective_role === "admin",
+                libraryAccount: active ? member.libraryAccount : null,
+            };
+        }),
+    };
+}
 
 /** Global search is filtered before pagination; blank searches keep the paginated API path. */
-export async function listUsersAdmin({ page = 1, perPage = 20, q = "" }: AdminUsersQuery) {
-    await requireAdmin();
+async function listUsers({ page, perPage, q }: AdminUsersQuery) {
     const admin = createAdminClient();
-    page = Number.isSafeInteger(page) && page > 0 ? page : 1;
-    perPage = Number.isSafeInteger(perPage) && perPage > 0 ? Math.min(perPage, 100) : 20;
     const query = q.trim().toLowerCase().slice(0, 100);
 
     if (!query) {
         const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
         if (error) throw new Error(error.message);
-        return {
-            page,
-            perPage,
-            total: data.total ?? data.users.length,
-            users: await enrichUsers(admin, data.users),
-        };
+        const total = data.total ?? data.users.length;
+        // A bookmark past the end (e.g. after deletions) gets the last page instead of an empty one.
+        const lastPage = Math.max(1, Math.ceil(total / perPage));
+        if (page > lastPage) return listUsers({ page: lastPage, perPage, q });
+        return { page, perPage, total, users: await enrichUsers(admin, data.users) };
     }
 
     const matches: ProfileWithAuth[] = [];

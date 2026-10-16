@@ -10,6 +10,7 @@ export async function getUserAdmin(userId: string): Promise<ProfileWithAuth | nu
     const admin = createAdminClient();
 
     const { data, error } = await admin.auth.admin.getUserById(userId);
+    if (error?.status === 404) return null;
     if (error) throw new Error(error.message);
 
     const u = data.user as User | null;

@@ -16,10 +16,15 @@ export async function AdminQueueList({
 }) {
     const t = await getTranslations({ locale, namespace: "requests.queue" });
     return (
-        <section className="space-y-3">
-            <h2 className="font-semibold">{heading}</h2>
+        <section className="border-border bg-surface overflow-hidden rounded-2xl border">
+            <div className="border-border flex items-center gap-3 border-b px-5 py-4">
+                <h2 className="font-semibold">{heading}</h2>
+                <span className="bg-surface-subtle text-muted rounded-full px-2 py-0.5 text-xs">
+                    {items.length}
+                </span>
+            </div>
             {items.length === 0 ? (
-                <p className="text-muted text-sm">{t("empty")}</p>
+                <p className="text-muted px-5 py-10 text-center text-sm">{t("empty")}</p>
             ) : (
                 <ul className="divide-border divide-y">
                     {items.map((item) => {
@@ -30,7 +35,7 @@ export async function AdminQueueList({
                               ? t("unknownMember")
                               : t("formerMember");
                         return (
-                            <li key={item.id} className="flex flex-wrap items-center gap-3 py-4">
+                            <li key={item.id} className="flex flex-wrap items-center gap-4 p-5">
                                 <Poster path={item.posterPath} />
                                 <div className="min-w-0 flex-1 space-y-1">
                                     <p className="font-medium">

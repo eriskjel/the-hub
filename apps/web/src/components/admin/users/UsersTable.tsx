@@ -1,135 +1,290 @@
 "use client";
 
-import { TableComponent } from "nextjs-reusable-table";
-import "nextjs-reusable-table/styles.css";
-import React, { ReactElement, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import type { ProfileWithAuth } from "@/types/users";
-import { isActiveMember, type MediaMember } from "@/lib/media/member";
+import { useLocale, useTranslations } from "next-intl";
+import { ArrowRight, ChevronLeft, ChevronRight, RefreshCw, Search, UsersRound } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/Button";
+import { RoleBadge } from "@/components/admin/RoleBadge";
+import { USER_PAGE_SIZES } from "@/lib/admin/users";
+import { UsersSkeletonRows } from "./UsersTableSkeleton";
+import { useAdminUsers } from "./useAdminUsers";
 
-import { pickDisplayName } from "@/lib/auth/pickDisplayName";
-import { PaginationControls } from "@/components/ui/PaginationControls";
-import { useRouter } from "@/i18n/navigation";
-import { useQueryNav } from "@/hooks/useQueryNav";
-import UsersRowCells, { UsersRow } from "@/components/admin/users/UsersRowCells";
-import TableTopBar from "@/components/ui/TableTopBar";
-
-export default function UsersTable({
-    users,
-    mediaMembers,
-    page,
-    pageSize,
-    total,
-}: {
-    users: ProfileWithAuth[];
-    mediaMembers: Record<string, MediaMember>;
-    page: number;
-    pageSize: number;
-    total: number;
-}): ReactElement {
+export default function UsersTable({ viewerId }: { viewerId: string }) {
     const t = useTranslations("admin.users");
-    const router = useRouter();
-    const { setParams } = useQueryNav();
-    const [isNavigating, setIsNavigating] = useState(false);
-    const totalPages: number = Math.max(1, Math.ceil(total / pageSize));
-
-    const columns: string[] = useMemo(() => getUserTableColumns(t), [t]);
-
-    const data: UsersRow[] = useMemo(
-        () => mapUsersToRows(users, mediaMembers),
-        [users, mediaMembers]
-    );
-
-    useEffect(() => {
-        setIsNavigating(false);
-    }, [users]);
-
-    const classes = {
-        table: "w-full bg-white text-gray-900",
-        tbody: "divide-y divide-gray-200",
-        thead: "border-b border-gray-300",
-        th: "px-6 py-4 text-left text-sm font-semibold text-gray-700",
-        td: "px-6 py-4 text-left text-sm text-gray-900 !bg-transparent",
-        tr: "group odd:bg-white even:bg-gray-50 hover:!bg-slate-100 transition-colors cursor-pointer",
-        pagination: {
-            container: "flex items-center justify-between mt-4 gap-3",
-            button: "px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-50 border",
-            buttonDisabled: "opacity-50 cursor-not-allowed",
-            pageInfo: "text-sm text-gray-700",
-        },
-    };
+    const locale = useLocale();
+    const {
+        query,
+        result,
+        shown,
+        forbidden,
+        fetching,
+        waiting,
+        totalPages,
+        returnQuery,
+        updateUrl,
+        searchText,
+        setSearchText,
+        setComposing,
+        clearSearch,
+        submitSearch,
+    } = useAdminUsers(viewerId);
+    // Retained rows may belong to a failed page or search. Recover with Retry before paging.
+    const canPage =
+        !fetching &&
+        shown?.page === query.page &&
+        shown?.q === query.q &&
+        shown?.perPage === query.perPage;
 
     return (
-        <div className="space-y-4 [&_thead_tr]:!bg-gray-200">
-            <TableTopBar
-                total={total}
-                pageSize={pageSize}
-                totalLabel={(n) => t("pagination.total_users_count", { count: n })}
-                perPageLabel={t("pagination.items_per_page")}
-                onChangePerPage={(n) => setParams({ per: String(n), page: "1" })}
-            />
-            <TableComponent<UsersRow>
-                columns={columns}
-                data={data}
-                props={["id", "name", "email", "roleKey", "requests"] as const}
-                loading={isNavigating}
-                disableDefaultStyles={false}
-                enableDarkMode={false}
-                customClassNames={classes}
-                enablePagination
-                page={page}
-                setPage={(p) => {
-                    setIsNavigating(true);
-                    setParams({ page: String(p) });
-                }}
-                itemsPerPage={pageSize}
-                totalPages={totalPages}
-                renderPagination={(p) => (
-                    <PaginationControls
-                        page={p.page}
-                        setPage={p.setPage}
-                        totalPages={totalPages}
-                        label={(page, total) => t("pagination.page_of", { page, total })}
-                        prevLabel={t("pagination.prev")}
-                        nextLabel={t("pagination.next")}
+        <section
+            className="border-border bg-surface overflow-hidden rounded-2xl border"
+            aria-label={t("title")}
+        >
+            <div className="border-border flex flex-wrap items-end justify-between gap-4 border-b p-4 sm:p-5">
+                <form
+                    role="search"
+                    className="flex w-full flex-wrap items-end gap-2 sm:w-auto sm:flex-1"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        submitSearch();
+                    }}
+                >
+                    <div className="min-w-0 flex-1 sm:max-w-md">
+                        <label
+                            htmlFor="users-search"
+                            className="text-foreground mb-2 block text-sm font-medium"
+                        >
+                            {t("search.label")}
+                        </label>
+                        <div className="relative">
+                            <Search
+                                aria-hidden="true"
+                                className="text-muted pointer-events-none absolute top-3 left-3 h-4 w-4"
+                            />
+                            <input
+                                id="users-search"
+                                name="q"
+                                type="search"
+                                maxLength={100}
+                                value={searchText}
+                                onChange={(event) => setSearchText(event.target.value)}
+                                onCompositionStart={() => setComposing(true)}
+                                onCompositionEnd={() => setComposing(false)}
+                                placeholder={t("search.placeholder")}
+                                className="border-border bg-background text-foreground focus-visible:ring-primary h-10 w-full rounded-lg border pr-3 pl-9 text-sm outline-none focus-visible:ring-2"
+                            />
+                        </div>
+                    </div>
+                    {searchText && (
+                        <Button type="button" className="h-10" onClick={clearSearch}>
+                            {t("search.clear")}
+                        </Button>
+                    )}
+                </form>
+                <Button
+                    type="button"
+                    className="h-10"
+                    disabled={fetching}
+                    onClick={() => void result.refetch()}
+                >
+                    <RefreshCw
+                        aria-hidden="true"
+                        className={`h-4 w-4 ${fetching ? "motion-safe:animate-spin" : ""}`}
                     />
-                )}
-                rowOnClick={(row) => router.push(`/admin/users/${row.id}`)}
-                renderRow={(row) => <UsersRowCells {...row} />}
-            />
-        </div>
+                    {t("refresh")}
+                </Button>
+            </div>
+            <div className="flex min-h-12 flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
+                <span className="text-muted">
+                    {shown
+                        ? t("pagination.total_users_count", { count: shown.total })
+                        : t("loading")}
+                </span>
+                <span role="status" className="text-muted">
+                    {fetching ? t("updating") : result.isPaused ? t("offline") : ""}
+                </span>
+            </div>
+            {(result.isError || forbidden) && (
+                <div
+                    role="alert"
+                    className="border-error/20 bg-error/5 text-error mx-5 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm"
+                >
+                    <span>{t(forbidden ? "forbidden" : "loadError")}</span>
+                    <Button type="button" disabled={fetching} onClick={() => void result.refetch()}>
+                        {t("retry")}
+                    </Button>
+                </div>
+            )}
+            <div className="overflow-x-auto" aria-busy={fetching}>
+                <table className="w-full text-left text-sm">
+                    <caption className="sr-only">{t("title")}</caption>
+                    <thead className="border-border bg-surface-subtle/50 text-muted border-y text-xs">
+                        <tr>
+                            <th scope="col" className="px-5 py-3 font-medium">
+                                {t("columns.name")}
+                            </th>
+                            <th scope="col" className="px-5 py-3 font-medium">
+                                {t("columns.role")}
+                            </th>
+                            <th scope="col" className="hidden px-5 py-3 font-medium sm:table-cell">
+                                {t("columns.requests")}
+                            </th>
+                            <th scope="col" className="hidden px-5 py-3 font-medium lg:table-cell">
+                                {t("columns.lastLogin")}
+                            </th>
+                            <th scope="col" className="px-5 py-3">
+                                <span className="sr-only">{t("columns.actions")}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody
+                        className={waiting ? "opacity-60 transition-opacity" : "transition-opacity"}
+                    >
+                        {!shown ? (
+                            forbidden ? null : (
+                                <UsersSkeletonRows rows={query.perPage} />
+                            )
+                        ) : (
+                            shown.users.map((user) => (
+                                <tr
+                                    key={user.id}
+                                    className="border-border hover:bg-surface-subtle/50 border-b last:border-b-0"
+                                >
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <span
+                                                aria-hidden="true"
+                                                className="bg-primary/10 text-primary hidden h-10 w-10 shrink-0 items-center justify-center rounded-full font-semibold sm:flex"
+                                            >
+                                                {user.name.slice(0, 1).toUpperCase()}
+                                            </span>
+                                            <div className="min-w-0">
+                                                <Link
+                                                    href={`/admin/users/${user.id}?${returnQuery}`}
+                                                    className="text-foreground focus-visible:ring-primary rounded font-medium hover:underline focus-visible:ring-2"
+                                                >
+                                                    {user.name}
+                                                </Link>
+                                                <p
+                                                    className="text-muted mt-0.5 max-w-72 truncate text-xs"
+                                                    title={user.email}
+                                                >
+                                                    {user.email || t("noEmail")}
+                                                </p>
+                                                <p className="text-muted mt-1 text-xs sm:hidden">
+                                                    {user.hasAccess
+                                                        ? t("access.active")
+                                                        : t("access.none")}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <RoleBadge role={user.role} />
+                                    </td>
+                                    <td className="hidden px-5 py-4 sm:table-cell">
+                                        <span
+                                            className={
+                                                user.hasAccess ? "text-foreground" : "text-muted"
+                                            }
+                                        >
+                                            {user.hasAccess ? t("access.active") : t("access.none")}
+                                        </span>
+                                        {user.libraryAccount && (
+                                            <p
+                                                className="text-muted mt-1 max-w-40 truncate font-mono text-xs"
+                                                title={user.libraryAccount}
+                                            >
+                                                {user.libraryAccount}
+                                            </p>
+                                        )}
+                                    </td>
+                                    <td className="text-muted hidden px-5 py-4 whitespace-nowrap lg:table-cell">
+                                        {user.lastSignIn
+                                            ? new Intl.DateTimeFormat(
+                                                  locale === "no" ? "nb-NO" : locale,
+                                                  { dateStyle: "medium", timeZone: "Europe/Oslo" }
+                                              ).format(new Date(user.lastSignIn))
+                                            : t("never")}
+                                    </td>
+                                    <td className="px-5 py-4 text-right">
+                                        <Link
+                                            href={`/admin/users/${user.id}?${returnQuery}`}
+                                            aria-label={t("viewUser", { name: user.name })}
+                                            className="text-muted hover:text-primary focus-visible:ring-primary inline-flex items-center gap-2 rounded-lg p-2 focus-visible:ring-2"
+                                        >
+                                            <span className="hidden sm:inline">{t("view")}</span>
+                                            <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                        {shown?.users.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-5 py-16 text-center">
+                                    <UsersRound
+                                        aria-hidden="true"
+                                        className="text-muted mx-auto mb-3 h-8 w-8"
+                                    />
+                                    <p className="text-foreground font-medium">{t("empty")}</p>
+                                    <p className="text-muted mt-2">
+                                        {t(query.q ? "emptySearch" : "emptyDirectory")}
+                                    </p>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            <footer className="border-border flex flex-wrap items-center justify-between gap-4 border-t px-5 py-4">
+                <div className="text-muted flex items-center gap-2 text-xs">
+                    <label htmlFor="users-per-page">{t("pagination.items_per_page")}</label>
+                    <select
+                        id="users-per-page"
+                        value={query.perPage}
+                        disabled={fetching}
+                        onChange={(event) =>
+                            updateUrl({ ...query, perPage: Number(event.target.value), page: 1 })
+                        }
+                        className="border-border bg-background text-foreground focus-visible:ring-primary rounded-md border px-2 py-1.5 text-sm focus-visible:ring-2 disabled:opacity-50"
+                    >
+                        {USER_PAGE_SIZES.map((size) => (
+                            <option key={size} value={size}>
+                                {size}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <nav aria-label={t("pagination.label")} className="flex items-center gap-3">
+                    <span className="text-muted text-xs" role="status">
+                        {t("pagination.page_of", {
+                            page: shown?.page ?? query.page,
+                            total: totalPages,
+                        })}
+                    </span>
+                    <Button
+                        type="button"
+                        aria-label={t("pagination.prev")}
+                        disabled={!canPage || shown.page <= 1}
+                        onClick={() =>
+                            updateUrl({ ...query, page: Math.max(1, (shown?.page ?? 1) - 1) })
+                        }
+                    >
+                        <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+                        <span className="hidden sm:inline">{t("pagination.prev")}</span>
+                    </Button>
+                    <Button
+                        type="button"
+                        aria-label={t("pagination.next")}
+                        disabled={!canPage || shown.page >= totalPages}
+                        onClick={() => updateUrl({ ...query, page: (shown?.page ?? 1) + 1 })}
+                    >
+                        <span className="hidden sm:inline">{t("pagination.next")}</span>
+                        <ChevronRight aria-hidden="true" className="h-4 w-4" />
+                    </Button>
+                </nav>
+            </footer>
+        </section>
     );
-}
-
-function getUserTableColumns(t: ReturnType<typeof useTranslations>): string[] {
-    return [
-        t("columns.id"),
-        t("columns.name"),
-        t("columns.email"),
-        t("columns.role"),
-        t("columns.requests"),
-        t("columns.actions"),
-    ];
-}
-
-function mapUsersToRows(
-    users: ProfileWithAuth[],
-    mediaMembers: Record<string, MediaMember>
-): UsersRow[] {
-    return users.map((user: ProfileWithAuth) => {
-        const member = mediaMembers[user.id];
-        return {
-            id: user.id,
-            name: pickDisplayName(user),
-            email: user.auth.email,
-            roleKey: user.auth.effective_role,
-            // The linked streaming username, a check mark for access without one
-            // (admins always have access), or a dash.
-            requests: isActiveMember(member)
-                ? (member.libraryAccount ?? "✓")
-                : user.auth.effective_role === "admin"
-                  ? "✓"
-                  : "—",
-        };
-    });
 }

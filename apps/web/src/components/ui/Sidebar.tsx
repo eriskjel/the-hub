@@ -61,6 +61,8 @@ export default function Sidebar({
                                     <li key={it.href}>
                                         <Anchor
                                             href={it.href}
+                                            aria-label={collapsed ? it.label : undefined}
+                                            title={collapsed ? it.label : undefined}
                                             className={cn(
                                                 "focus-visible:ring-primary flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors outline-none focus-visible:ring-2",
                                                 collapsed && "justify-center",

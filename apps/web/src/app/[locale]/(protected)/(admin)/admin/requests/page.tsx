@@ -8,6 +8,7 @@ import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
 import { WorkerStatusCard } from "@/components/admin/requests/WorkerStatusCard";
 import { AdminQueueList } from "@/components/admin/requests/AdminQueueList";
 import { QueueRefresh } from "@/components/requests/QueueRefresh";
+import { AdminPage } from "@/components/admin/AdminPage";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +28,8 @@ export default async function AdminRequestsPage({
         getTranslations({ locale, namespace: "admin.requests" }),
     ]);
     return (
-        <div className="mx-auto max-w-5xl space-y-6 p-6">
+        <AdminPage title={t("title")} description={t("intro")}>
             <QueueRefresh />
-            <header className="space-y-1">
-                <h1 className="text-2xl font-semibold">{t("title")}</h1>
-                <p className="text-muted text-sm">{t("intro")}</p>
-            </header>
             <WorkerStatusCard worker={worker} locale={locale} />
             <AdminQueueList
                 items={queue.filter((item) => isOpenStatus(item.status))}
@@ -51,6 +48,6 @@ export default async function AdminRequestsPage({
                 heading={t("closed")}
                 locale={locale}
             />
-        </div>
+        </AdminPage>
     );
 }

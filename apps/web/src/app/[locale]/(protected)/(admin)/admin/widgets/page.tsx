@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import CountdownProviderCard from "@/components/admin/countdown/CountdownProviderCard";
 import { fetchDeniedDates, fetchProviderStatus } from "@/lib/admin/countdown.server";
 import type { CountdownSettings } from "@/widgets/schema";
+import { AdminPage } from "@/components/admin/AdminPage";
 
 const PROVIDERS: CountdownSettings["provider"][] = ["trippel-trumf", "dnb-supertilbud"];
 
@@ -13,12 +14,8 @@ export default async function AdminWidgetsPage() {
     ]);
 
     return (
-        <div className="space-y-6 p-6">
-            <div>
-                <h2 className="text-foreground mb-1 text-lg font-semibold">{t("title")}</h2>
-                <p className="text-muted text-sm">{t("description")}</p>
-            </div>
-            <div className="flex flex-wrap gap-4">
+        <AdminPage title={t("title")} description={t("description")}>
+            <div className="grid gap-5 xl:grid-cols-2">
                 {PROVIDERS.map((id, i) => (
                     <CountdownProviderCard
                         key={id}
@@ -28,6 +25,6 @@ export default async function AdminWidgetsPage() {
                     />
                 ))}
             </div>
-        </div>
+        </AdminPage>
     );
 }

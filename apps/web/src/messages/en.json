@@ -343,7 +343,8 @@
                 "title": "Countdown – provider status",
                 "description": "Manually confirm a date to remove the \"Unconfirmed date\" badge. The confirmation resets automatically when the next date changes.",
                 "next": "Next",
-                "noDate": "No date in cache.",
+                "noDate": "No upcoming date is available.",
+                "unavailable": "Provider status is unavailable. Try refreshing.",
                 "confirm": "Confirm date",
                 "unconfirm": "Remove confirmation",
                 "confirmed": "Confirmed",
@@ -356,7 +357,13 @@
                 "providers": {
                     "trippel-trumf": "Trippel-Trumf",
                     "dnb-supertilbud": "DNB Supertilbud"
-                }
+                },
+                "cancel": "Cancel",
+                "updateFailed": "Could not update this provider. Refresh to check its current state, then try again.",
+                "updating": "Updating…",
+                "updated": "Up to date.",
+                "refresh": "Refresh",
+                "refreshProvider": "Refresh {provider}"
             }
         },
         "nav": {
@@ -371,7 +378,7 @@
         },
         "items": {
             "users": "Users",
-            "widgets": "Countdown Widgets",
+            "widgets": "Countdowns",
             "settings": "Settings",
             "requests": "Requests"
         },
@@ -383,7 +390,8 @@
                 "email": "Email",
                 "role": "Role",
                 "requests": "Requests",
-                "actions": "Actions"
+                "actions": "Actions",
+                "lastLogin": "Last login"
             },
             "actions": {
                 "edit": "Edit",
@@ -402,10 +410,11 @@
                 "prev": "Previous",
                 "next": "Next",
                 "first": "First",
-                "last": "Last"
+                "last": "Last",
+                "label": "User pages"
             },
             "detail": {
-                "back": "Back",
+                "back": "Back to users",
                 "edit": "Edit user",
                 "cards": {
                     "account": {
@@ -443,13 +452,31 @@
                         "not_found": "User not found.",
                         "failed": "Something went wrong. Try again."
                     }
-                }
+                },
+                "never": "Never"
             },
             "search": {
                 "label": "Search users",
                 "placeholder": "Email, name or username",
-                "submit": "Search",
                 "clear": "Clear search"
+            },
+            "description": "Find people, review their accounts, and manage request access.",
+            "loading": "Loading users…",
+            "updating": "Updating users…",
+            "offline": "Offline. Waiting for a connection.",
+            "refresh": "Refresh",
+            "retry": "Try again",
+            "loadError": "Could not load the requested results. The last loaded users are still shown.",
+            "forbidden": "Your admin session has ended or you no longer have access. Sign in again to continue.",
+            "view": "View",
+            "viewUser": "View {name}",
+            "noEmail": "No email address",
+            "never": "Never",
+            "emptySearch": "Try a different name or email, or clear your search.",
+            "emptyDirectory": "Accounts will appear here when people join.",
+            "access": {
+                "active": "Allowed",
+                "none": "No access"
             }
         },
         "requests": {
@@ -498,6 +525,14 @@
                     "unknown": "Not reported"
                 }
             }
+        },
+        "workspace": "Administration",
+        "workspaceDescription": "The Hub workspace",
+        "loading": "Loading admin…",
+        "error": {
+            "title": "This page could not load",
+            "description": "Something went wrong while loading the admin page. Please try again.",
+            "retry": "Try again"
         }
     },
     "requests": {

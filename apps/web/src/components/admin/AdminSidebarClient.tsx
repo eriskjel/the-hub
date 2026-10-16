@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, ShieldCheck } from "lucide-react";
 import Sidebar, { type SidebarLinkProps } from "@/components/ui/Sidebar";
 import { getAdminNavItems } from "@/components/admin/adminNavItems";
 import { cn } from "@/utils/cn";
@@ -13,6 +13,24 @@ import type { ComponentType } from "react";
 const EXPANDED_W = "15rem"; // matches w-60
 const COLLAPSED_W = "3.5rem"; // matches w-14
 const STORAGE_KEY = "admin-sidebar-collapsed";
+const CHANGE_EVENT = "admin-sidebar-change";
+
+function subscribe(listener: () => void) {
+    window.addEventListener("storage", listener);
+    window.addEventListener(CHANGE_EVENT, listener);
+    return () => {
+        window.removeEventListener("storage", listener);
+        window.removeEventListener(CHANGE_EVENT, listener);
+    };
+}
+
+function storedCollapsed() {
+    try {
+        return localStorage.getItem(STORAGE_KEY) === "1";
+    } catch {
+        return false;
+    }
+}
 
 const TypedLink = Link as ComponentType<SidebarLinkProps>;
 
@@ -20,16 +38,9 @@ export default function AdminSidebarClient() {
     const t = useTranslations("admin");
     const pathname = usePathname();
     const { locale } = useParams() as { locale: string };
-    const [collapsed, setCollapsed] = useState(false);
-
-    // Restore persisted state after mount (avoids SSR hydration mismatch).
-    useEffect(() => {
-        try {
-            if (localStorage.getItem(STORAGE_KEY) === "1") setCollapsed(true);
-        } catch {
-            // storage unavailable (private mode, quota, etc.) — fall back to default
-        }
-    }, []);
+    const persisted = useSyncExternalStore(subscribe, storedCollapsed, () => false);
+    const [fallback, setFallback] = useState<boolean | null>(null);
+    const collapsed = fallback ?? persisted;
 
     // Keep the CSS variable in sync so .admin-content padding-left follows.
     useEffect(() => {
@@ -37,15 +48,19 @@ export default function AdminSidebarClient() {
             "--admin-sidebar-w",
             collapsed ? COLLAPSED_W : EXPANDED_W
         );
+        return () => {
+            document.documentElement.style.removeProperty("--admin-sidebar-w");
+        };
     }, [collapsed]);
 
     function toggle() {
         const next = !collapsed;
-        setCollapsed(next);
         try {
             localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+            setFallback(null);
+            window.dispatchEvent(new Event(CHANGE_EVENT));
         } catch {
-            // storage unavailable — state still toggles for this session
+            setFallback(next);
         }
     }
 
@@ -58,6 +73,15 @@ export default function AdminSidebarClient() {
                 collapsed ? "w-14" : "w-60"
             )}
         >
+            <div className="border-border flex h-24 items-center gap-3 border-b px-4">
+                <ShieldCheck aria-hidden="true" className="text-primary h-5 w-5 shrink-0" />
+                {!collapsed && (
+                    <div>
+                        <p className="text-foreground text-sm font-semibold">{t("workspace")}</p>
+                        <p className="text-muted mt-1 text-xs">{t("workspaceDescription")}</p>
+                    </div>
+                )}
+            </div>
             <Sidebar
                 items={items}
                 currentPath={pathname ?? ""}

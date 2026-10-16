@@ -21,7 +21,7 @@ export async function WorkerStatusCard({
         : t("never");
     return (
         <section
-            className="border-border bg-surface space-y-4 rounded-lg border p-4"
+            className="border-border bg-surface space-y-5 rounded-2xl border p-5 sm:p-6"
             aria-labelledby="worker-heading"
         >
             <div className="flex flex-wrap items-center justify-between gap-3">
