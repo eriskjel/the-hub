@@ -96,6 +96,18 @@ it("sends the displayed request revision and disables all row actions while savi
     expect(toast.success).toHaveBeenCalledWith("Request declined.");
 });
 
+it("closes an open menu when the main action starts from the keyboard", () => {
+    vi.mocked(adminRequestAction).mockReturnValueOnce(new Promise(() => {}));
+    render(<QueueControls item={proposal} title="A movie" />);
+    openMenu();
+    // A keyboard press fires no mousedown outside the menu.
+    fireEvent.click(screen.getByRole("button", { name: "Mark A movie available" }));
+
+    expect(screen.queryByRole("button", { name: "Decline A movie" })).toBeNull();
+    expect(screen.getByRole("button", { name: "More actions for A movie" })).toBeDisabled();
+    expect(adminRequestAction).toHaveBeenCalledOnce();
+});
+
 it("reports a stale action without success", async () => {
     vi.mocked(adminRequestAction).mockResolvedValueOnce({ ok: false, error: "changed" });
     render(<QueueControls item={item} title="A movie" />);
