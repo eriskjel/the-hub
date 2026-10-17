@@ -77,9 +77,9 @@ describe("getQueue", () => {
         expect(queue.find((item) => item.id === 2)?.detail).toBeNull();
     });
     it("includes cancelled requests for the admin queue only", async () => {
-        const queue = await getQueue(client(), ME, "en", { admin: true });
+        const queue = await getQueue(client(), ME, { admin: true });
         expect(queue.find((item) => item.id === 5)?.status).toBe("cancelled");
-        expect((await getQueue(client(), ME, "en")).some((item) => item.id === 5)).toBe(false);
+        expect((await getQueue(client(), ME)).some((item) => item.id === 5)).toBe(false);
     });
 
     it("lists closed requests for admins by last change, apart from available titles", async () => {
@@ -92,12 +92,12 @@ describe("getQueue", () => {
             ),
         ];
 
-        const queue = await getQueue(client(), ME, "en", { admin: true });
+        const queue = await getQueue(client(), ME, { admin: true });
         expect(queue.filter((q) => q.status !== "available").map((q) => q.id)).toEqual([1, 2]);
         expect(queue.filter((q) => q.status === "available")).toHaveLength(200);
     });
     it("lists open movie requests oldest first, then history, without cancelled ones", async () => {
-        const queue = await getQueue(client(), ME, "en");
+        const queue = await getQueue(client(), ME);
 
         expect(queue.map((q) => q.id)).toEqual([1, 2, 4, 3]);
     });
@@ -110,7 +110,7 @@ describe("getQueue", () => {
             ),
         ];
 
-        const queue = await getQueue(client(), ME, "en");
+        const queue = await getQueue(client(), ME);
         expect(queue).toHaveLength(201);
         expect(queue[0]).toMatchObject({ id: 1, status: "wanted" });
         expect(queue.slice(1).map((q) => q.id)).toEqual(
@@ -123,12 +123,12 @@ describe("getQueue", () => {
             req(i + 1, i + 101, ME, "wanted", "2026-10-01")
         );
 
-        const queue = await getQueue(client(), ME, "en");
+        const queue = await getQueue(client(), ME);
         expect(queue.map((q) => q.id)).toEqual(Array.from({ length: 200 }, (_, i) => i + 1));
     });
 
     it("names the requester and shows your part in each request", async () => {
-        const byId = new Map((await getQueue(client(), ME, "en")).map((q) => [q.id, q]));
+        const byId = new Map((await getQueue(client(), ME)).map((q) => [q.id, q]));
 
         expect(byId.get(1)).toMatchObject({
             requester: { name: "Me Myself", isYou: true },
@@ -145,8 +145,8 @@ describe("getQueue", () => {
         expect(byId.get(4)).toMatchObject({ requester: { name: null, isYou: false } });
     });
 
-    it("fills in titles from TMDB in the page's language, and still lists a title TMDB can't return", async () => {
-        const byId = new Map((await getQueue(client(), ME, "no")).map((q) => [q.id, q]));
+    it("fills in titles from TMDB, and still lists a title TMDB can't return", async () => {
+        const byId = new Map((await getQueue(client(), ME)).map((q) => [q.id, q]));
 
         expect(byId.get(1)).toMatchObject({
             tmdbId: 101,
@@ -160,20 +160,20 @@ describe("getQueue", () => {
             year: null,
             posterPath: null,
         });
-        expect(getMovieMock).toHaveBeenCalledWith(101, "no");
+        expect(getMovieMock).toHaveBeenCalledWith(101);
     });
 
     it("still renders when names can't be read", async () => {
         db.failNext("profiles", "select");
 
-        const queue = await getQueue(client(), ME, "en");
+        const queue = await getQueue(client(), ME);
         expect(queue.find((q) => q.id === 1)?.requester).toEqual({ name: null, isYou: true });
     });
 
     it("throws when the queue itself can't be read", async () => {
         db.failNext("media_request", "select");
 
-        await expect(getQueue(client(), ME, "en")).rejects.toThrow("media queue read failed");
+        await expect(getQueue(client(), ME)).rejects.toThrow("media queue read failed");
     });
 
     it("throws when the history can't be read", async () => {
@@ -181,7 +181,7 @@ describe("getQueue", () => {
             db.beforeNext("media_request", "select", () => db.failNext("media_request", "select"));
         });
 
-        await expect(getQueue(client(), ME, "en")).rejects.toThrow("media queue read failed");
+        await expect(getQueue(client(), ME)).rejects.toThrow("media queue read failed");
     });
 });
 
@@ -237,7 +237,7 @@ describe("countWaitingForAdmin", () => {
             ),
         ];
 
-        expect((await getQueue(client(), ME, "en")).some((item) => item.id === 1)).toBe(false);
+        expect((await getQueue(client(), ME)).some((item) => item.id === 1)).toBe(false);
         expect(await countWaitingForAdmin(client())).toBe(2);
     });
 

@@ -1,7 +1,6 @@
 import "server-only";
 
 import { z } from "zod";
-import type { Locale } from "@/i18n/routing";
 
 /**
  * TMDB API (v3 endpoints, v4 read access token). Only the server talks to
@@ -13,7 +12,13 @@ const SEARCH_REVALIDATE_S = 60 * 60;
 const DETAILS_REVALIDATE_S = 24 * 60 * 60;
 const TIMEOUT_MS = 8000;
 
-const TMDB_LANGUAGE: Record<Locale, string> = { en: "en-US", no: "no-NO" };
+/**
+ * Titles are English whatever the page language: TMDB's Norwegian titles are
+ * hit and miss, and fall back to the original script ("七人の侍") when missing.
+ * Scandinavian films keep their original title.
+ */
+const TMDB_LANGUAGE = "en-US";
+const ORIGINAL_TITLE_LANGUAGES = new Set(["no", "nb", "nn", "sv", "da"]);
 
 export type TmdbMovie = {
     id: number;
@@ -27,6 +32,7 @@ const movieSchema = z
         id: z.number().int().positive(),
         title: z.string().trim().catch(""),
         original_title: z.string().trim().catch(""),
+        original_language: z.string().catch(""),
         release_date: z.string().nullish(),
         poster_path: z.string().nullish(),
         adult: z.boolean(),
@@ -44,11 +50,11 @@ export class TmdbError extends Error {
 }
 
 /** Movies matching `query`, adult titles excluded (first page, up to 20). */
-export async function searchMovies(query: string, locale: Locale): Promise<TmdbMovie[]> {
+export async function searchMovies(query: string): Promise<TmdbMovie[]> {
     const params = new URLSearchParams({
         query,
         include_adult: "false",
-        language: TMDB_LANGUAGE[locale],
+        language: TMDB_LANGUAGE,
         page: "1",
     });
     const res = await tmdbFetch(`/search/movie?${params}`, SEARCH_REVALIDATE_S);
@@ -62,8 +68,8 @@ export async function searchMovies(query: string, locale: Locale): Promise<TmdbM
 }
 
 /** One movie, or null if TMDB doesn't know it (or it's an adult title). */
-export async function getMovie(id: number, locale: Locale): Promise<TmdbMovie | null> {
-    const params = new URLSearchParams({ language: TMDB_LANGUAGE[locale] });
+export async function getMovie(id: number): Promise<TmdbMovie | null> {
+    const params = new URLSearchParams({ language: TMDB_LANGUAGE });
     const res = await tmdbFetch(`/movie/${id}?${params}`, DETAILS_REVALIDATE_S);
     if (res.status === 404) return null;
     if (!res.ok) throw new TmdbError(`movie lookup failed: ${res.status}`);
@@ -87,7 +93,10 @@ function toMovie(raw: RawMovie): TmdbMovie {
     const year = raw.release_date?.slice(0, 4);
     return {
         id: raw.id,
-        title: raw.title || raw.original_title,
+        title:
+            (ORIGINAL_TITLE_LANGUAGES.has(raw.original_language) && raw.original_title) ||
+            raw.title ||
+            raw.original_title,
         year: year && /^\d{4}$/.test(year) ? year : null,
         // Goes into an image URL, so accept only TMDB's plain "/abc.jpg" shape.
         posterPath:

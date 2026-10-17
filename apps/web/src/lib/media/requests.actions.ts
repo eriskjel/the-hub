@@ -3,7 +3,6 @@
 import { refresh } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { DEFAULT_LOCALE } from "@/i18n/routing";
 import { getOwnMembership } from "@/lib/media/membership.server";
 import { getMovie } from "@/lib/media/tmdb.server";
 import {
@@ -34,7 +33,7 @@ export async function requestMovie(tmdbId: number): Promise<RequestActionResult>
     if (!id.success) return fail("not_found");
 
     try {
-        if (!(await getMovie(id.data, DEFAULT_LOCALE))) return fail("not_found");
+        if (!(await getMovie(id.data))) return fail("not_found");
     } catch (e) {
         console.error("media request: TMDB lookup failed:", (e as Error).message);
         return fail("failed");

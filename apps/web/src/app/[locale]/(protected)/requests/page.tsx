@@ -50,7 +50,7 @@ export default async function RequestsPage({
     const reader = queueReader(membership, supabase);
     // Admins decide on the admin page, where the proposals are; this only points there.
     const [queue, used, worker, waitingForAdmin] = await Promise.all([
-        getQueue(reader, user.id, locale),
+        getQueue(reader, user.id),
         countRecentRequests(reader, user.id),
         getWorkerStatus(reader),
         membership.viaAdmin ? countWaitingForAdmin(reader) : 0,

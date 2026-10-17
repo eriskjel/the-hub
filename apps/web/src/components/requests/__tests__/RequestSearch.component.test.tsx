@@ -72,7 +72,7 @@ describe("RequestSearch", () => {
 
         await screen.findByText("Movie 1");
         expect(fetchMock).toHaveBeenCalledOnce();
-        expect(fetchMock.mock.calls[0][0]).toBe("/api/media/search?q=inter&locale=en");
+        expect(fetchMock.mock.calls[0][0]).toBe("/api/media/search?q=inter");
     });
 
     it("shows the top five results, and the rest on request", async () => {

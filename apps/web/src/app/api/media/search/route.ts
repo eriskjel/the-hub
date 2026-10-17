@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
 import { getOwnMembership, queueReader } from "@/lib/media/membership.server";
 import { searchMovies } from "@/lib/media/tmdb.server";
 import {
@@ -14,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/media/search?q=…&locale=en|no
+ * GET /api/media/search?q=…
  * Members (and admins) only. Searches TMDB for movies and marks the ones
  * already in the request queue.
  */
@@ -38,12 +37,10 @@ export async function GET(req: NextRequest) {
     if (query.length < SEARCH_MIN_LENGTH || query.length > SEARCH_MAX_LENGTH) {
         return NextResponse.json({ error: "invalid_query" }, { status: 400 });
     }
-    const localeParam = req.nextUrl.searchParams.get("locale") ?? "";
-    const locale = isLocale(localeParam) ? localeParam : DEFAULT_LOCALE;
 
     let movies;
     try {
-        movies = await searchMovies(query, locale);
+        movies = await searchMovies(query);
     } catch (e) {
         console.error("media search: TMDB failed:", (e as Error).message);
         return NextResponse.json({ error: "search_unavailable" }, { status: 502 });
