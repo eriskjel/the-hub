@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState, type ReactElement } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { FieldText } from "@/components/ui/Fields";
@@ -18,7 +18,6 @@ const RESULTS_SHOWN = 5;
 
 export default function RequestSearch(): ReactElement {
     const t = useTranslations("requests.search");
-    const locale = useLocale();
     const [input, setInput] = useState("");
     const [query, setQuery] = useState("");
     const [showAll, setShowAll] = useState(false);
@@ -27,9 +26,9 @@ export default function RequestSearch(): ReactElement {
 
     const enabled = query.length >= SEARCH_MIN_LENGTH;
     const search = useQuery({
-        queryKey: [SEARCH_QUERY_KEY, locale, query],
+        queryKey: [SEARCH_QUERY_KEY, query],
         queryFn: async ({ signal }): Promise<SearchResult[]> => {
-            const params = new URLSearchParams({ q: query, locale });
+            const params = new URLSearchParams({ q: query });
             const res = await fetch(`/api/media/search?${params}`, { signal });
             if (!res.ok) throw new Error(`media search ${res.status}`);
             return ((await res.json()) as { results: SearchResult[] }).results;

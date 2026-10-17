@@ -1,7 +1,6 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Locale } from "@/i18n/routing";
 import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
@@ -67,7 +66,6 @@ type Row = {
 export async function getQueue(
     supabase: SupabaseClient,
     userId: string,
-    locale: Locale,
     options: { admin?: boolean } = {}
 ): Promise<QueueItem[]> {
     const results = await Promise.all(
@@ -94,7 +92,7 @@ export async function getQueue(
     );
     const movies = await Promise.all(
         rows.map((r) =>
-            getMovie(r.tmdb_id, locale).catch((e: Error) => {
+            getMovie(r.tmdb_id).catch((e: Error) => {
                 console.error("media queue: TMDB lookup failed:", e.message);
                 return null;
             })
