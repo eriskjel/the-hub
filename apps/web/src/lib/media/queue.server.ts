@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/routing";
 import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
+import type { RequestDetail } from "./detail";
 
 /** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
@@ -40,6 +41,7 @@ export type QueueItem = {
     posterPath: string | null;
     status: RequestStatus;
     statusDetail: string | null;
+    detail: RequestDetail | null;
     /** Null when the requester's account was deleted. */
     requester: { name: string | null; isYou: boolean } | null;
     followerCount: number;
@@ -53,6 +55,8 @@ type Row = {
     tmdb_id: number;
     status: RequestStatus;
     status_detail: string | null;
+    detail_code: string | null;
+    detail_args: unknown;
     requested_by: string | null;
     created_at: string;
     updated_at: string;
@@ -75,7 +79,7 @@ export async function getQueue(
             supabase
                 .from("media_request")
                 .select(
-                    "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)"
+                    "id, tmdb_id, status, status_detail, detail_code, detail_args, requested_by, created_at, updated_at, media_request_follower(user_id)"
                 )
                 .eq("media_type", "movie")
                 .in("status", statuses)
@@ -111,6 +115,7 @@ export async function getQueue(
             posterPath: movies[i]?.posterPath ?? null,
             status: r.status,
             statusDetail: r.status_detail,
+            detail: r.detail_code ? { code: r.detail_code, args: r.detail_args } : null,
             requester: r.requested_by
                 ? { name: names.get(r.requested_by) ?? null, isYou: r.requested_by === userId }
                 : null,

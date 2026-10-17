@@ -63,6 +63,19 @@ beforeEach(() => {
 });
 
 describe("getQueue", () => {
+    it("reads structured details alongside the legacy fallback", async () => {
+        Object.assign(db.tables.media_request[0], {
+            detail_code: "waiting_release",
+            detail_args: { date: "2026-11-12" },
+            status_detail: "Waiting for digital release, 12 Nov",
+        });
+        const queue = await getQueue(client(), ME, "no");
+        expect(queue.find((item) => item.id === 1)).toMatchObject({
+            detail: { code: "waiting_release", args: { date: "2026-11-12" } },
+            statusDetail: "Waiting for digital release, 12 Nov",
+        });
+        expect(queue.find((item) => item.id === 2)?.detail).toBeNull();
+    });
     it("includes cancelled requests for the admin queue only", async () => {
         const queue = await getQueue(client(), ME, "en", { admin: true });
         expect(queue.find((item) => item.id === 5)?.status).toBe("cancelled");

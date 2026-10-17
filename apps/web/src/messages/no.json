@@ -545,6 +545,26 @@
         }
     },
     "requests": {
+        "detail": {
+            "paused": "Behandlingen er satt på pause",
+            "waiting_release": "Venter på digital utgivelse {date}",
+            "no_releases": "Ingen utgivelser ennå, sjekker igjen {next}",
+            "only_low_quality": "Ingen egnede utgivelser ennå, sjekker igjen {next}",
+            "unwanted": "Venter på at noen med tilgang ønsker den",
+            "search_failed": "Søket feilet, prøver igjen innen en time",
+            "in_library": "Fantes allerede i biblioteket",
+            "suggested": "Forslag: {label}",
+            "choice_no_listed_remux": "Ingen remux fra en kjent gruppe",
+            "choice_4k_missing": "4K-plate ser ut til å finnes, men ingen kjent gruppe har 4K-remux",
+            "choice_cuts": "{group} har flere versjoner: {cuts}",
+            "choice_ambiguous": "{group} har utgivelser reglene ikke skiller",
+            "choice_sizes": "{group} har versjoner med svært ulik størrelse, kanskje fra ulike plater",
+            "release": "{label}",
+            "not_cached": "Ikke tilgjengelig nå: {label}. Velg en annen, eller søk igjen senere",
+            "choice_unmatched": "Fant ikke valget igjen, søk på nytt",
+            "no_longer_wanted": "Ingen med tilgang ønsker den lenger",
+            "add_failed": "Kunne ikke legge til, prøver igjen innen en time"
+        },
         "pageTitle": "Ønsker",
         "intro": "Ønsk deg en film. Alle med tilgang deler én liste, og ønsker du deg en film som allerede står der, får den din +1.",
         "quota": "{used} av {quota} ønsker brukt denne uken",

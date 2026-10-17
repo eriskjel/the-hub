@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
 import en from "@/messages/en.json";
+import no from "@/messages/no.json";
 import { AdminQueueList } from "../AdminQueueList";
 import type { QueueItem } from "@/lib/media/queue.server";
 vi.mock("next-intl/server", async () => {
@@ -24,6 +25,7 @@ const proposal: QueueItem = {
     year: "1995",
     posterPath: null,
     status: "proposed",
+    detail: null,
     statusDetail: "Needs a choice: no release from a listed group",
     requester: { name: "Member", isYou: false },
     followerCount: 0,
@@ -33,6 +35,37 @@ const proposal: QueueItem = {
 };
 beforeEach(() => {
     setIntl({ locale: "en", messages: en });
+});
+
+it("translates admin details and retains the fallback for unknown worker codes", async () => {
+    setIntl({ locale: "no", messages: no });
+    render(
+        await AdminQueueList({
+            items: [
+                {
+                    ...proposal,
+                    detail: {
+                        code: "choice_cuts",
+                        args: { group: "Group", cuts: "Theatrical, Director's Cut" },
+                    },
+                },
+                {
+                    ...proposal,
+                    id: 8,
+                    detail: { code: "future_code", args: {} },
+                    statusDetail: "Future explanation",
+                },
+            ],
+            heading: "Needs you",
+            empty: "Nothing",
+            locale: "no",
+        })
+    );
+    expect(
+        screen.getByText("Group har flere versjoner: Theatrical, Director's Cut")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(proposal.statusDetail!)).toBeNull();
+    expect(screen.getByText("Future explanation")).toBeInTheDocument();
 });
 
 it("shows a proposal's options with the worker's pick marked", async () => {

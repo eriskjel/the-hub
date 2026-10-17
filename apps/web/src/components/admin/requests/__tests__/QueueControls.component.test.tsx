@@ -25,6 +25,7 @@ const item: QueueItem = {
     year: null,
     posterPath: null,
     status: "wanted",
+    detail: null,
     statusDetail: null,
     requester: null,
     followerCount: 0,
