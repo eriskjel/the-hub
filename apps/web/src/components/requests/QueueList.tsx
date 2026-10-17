@@ -37,6 +37,7 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
     const tDetail = useTranslations("requests.detail");
     const detail = describeDetail(item, tDetail, useLocale(), "member");
     const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
+    const note = item.notes.find((n) => n.author.isYou);
 
     const requester = !item.requester
         ? t("formerMember")
@@ -63,6 +64,11 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
                     </span>
                 </p>
                 {detail && <p className="text-muted text-xs">{detail}</p>}
+                {note && (
+                    <p className="text-muted text-xs break-words">
+                        {t("yourNote", { note: note.text })}
+                    </p>
+                )}
             </div>
             <RequestControls
                 tmdbId={item.tmdbId}

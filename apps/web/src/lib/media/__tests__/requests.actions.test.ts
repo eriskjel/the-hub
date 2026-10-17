@@ -230,6 +230,24 @@ describe("requestMovie", () => {
         ]);
     });
 
+    it("passes a trimmed note on, and no note when it's blank", async () => {
+        await requestMovie(MOVIE, { note: "  The extended cut \n" });
+        await requestMovie(MOVIE, { note: " \n " });
+        await requestMovie(MOVIE);
+
+        expect(addCalls[0].p_note).toBe("The extended cut");
+        expect(addCalls[1]).not.toHaveProperty("p_note");
+        expect(addCalls[2]).not.toHaveProperty("p_note");
+    });
+
+    it.each(["x".repeat(501), 42])("refuses the note %j", async (note) => {
+        expect(await requestMovie(MOVIE, { note: note as string })).toEqual({
+            ok: false,
+            error: "failed",
+        });
+        expect(addCalls).toHaveLength(0);
+    });
+
     it.each([
         ["signed out", () => (signedIn = null)],
         ["never a member", () => setup({ members: [member(OTHER)] })],
