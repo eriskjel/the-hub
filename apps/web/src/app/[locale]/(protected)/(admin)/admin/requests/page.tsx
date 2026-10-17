@@ -56,22 +56,20 @@ export default async function AdminRequestsPage({
                 empty={t("empty")}
                 locale={locale}
             />
-            <div className="space-y-3">
-                <AdminQueueList
-                    items={queue.filter((item) => item.status === "available")}
-                    heading={t("available")}
-                    empty={t("empty")}
-                    locale={locale}
-                    collapsed
-                />
-                <AdminQueueList
-                    items={queue.filter((item) => ["declined", "cancelled"].includes(item.status))}
-                    heading={t("closed")}
-                    empty={t("empty")}
-                    locale={locale}
-                    collapsed
-                />
-            </div>
+            <AdminQueueList
+                items={queue.filter((item) => item.status === "available")}
+                heading={t("available")}
+                empty={t("empty")}
+                locale={locale}
+                collapsed
+            />
+            <AdminQueueList
+                items={queue.filter((item) => ["declined", "cancelled"].includes(item.status))}
+                heading={t("closed")}
+                empty={t("empty")}
+                locale={locale}
+                collapsed
+            />
         </AdminPage>
     );
 }
