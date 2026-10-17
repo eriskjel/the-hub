@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRight } from "lucide-react";
 import { Poster } from "@/components/requests/Poster";
 import { StatusBadge } from "@/components/requests/StatusBadge";
-import { QueueControls } from "@/components/admin/requests/QueueControls";
+import { ChooseOption, QueueControls } from "@/components/admin/requests/QueueControls";
 import type { QueueItem, RequestOption } from "@/lib/media/queue.server";
 import type { Locale } from "@/i18n/routing";
 import { cn } from "@/utils/cn";
@@ -14,6 +14,7 @@ export async function AdminQueueList({
     empty,
     locale,
     options,
+    canChoose = false,
     collapsed = false,
     highlight = false,
 }: {
@@ -23,6 +24,8 @@ export async function AdminQueueList({
     locale: Locale;
     /** The proposed releases per request, if this list shows them. */
     options?: Map<number, RequestOption[]>;
+    /** A proposal's options can be chosen, because the worker adds the chosen one. */
+    canChoose?: boolean;
     /** Starts closed, with only the heading and count showing. */
     collapsed?: boolean;
     /** Draws attention to the count while the list has items. */
@@ -58,6 +61,7 @@ export async function AdminQueueList({
                           ? t("unknownMember")
                           : t("formerMember");
                     const proposed = options?.get(item.id) ?? [];
+                    const choosing = canChoose && item.status === "proposed" && proposed.length > 0;
                     return (
                         <li key={item.id} className="flex gap-4 p-5">
                             <Poster path={item.posterPath} />
@@ -87,7 +91,7 @@ export async function AdminQueueList({
                                             </p>
                                         )}
                                     </div>
-                                    <QueueControls item={item} title={title} />
+                                    <QueueControls item={item} title={title} choosing={choosing} />
                                 </div>
                                 {proposed.length > 0 && (
                                     <ol
@@ -112,7 +116,7 @@ export async function AdminQueueList({
                                                 >
                                                     {option.rank}
                                                 </span>
-                                                <div className="min-w-0 space-y-0.5">
+                                                <div className="min-w-0 flex-1 space-y-0.5">
                                                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium break-words">
                                                         {option.label}
                                                         {option.rank === 1 && (
@@ -127,6 +131,14 @@ export async function AdminQueueList({
                                                         </p>
                                                     )}
                                                 </div>
+                                                {choosing && (
+                                                    <ChooseOption
+                                                        item={item}
+                                                        rank={option.rank}
+                                                        label={option.label}
+                                                        title={title}
+                                                    />
+                                                )}
                                             </li>
                                         ))}
                                     </ol>

@@ -2,13 +2,18 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
 import en from "@/messages/en.json";
-import { QueueControls, ProcessingToggle } from "../QueueControls";
-import { adminRequestAction, setProcessingPaused } from "@/lib/admin/mediaQueue.actions";
+import { ChooseOption, QueueControls, ProcessingToggle } from "../QueueControls";
+import {
+    adminRequestAction,
+    approveRequestOption,
+    setProcessingPaused,
+} from "@/lib/admin/mediaQueue.actions";
 import type { QueueItem } from "@/lib/media/queue.server";
 import type { AdminMediaResult } from "@/lib/media/admin";
 import { toast } from "sonner";
 vi.mock("@/lib/admin/mediaQueue.actions", () => ({
     adminRequestAction: vi.fn(),
+    approveRequestOption: vi.fn(),
     setProcessingPaused: vi.fn(),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -32,7 +37,7 @@ beforeEach(() => {
     setIntl({ locale: "en", messages: en });
 });
 
-it.each(["searching", "approved", "downloading", "available"] as const)(
+it.each(["searching", "downloading", "available"] as const)(
     "has no mutation buttons for %s",
     (status) => {
         render(<QueueControls item={{ ...item, status }} title="A movie" />);
@@ -55,14 +60,39 @@ it("offers marking a proposal available first, with the overrides in the menu", 
     expect(screen.getAllByRole("button", { name: "Mark A movie available" })).toHaveLength(1);
 });
 
-it("keeps every action in the menu while the request waits for the worker", () => {
-    render(<QueueControls item={item} title="A movie" />);
+it.each(["wanted", "approved"] as const)(
+    "keeps every action in the menu while a %s request waits for the worker",
+    (status) => {
+        render(<QueueControls item={{ ...item, status }} title="A movie" />);
+        expect(screen.getAllByRole("button")).toHaveLength(1);
+
+        openMenu();
+        for (const name of [
+            "Mark A movie available",
+            "Decline A movie",
+            "Search again for A movie",
+        ]) {
+            expect(screen.getByRole("button", { name })).toBeInTheDocument();
+        }
+    }
+);
+
+it("moves marking available into the menu while the admin chooses an option", () => {
+    render(<QueueControls item={proposal} title="A movie" choosing />);
     expect(screen.getAllByRole("button")).toHaveLength(1);
 
     openMenu();
-    for (const name of ["Mark A movie available", "Decline A movie", "Search again for A movie"]) {
-        expect(screen.getByRole("button", { name })).toBeInTheDocument();
-    }
+    expect(screen.getByRole("button", { name: "Mark A movie available" })).toBeInTheDocument();
+});
+
+it("approves the chosen option against the displayed revision", async () => {
+    vi.mocked(approveRequestOption).mockResolvedValueOnce({ ok: true, outcome: "approved" });
+    render(<ChooseOption item={proposal} rank={2} label="Group · 1080p" title="A movie" />);
+    fireEvent.click(screen.getByRole("button", { name: "Choose Group · 1080p for A movie" }));
+    expect(approveRequestOption).toHaveBeenCalledWith(7, 2, item.updatedAt);
+    await waitFor(() =>
+        expect(toast.success).toHaveBeenCalledWith("Chosen. It will be added shortly.")
+    );
 });
 
 it("closes the menu on Escape and returns focus to its button", () => {
