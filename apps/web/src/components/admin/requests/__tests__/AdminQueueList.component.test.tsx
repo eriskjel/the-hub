@@ -159,3 +159,19 @@ it("starts a collapsed list closed, showing its heading and count", async () => 
     expect(details).not.toHaveAttribute("open");
     expect(details?.querySelector("summary")).toHaveTextContent("Available1");
 });
+
+it("starts any other list open, and it can still be folded", async () => {
+    const { container } = render(
+        await AdminQueueList({
+            items: [{ ...proposal, status: "searching", statusDetail: null }],
+            heading: "In progress",
+            empty: "Nothing",
+            locale: "en",
+        })
+    );
+
+    const details = container.querySelector("details");
+    expect(details).toHaveAttribute("open");
+    expect(details?.querySelector("summary")).toHaveTextContent("In progress1");
+    expect(screen.getByText("A movie")).toBeVisible();
+});

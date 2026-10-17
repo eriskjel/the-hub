@@ -27,7 +27,7 @@ export async function AdminQueueList({
     options?: Map<number, RequestOption[]>;
     /** A proposal's options can be chosen, because the worker adds the chosen one. */
     canChoose?: boolean;
-    /** Starts closed, with only the heading and count showing. */
+    /** Starts closed, with only the heading and count showing. Every list can be folded either way. */
     collapsed?: boolean;
     /** Draws attention to the count while the list has items. */
     highlight?: boolean;
@@ -155,24 +155,17 @@ export async function AdminQueueList({
             </ul>
         );
 
-    if (collapsed) {
-        return (
-            <details className="group border-border bg-surface rounded-2xl border">
-                <summary className="focus-visible:ring-border flex cursor-pointer list-none items-center gap-3 rounded-2xl px-5 py-4 focus:outline-none focus-visible:ring-2 [&::-webkit-details-marker]:hidden">
-                    <ChevronRight
-                        aria-hidden
-                        className="text-muted h-4 w-4 transition-transform group-open:rotate-90"
-                    />
-                    {header}
-                </summary>
-                <div className="border-border border-t">{body}</div>
-            </details>
-        );
-    }
+    // Every list folds. `open` is only the starting state: the refresh leaves an admin's toggle alone.
     return (
-        <section className="border-border bg-surface rounded-2xl border">
-            <div className="border-border flex items-center gap-3 border-b px-5 py-4">{header}</div>
-            {body}
-        </section>
+        <details open={!collapsed} className="group border-border bg-surface rounded-2xl border">
+            <summary className="focus-visible:ring-border flex cursor-pointer list-none items-center gap-3 rounded-2xl px-5 py-4 focus:outline-none focus-visible:ring-2 [&::-webkit-details-marker]:hidden">
+                <ChevronRight
+                    aria-hidden
+                    className="text-muted h-4 w-4 transition-transform group-open:rotate-90"
+                />
+                {header}
+            </summary>
+            <div className="border-border border-t">{body}</div>
+        </details>
     );
 }
