@@ -30,11 +30,11 @@ afterEach(() => {
 });
 
 describe("searchMovies", () => {
-    it("asks TMDB with the token, the query and the locale's language", async () => {
+    it("asks TMDB with the token and the query, in English", async () => {
         const fetchMock = respond(200, { results: [raw()] });
         vi.stubGlobal("fetch", fetchMock);
 
-        const movies = await searchMovies("inter stellar", "no");
+        const movies = await searchMovies("inter stellar");
 
         expect(movies).toEqual([
             {
@@ -51,7 +51,7 @@ describe("searchMovies", () => {
         const parsed = new URL(url);
         expect(parsed.origin + parsed.pathname).toBe("https://api.themoviedb.org/3/search/movie");
         expect(parsed.searchParams.get("query")).toBe("inter stellar");
-        expect(parsed.searchParams.get("language")).toBe("no-NO");
+        expect(parsed.searchParams.get("language")).toBe("en-US");
         expect(parsed.searchParams.get("include_adult")).toBe("false");
         expect((init.headers as Record<string, string>).authorization).toBe(`Bearer ${TOKEN}`);
         expect(init.next).toEqual({ revalidate: 3600 });
@@ -71,7 +71,7 @@ describe("searchMovies", () => {
             })
         );
 
-        expect(await searchMovies("x", "en")).toEqual([
+        expect(await searchMovies("x")).toEqual([
             {
                 id: 2,
                 title: "Original",
@@ -87,14 +87,14 @@ describe("searchMovies", () => {
         async (adult) => {
             vi.stubGlobal("fetch", respond(200, { results: [raw({ adult })] }));
 
-            expect(await searchMovies("x", "en")).toEqual([]);
+            expect(await searchMovies("x")).toEqual([]);
         }
     );
 
     it("throws on a TMDB error, without the token in the message", async () => {
         vi.stubGlobal("fetch", respond(401, { status_message: "Invalid API key" }));
 
-        const error = await searchMovies("x", "en").catch((e: Error) => e);
+        const error = await searchMovies("x").catch((e: Error) => e);
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toContain("401");
         expect((error as Error).message).not.toContain(TOKEN);
@@ -105,7 +105,7 @@ describe("searchMovies", () => {
         const fetchMock = vi.fn();
         vi.stubGlobal("fetch", fetchMock);
 
-        await expect(searchMovies("x", "en")).rejects.toThrow("TMDB_API_TOKEN is not set");
+        await expect(searchMovies("x")).rejects.toThrow("TMDB_API_TOKEN is not set");
         expect(fetchMock).not.toHaveBeenCalled();
     });
 });
@@ -115,7 +115,7 @@ describe("getMovie", () => {
         const fetchMock = respond(200, raw());
         vi.stubGlobal("fetch", fetchMock);
 
-        expect(await getMovie(157336, "en")).toMatchObject({ id: 157336, title: "Interstellar" });
+        expect(await getMovie(157336)).toMatchObject({ id: 157336, title: "Interstellar" });
         const [url, init] = fetchMock.mock.calls[0] as unknown as [string, { next?: unknown }];
         expect(url).toBe("https://api.themoviedb.org/3/movie/157336?language=en-US");
         expect(init.next).toEqual({ revalidate: 86400 });
@@ -131,18 +131,49 @@ describe("getMovie", () => {
     ])("returns null for %s", async (_label, status, body) => {
         vi.stubGlobal("fetch", respond(status, body));
 
-        expect(await getMovie(157336, "en")).toBeNull();
+        expect(await getMovie(157336)).toBeNull();
     });
 
-    it("uses the original title when the localized title is missing", async () => {
+    it("uses the original title when the English title is missing", async () => {
         vi.stubGlobal("fetch", respond(200, raw({ title: null, original_title: " Original " })));
 
-        expect(await getMovie(157336, "en")).toMatchObject({ title: "Original" });
+        expect(await getMovie(157336)).toMatchObject({ title: "Original" });
     });
+
+    it.each([
+        ["English", "en", "The Thing", "The Thing", "The Thing"],
+        ["Japanese", "ja", "Seven Samurai", "七人の侍", "Seven Samurai"],
+        ["French", "fr", "Amélie", "Le Fabuleux Destin d'Amélie Poulain", "Amélie"],
+        [
+            "Norwegian",
+            "no",
+            "The Worst Person in the World",
+            "Verdens verste menneske",
+            "Verdens verste menneske",
+        ],
+        [
+            "Swedish",
+            "sv",
+            "Let the Right One In",
+            "Låt den rätte komma in",
+            "Låt den rätte komma in",
+        ],
+        ["Danish", "da", "The Hunt", "Jagten", "Jagten"],
+    ])(
+        "shows a %s film's title in English unless it's Scandinavian",
+        async (_l, language, title, original, shown) => {
+            vi.stubGlobal(
+                "fetch",
+                respond(200, raw({ title, original_title: original, original_language: language }))
+            );
+
+            expect(await getMovie(157336)).toMatchObject({ title: shown });
+        }
+    );
 
     it("throws when TMDB fails", async () => {
         vi.stubGlobal("fetch", respond(503, {}));
 
-        await expect(getMovie(157336, "en")).rejects.toThrow("503");
+        await expect(getMovie(157336)).rejects.toThrow("503");
     });
 });

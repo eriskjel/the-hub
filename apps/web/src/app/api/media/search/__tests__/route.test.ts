@@ -86,14 +86,10 @@ describe("GET /api/media/search", () => {
         }
     );
 
-    it("searches in the page's language, defaulting to Norwegian", async () => {
-        await get({ q: "  interstellar ", locale: "en" });
-        await get({ q: "interstellar", locale: "de" });
+    it("searches for the trimmed query", async () => {
+        await get({ q: "  interstellar " });
 
-        expect(searchMoviesMock.mock.calls).toEqual([
-            ["interstellar", "en"],
-            ["interstellar", "no"],
-        ]);
+        expect(searchMoviesMock.mock.calls).toEqual([["interstellar"]]);
     });
 
     it("marks titles already in the queue and your part in them", async () => {
