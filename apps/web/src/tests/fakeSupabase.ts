@@ -3,7 +3,7 @@
  * about the resulting rows rather than the exact query chain. It supports the
  * builder subset the app uses: select (with `count`/`head` and simple
  * one-level embeds), insert, update, upsert (`onConflict`, `ignoreDuplicates`),
- * delete, the filters eq/neq/in/is/gte/not-is, order, limit, maybeSingle and
+ * delete, the filters eq/neq/in/is/gte/not-is, order, limit, range, maybeSingle and
  * single, plus `rpc` with test-supplied stand-ins. There is no RLS: give each
  * test the rows its caller could see.
  */
@@ -14,6 +14,8 @@ type DbError = { code?: string; message: string };
 type Result = { data: unknown; error: DbError | null; count?: number | null };
 
 export type FakeDbOptions = {
+    /** Optional API response cap, applied after filters, ordering and range offsets. */
+    maxRows?: number;
     /** Unique keys per table (each a list of columns), checked on insert and update. */
     unique?: Record<string, string[][]>;
     /** Tables with a generated `id` (like `generated always as identity`). */
@@ -72,7 +74,9 @@ export function fakeDb(tables: Tables, options: FakeDbOptions = {}): FakeDb {
         switch (q.op) {
             case "select": {
                 let out = sortRows(matches, q.orders);
+                out = out.slice(q.offsetN);
                 if (q.limitN !== null) out = out.slice(0, q.limitN);
+                if (options.maxRows !== undefined) out = out.slice(0, options.maxRows);
                 const data = q.head ? null : out.map((r) => withEmbeds(r, q.columns));
                 return { data, error: null, count: q.count ? matches.length : null };
             }
@@ -176,6 +180,7 @@ class Query implements PromiseLike<Result> {
     filters: ((r: Row) => boolean)[] = [];
     orders: { column: string; ascending: boolean }[] = [];
     limitN: number | null = null;
+    offsetN = 0;
     payloads: Row[] = [];
     columns = "*";
     returning = false;
@@ -249,6 +254,11 @@ class Query implements PromiseLike<Result> {
     }
     limit(n: number) {
         this.limitN = n;
+        return this;
+    }
+    range(from: number, to: number) {
+        this.offsetN = from;
+        this.limitN = to - from + 1;
         return this;
     }
     async maybeSingle(): Promise<Result> {

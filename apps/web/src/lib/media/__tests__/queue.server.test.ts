@@ -58,7 +58,7 @@ beforeEach(() => {
                 { id: NAMELESS, full_name: null, username: null },
             ],
         },
-        { embeds: { media_request_follower: { foreignKey: "request_id" } } }
+        { maxRows: 1000, embeds: { media_request_follower: { foreignKey: "request_id" } } }
     );
 });
 
@@ -281,6 +281,64 @@ describe("getQueue", () => {
         expect(all.get(1)?.notes).toEqual([
             { author: { name: null, isYou: false }, text: "Any version" },
         ]);
+    });
+
+    it("shows a displayed request's note after 1,000 older notes for other requests", async () => {
+        db.tables.media_request_note = [
+            ...Array.from({ length: 1000 }, (_, i) => ({
+                request_id: 10000 + i,
+                user_id: ME,
+                note: "Historical instruction",
+                created_at: "2020-01-01",
+            })),
+            { request_id: 1, user_id: ME, note: "The new instruction", created_at: "2026-10-17" },
+        ];
+
+        for (const admin of [false, true]) {
+            const queue = await getQueue(client(), ME, { admin });
+            expect(queue.find((q) => q.id === 1)?.notes.map((n) => n.text)).toEqual([
+                "The new instruction",
+            ]);
+        }
+    });
+
+    it("loads every displayed note across pages, ordering equal timestamps by the note key", async () => {
+        const notes = Array.from({ length: 1201 }, (_, i) => ({
+            request_id: 1,
+            user_id: `member-${String(i).padStart(4, "0")}`,
+            note: `Instruction ${i}`,
+            created_at: "2026-10-17",
+        }));
+        db.tables.media_request_note = [...notes].reverse();
+
+        const queue = await getQueue(client(), ME, { admin: true });
+        expect(queue.find((q) => q.id === 1)?.notes.map((n) => n.text)).toEqual(
+            notes.map((n) => n.note)
+        );
+    });
+
+    it("does not return an incomplete set of notes when a later page fails", async () => {
+        db.tables.media_request_note = Array.from({ length: 501 }, (_, i) => ({
+            request_id: 1,
+            user_id: `member-${i}`,
+            note: "Instruction",
+            created_at: "2026-10-17",
+        }));
+        db.beforeNext("media_request_note", "select", () => {
+            db.beforeNext("media_request_note", "select", () =>
+                db.failNext("media_request_note", "select")
+            );
+        });
+
+        const queue = await getQueue(client(), ME, { admin: true });
+        expect(queue.find((q) => q.id === 1)?.notes).toEqual([]);
+    });
+
+    it("does not fetch notes when the queue is empty", async () => {
+        db.tables.media_request = [];
+        const from = vi.spyOn(db, "from");
+        expect(await getQueue(client(), ME)).toEqual([]);
+        expect(from).not.toHaveBeenCalledWith("media_request_note");
     });
 
     it("still renders when notes can't be read", async () => {

@@ -109,7 +109,6 @@ export async function getQueue(
     userId: string,
     options: { admin?: boolean } = {}
 ): Promise<QueueItem[]> {
-    const notesRead = getNotes(supabase, options.admin ? null : userId);
     const results = await Promise.all(
         (options.admin ? ADMIN_SECTIONS : MEMBER_SECTIONS).map(
             async ({ statuses, orderBy, ascending }) => {
@@ -135,7 +134,11 @@ export async function getQueue(
     const error = results.find((r) => r.error)?.error;
     if (error) throw new Error(`media queue read failed: ${error.message}`);
     const rows = results.flatMap((r) => r.data ?? []) as Row[];
-    const notes = await notesRead;
+    const notes = await getNotes(
+        supabase,
+        rows.map((r) => r.id),
+        options.admin ? null : userId
+    );
 
     const names = await getNames(supabase, [
         ...rows.flatMap((r) => (r.requested_by ? [r.requested_by] : [])),
@@ -228,20 +231,35 @@ export async function countWaitingForAdmin(client: SupabaseClient): Promise<numb
 type NoteRow = { request_id: number; user_id: string; note: string };
 
 /**
- * Notes, oldest first: every note when `userId` is null, else only the user's
- * own. A note is a nicety; the queue still renders without them.
+ * Notes for the displayed requests, oldest first, with only the user's own
+ * notes outside the admin view. Page below the API's 1,000-row response cap.
  */
-async function getNotes(supabase: SupabaseClient, userId: string | null): Promise<NoteRow[]> {
-    const query = supabase
-        .from("media_request_note")
-        .select("request_id, user_id, note")
-        .order("created_at");
-    const { data, error } = await (userId ? query.eq("user_id", userId) : query);
-    if (error) {
-        console.error("media queue: note read failed:", error.message);
-        return [];
+async function getNotes(
+    supabase: SupabaseClient,
+    requestIds: number[],
+    userId: string | null
+): Promise<NoteRow[]> {
+    if (requestIds.length === 0) return [];
+    const pageSize = 500;
+    const notes: NoteRow[] = [];
+    for (let offset = 0; ; offset += pageSize) {
+        const query = supabase
+            .from("media_request_note")
+            .select("request_id, user_id, note")
+            .in("request_id", requestIds)
+            .order("created_at")
+            .order("request_id")
+            .order("user_id")
+            .range(offset, offset + pageSize - 1);
+        const { data, error } = await (userId ? query.eq("user_id", userId) : query);
+        if (error) {
+            console.error("media queue: note read failed:", error.message);
+            return [];
+        }
+        const page = (data ?? []) as NoteRow[];
+        notes.push(...page);
+        if (page.length < pageSize) return notes;
     }
-    return (data ?? []) as NoteRow[];
 }
 
 async function getNames(supabase: SupabaseClient, ids: string[]): Promise<Map<string, string>> {
