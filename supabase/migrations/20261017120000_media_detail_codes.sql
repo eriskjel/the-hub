@@ -217,4 +217,3 @@ $$;
 
 revoke all on function public.media_request_cancel(uuid, bigint) from public, anon, authenticated, media_worker;
 grant execute on function public.media_request_cancel(uuid, bigint) to service_role;
-
