@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
@@ -11,6 +11,7 @@ vi.mock("@/lib/media/requests.actions", () => ({
     requestMovie: vi.fn(),
     cancelRequest: vi.fn(),
     unfollowRequest: vi.fn(),
+    keepRequest: vi.fn(),
 }));
 
 const item = (id: number, status: QueueItem["status"], statusDetail: string): QueueItem => ({
@@ -24,6 +25,7 @@ const item = (id: number, status: QueueItem["status"], statusDetail: string): Qu
     statusDetail,
     requester: { name: null, isYou: true },
     notes: [],
+    removal: null,
     followerCount: 0,
     role: "requester",
     createdAt: "2026-10-13T20:00:00Z",
@@ -80,6 +82,47 @@ it("renders Norwegian dates, hides admin-only fallbacks and escapes worker value
     expect(screen.queryByText("Admin-only fallback")).toBeNull();
     expect(screen.getByText('<img src=x onerror="alert(1)">')).toBeInTheDocument();
     expect(container.querySelector("[onerror]")).toBeNull();
+});
+
+it("tells when a temporary title leaves, and offers keeping it or a +1", () => {
+    const removal = { days: 30, at: "2026-11-16T10:32:00Z" };
+    render(
+        <QueryClientProvider client={new QueryClient()}>
+            <QueueList
+                heading="Queue"
+                items={[
+                    { ...item(1, "wanted", ""), removal: { days: 30, at: null } },
+                    { ...item(2, "available", ""), removal },
+                    { ...item(3, "available", ""), removal, role: null },
+                    { ...item(4, "available", ""), removal: { days: 30, at: null }, role: null },
+                    { ...item(5, "available", ""), removal, role: null, followerCount: 1 },
+                    { ...item(6, "available", ""), removal: { days: 30, at: null } },
+                ]}
+            />
+        </QueryClientProvider>
+    );
+
+    const row = (title: string) => screen.getByText(title).closest("li") as HTMLElement;
+    expect(row("Movie 1")).toHaveTextContent(
+        "Leaves the library 30 days after it's added, unless someone +1s it"
+    );
+    expect(
+        within(row("Movie 1")).getByRole("button", { name: "Keep Movie 1 in the library" })
+    ).toBeInTheDocument();
+    expect(
+        within(row("Movie 1")).getByRole("button", { name: "Cancel your request for Movie 1" })
+    ).toBeInTheDocument();
+    expect(row("Movie 2")).toHaveTextContent("Leaves the library 16 Nov, unless someone +1s it");
+    expect(within(row("Movie 2")).getByRole("button")).toHaveAccessibleName(
+        "Keep Movie 2 in the library"
+    );
+    expect(within(row("Movie 3")).getByRole("button")).toHaveAccessibleName("+1 Movie 3");
+    // Not scheduled: the worker didn't add it, so it stays. A +1 already keeps the last one.
+    expect(within(row("Movie 4")).queryByRole("button")).toBeNull();
+    expect(within(row("Movie 6")).queryByRole("button")).toBeNull();
+    expect(row("Movie 4")).not.toHaveTextContent("Leaves the library");
+    expect(row("Movie 5")).not.toHaveTextContent("Leaves the library");
+    expect(within(row("Movie 5")).getByRole("button")).toHaveAccessibleName("+1 Movie 5");
 });
 
 it("shows your own note under the request", () => {

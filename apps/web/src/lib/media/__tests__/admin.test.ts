@@ -21,10 +21,20 @@ it("protects active processing and available titles from admin changes", () => {
         expect(adminRequestIntents(status)).toEqual([]);
     }
     for (const status of REQUEST_STATUSES.filter((s) =>
-        ["wanted", "proposed", "approved", "failed", "declined", "cancelled"].includes(s)
+        ["wanted", "proposed", "approved", "failed", "declined", "cancelled", "removed"].includes(s)
     )) {
         expect(adminRequestIntents(status)).toContain("requeue");
         expect(adminRequestIntents(status)).toContain("available");
+    }
+});
+
+it("offers keeping a temporary title only while its removal is ahead", () => {
+    for (const status of ["wanted", "searching", "approved", "downloading", "available"] as const) {
+        expect(adminRequestIntents(status, true)).toContain("keep");
+        expect(adminRequestIntents(status)).not.toContain("keep");
+    }
+    for (const status of ["failed", "declined", "cancelled", "removed"] as const) {
+        expect(adminRequestIntents(status, true)).not.toContain("keep");
     }
 });
 

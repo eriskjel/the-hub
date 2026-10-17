@@ -35,11 +35,12 @@ it("passes the exact displayed revision to the transactional function", async ()
     expect(refresh).toHaveBeenCalledOnce();
 });
 
-it.each(["decline", "available"])("reports successful %s actions", async (intent) => {
-    rpc.mockResolvedValueOnce({
-        data: intent === "decline" ? "declined" : "available",
-        error: null,
-    });
+it.each([
+    ["decline", "declined"],
+    ["available", "available"],
+    ["keep", "kept"],
+])("reports successful %s actions", async (intent, outcome) => {
+    rpc.mockResolvedValueOnce({ data: outcome, error: null });
     expect((await adminRequestAction(7, intent, revision)).ok).toBe(true);
     expect(refresh).toHaveBeenCalledOnce();
 });

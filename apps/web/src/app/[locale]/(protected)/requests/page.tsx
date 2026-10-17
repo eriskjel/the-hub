@@ -60,7 +60,7 @@ export default async function RequestsPage({
     // The queue in the order it's worked: oldest first. Everything else, newest first.
     const open = shown.filter((item) => isOpenStatus(item.status));
     const available = shown.filter((item) => item.status === "available");
-    const closed = shown.filter((item) => item.status === "failed" || item.status === "declined");
+    const closed = shown.filter((item) => ["failed", "declined", "removed"].includes(item.status));
 
     return (
         <div className="mx-auto max-w-3xl space-y-6 p-6">

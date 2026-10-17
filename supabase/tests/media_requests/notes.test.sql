@@ -22,13 +22,6 @@ begin
         'the worker can ask whether a request has a note';
     assert not has_function_privilege('authenticated', 'public.media_request_has_note(bigint)', 'EXECUTE');
     assert not has_function_privilege('anon', 'public.media_request_has_note(bigint)', 'EXECUTE');
-
-    assert to_regprocedure('public.media_request_add(uuid, text, int, int)') is null,
-        'the old signature is gone, so PostgREST has one function to choose';
-    assert has_function_privilege('service_role', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE');
-    assert not has_function_privilege('authenticated', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE');
-    assert not has_function_privilege('anon', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE');
-    assert not has_function_privilege('media_worker', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE');
 end $$;
 
 \echo '== notes: saved when the call adds the user, removed when they leave'

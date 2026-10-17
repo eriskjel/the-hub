@@ -12,6 +12,7 @@ vi.mock("@/lib/media/requests.actions", () => ({
     requestMovie: vi.fn(),
     cancelRequest: vi.fn(),
     unfollowRequest: vi.fn(),
+    keepRequest: vi.fn(),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() } }));
 
@@ -122,7 +123,7 @@ describe("RequestSearch", () => {
         request("Movie 1");
 
         await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Requested."));
-        expect(requestMovie).toHaveBeenCalledWith(1, { note: "" });
+        expect(requestMovie).toHaveBeenCalledWith(1, { note: "", temporary: false });
         await waitFor(() => expect(screen.queryByRole("listitem")).toBeNull());
         const input = screen.getByLabelText("Search for a movie");
         expect(input).toHaveValue("");
@@ -213,9 +214,31 @@ describe("RequestSearch", () => {
         request("Movie 1", "The extended cut");
 
         await waitFor(() =>
-            expect(requestMovie).toHaveBeenCalledWith(1, { note: "The extended cut" })
+            expect(requestMovie).toHaveBeenCalledWith(1, {
+                note: "The extended cut",
+                temporary: false,
+            })
         );
         await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    });
+
+    it("asks for removal after a while when ticked", async () => {
+        vi.mocked(requestMovie).mockResolvedValueOnce({ ok: true, outcome: "requested" });
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+        const temporary = screen.getByRole("checkbox", {
+            name: "Remove it from the library 30 days after it's added",
+        });
+        expect(temporary).not.toBeChecked();
+        fireEvent.click(temporary);
+        fireEvent.click(screen.getByRole("button", { name: "Send request" }));
+
+        await waitFor(() =>
+            expect(requestMovie).toHaveBeenCalledWith(1, { note: "", temporary: true })
+        );
     });
 
     it("keeps the dialog and its note open to try again when the request failed", async () => {

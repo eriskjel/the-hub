@@ -501,11 +501,14 @@
                 "requeueTitle": "Søk etter {title} på nytt",
                 "more": "Flere valg for {title}",
                 "choose": "Velg",
-                "chooseTitle": "Velg {label} for {title}"
+                "chooseTitle": "Velg {label} for {title}",
+                "keep": "Behold i biblioteket",
+                "keepTitle": "Behold {title} i biblioteket"
             },
             "outcomes": {
                 "available": "Merket tilgjengelig.",
                 "approved": "Valgt. Filmen legges til om litt.",
+                "kept": "Den blir værende i biblioteket.",
                 "declined": "Ønsket er avslått.",
                 "requeued": "Sendt til nytt søk.",
                 "paused": "Behandlingen er satt på pause.",
@@ -592,7 +595,9 @@
             "notePlaceholder": "For eksempel: den forlengede versjonen",
             "noteHelp": "Bare du og administratoren ser notatet. Med et notat velger administratoren versjonen.",
             "send": "Send ønsket",
-            "back": "Avbryt"
+            "back": "Avbryt",
+            "temporary": "Fjern den fra biblioteket {days} dager etter at den er lagt til",
+            "temporaryHelp": "Gir noen andre den +1, blir den værende."
         },
         "actions": {
             "request": "Ønsk",
@@ -602,7 +607,9 @@
             "unfollow": "Fjern +1",
             "unfollowTitle": "Fjern din +1 for {title}",
             "cancel": "Avbryt",
-            "cancelTitle": "Avbryt ønsket ditt om {title}"
+            "cancelTitle": "Avbryt ønsket ditt om {title}",
+            "keep": "Behold",
+            "keepTitle": "Behold {title} i biblioteket"
         },
         "status": {
             "wanted": "I køen",
@@ -614,7 +621,8 @@
             "available": "Tilgjengelig",
             "failed": "Ikke funnet",
             "declined": "Avslått",
-            "cancelled": "Avbrutt"
+            "cancelled": "Avbrutt",
+            "removed": "Fjernet"
         },
         "queue": {
             "title": "Kø",
@@ -630,6 +638,8 @@
             "unknownMember": "Ønsket av et medlem",
             "plusOthers": "+{count} til",
             "yourNote": "Ditt notat: {note}",
+            "removalPending": "Fjernes fra biblioteket {days} dager etter at den er lagt til, med mindre noen gir den +1",
+            "removalDate": "Fjernes fra biblioteket {date}, med mindre noen gir den +1",
             "unknownTitle": "Film #{id}"
         },
         "outcomes": {
@@ -639,6 +649,7 @@
             "unfollowed": "Fjernet din +1.",
             "cancelled": "Ønsket er avbrutt.",
             "handed_over": "Ønsket er avbrutt. En som ga +1 har tatt det over.",
+            "kept": "Den blir værende i biblioteket.",
             "already_requested": "Du har allerede ønsket deg denne.",
             "already_following": "Du har allerede gitt +1 til denne.",
             "available": "Denne er allerede tilgjengelig.",

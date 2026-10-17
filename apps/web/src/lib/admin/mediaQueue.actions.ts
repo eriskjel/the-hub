@@ -9,7 +9,7 @@ import type { AdminMediaResult } from "@/lib/media/admin";
 
 const updateSchema = z.object({
     requestId: requestIdSchema,
-    intent: z.enum(["decline", "requeue", "available"]),
+    intent: z.enum(["decline", "requeue", "available", "keep"]),
     updatedAt: z.string().datetime({ offset: true }),
 });
 
@@ -74,6 +74,7 @@ async function write(fn: string, args: Record<string, unknown>): Promise<AdminMe
         case "requeued":
         case "available":
         case "approved":
+        case "kept":
         case "paused":
         case "resumed":
             refresh();
