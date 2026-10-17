@@ -10,7 +10,9 @@
 --   * A removed request is 'removed', and asking again reopens it.
 alter table public.media_request
     add column if not exists remove_after_days int null,
-    add column if not exists remove_at timestamptz null;
+    add column if not exists remove_at timestamptz null,
+    -- A row is reused after removal/cancellation; receipts belong to one cycle.
+    add column if not exists generation int not null default 1;
 
 alter table public.media_request drop constraint if exists mr_remove_after_days_range;
 alter table public.media_request add constraint mr_remove_after_days_range
@@ -81,8 +83,13 @@ begin
                set requested_by = p_user, status = 'wanted', status_detail = null, detail_code = null, detail_args = null,
                    chosen_rank = null, attempts = 0, claimed_at = null,
                    next_check_at = now(), created_at = now(), fulfilled_at = null,
-                   remove_after_days = p_remove_after_days, remove_at = null
+                   remove_after_days = p_remove_after_days, remove_at = null,
+                   generation = v_request.generation + 1
              where id = v_request.id;
+            -- This is a fresh request, so replace the previous requester's instruction.
+            -- Followers still want the title and retain their own notes.
+            delete from public.media_request_note
+             where request_id = v_request.id and user_id = v_request.requested_by;
             delete from public.media_request_follower
              where request_id = v_request.id and user_id = p_user;
             v_id := v_request.id;
@@ -113,6 +120,45 @@ $$;
 revoke all on function public.media_request_add(uuid, text, int, int, text, int)
     from public, anon, authenticated, media_worker;
 grant execute on function public.media_request_add(uuid, text, int, int, text, int) to service_role;
+
+-- As in 20261017155211, plus preserving the promoted follower's Keep protection.
+create or replace function public.media_request_cancel(p_user uuid, p_request_id bigint)
+returns text
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+    v_request public.media_request;
+    v_next uuid;
+begin
+    select * into v_request from public.media_request
+     where id = p_request_id for update;
+    if not found or v_request.requested_by is distinct from p_user
+       or v_request.status not in ('wanted', 'proposed') then
+        return 'not_cancellable';
+    end if;
+    delete from public.media_request_note where request_id = p_request_id and user_id = p_user;
+
+    select f.user_id into v_next from public.media_request_follower f
+     where f.request_id = p_request_id and f.user_id <> p_user
+       and public.media_request_has_access(f.user_id)
+     order by f.created_at, f.user_id
+     limit 1 for update of f;
+
+    if v_next is not null then
+        update public.media_request
+           set requested_by = v_next, remove_after_days = null, remove_at = null
+         where id = p_request_id;
+        delete from public.media_request_follower
+         where request_id = p_request_id and user_id = v_next;
+        return 'handed_over';
+    end if;
+    update public.media_request set status = 'cancelled', status_detail = null,
+        detail_code = null, detail_args = null where id = p_request_id;
+    return 'cancelled';
+end;
+$$;
 
 -- The requester keeps the title after all. The row lock waits for a removal
 -- the worker has started, which then wins.
@@ -174,7 +220,9 @@ begin
     if p_intent = 'requeue' then
         update public.media_request
            set status = 'wanted', chosen_rank = null, status_detail = null, detail_code = null, detail_args = null,
-               attempts = 0, claimed_at = null, next_check_at = now(), fulfilled_at = null, remove_at = null
+               attempts = 0, claimed_at = null, next_check_at = now(), fulfilled_at = null, remove_at = null,
+               -- Search again keeps the instructions, but must not reuse a closed cycle's receipts.
+               generation = generation + case when v_request.status in ('removed', 'cancelled') then 1 else 0 end
          where id = p_request_id;
         delete from public.media_request_option where request_id = p_request_id;
         return 'requeued';
