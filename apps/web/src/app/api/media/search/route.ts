@@ -53,7 +53,9 @@ export async function GET(req: NextRequest) {
             .from("media_request")
             .select("id, tmdb_id, status, requested_by")
             .eq("media_type", "movie")
+            // Asking again reopens a cancelled or removed request, as if it were new.
             .neq("status", "cancelled")
+            .neq("status", "removed")
             .in(
                 "tmdb_id",
                 movies.map((m) => m.id)

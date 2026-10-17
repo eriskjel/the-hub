@@ -118,4 +118,13 @@ run_pair same-title \
 rid="$(as_admin -tA -c 'select id from public.media_request where tmdb_id = 910005' </dev/null)"
 assert_state "$rid" wanted "$requester" 1
 
+# A removal the worker has started wins over a Keep that comes in meanwhile.
+rid="$(seed_request 910008)"
+as_admin -c "update public.media_request set status = 'available', remove_after_days = 30, remove_at = now()
+    where id = $rid" </dev/null
+run_pair remove-before-keep \
+    "update public.media_request set status = 'removed' where id = $rid returning status" \
+    "select public.media_request_keep('$requester', $rid)" removed changed
+assert_state "$rid" removed "$requester" 0
+
 echo '== all request transition concurrency tests passed'

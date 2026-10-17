@@ -5,7 +5,12 @@ import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button, type ButtonVariant } from "@/components/ui/Button";
-import { cancelRequest, requestMovie, unfollowRequest } from "@/lib/media/requests.actions";
+import {
+    cancelRequest,
+    keepRequest,
+    requestMovie,
+    unfollowRequest,
+} from "@/lib/media/requests.actions";
 import type { RequestActionResult, RequestOutcome } from "@/lib/media/request";
 
 export const SEARCH_QUERY_KEY = "media-search";
@@ -14,6 +19,7 @@ const ACTIONS = {
     request: requestMovie,
     cancel: cancelRequest,
     unfollow: unfollowRequest,
+    keep: keepRequest,
 } satisfies Record<string, (id: number) => Promise<RequestActionResult>>;
 
 /** Outcomes where nothing changed: shown as info, not success. */

@@ -501,11 +501,14 @@
                 "requeueTitle": "Search again for {title}",
                 "more": "More actions for {title}",
                 "choose": "Choose",
-                "chooseTitle": "Choose {label} for {title}"
+                "chooseTitle": "Choose {label} for {title}",
+                "keep": "Keep in library",
+                "keepTitle": "Keep {title} in the library"
             },
             "outcomes": {
                 "available": "Marked available.",
                 "approved": "Chosen. It will be added shortly.",
+                "kept": "It stays in the library.",
                 "declined": "Request declined.",
                 "requeued": "Queued for a new search.",
                 "paused": "Processing paused.",
@@ -592,7 +595,9 @@
             "notePlaceholder": "For example: the extended cut",
             "noteHelp": "Only you and the admin see the note. With a note, the admin picks the version.",
             "send": "Send request",
-            "back": "Cancel"
+            "back": "Cancel",
+            "temporary": "Remove it from the library {days} days after it's added",
+            "temporaryHelp": "If someone else +1s it, it stays."
         },
         "actions": {
             "request": "Request",
@@ -602,7 +607,9 @@
             "unfollow": "Remove +1",
             "unfollowTitle": "Remove your +1 for {title}",
             "cancel": "Cancel",
-            "cancelTitle": "Cancel your request for {title}"
+            "cancelTitle": "Cancel your request for {title}",
+            "keep": "Keep",
+            "keepTitle": "Keep {title} in the library"
         },
         "status": {
             "wanted": "In the queue",
@@ -614,7 +621,8 @@
             "available": "Available",
             "failed": "Not found",
             "declined": "Declined",
-            "cancelled": "Cancelled"
+            "cancelled": "Cancelled",
+            "removed": "Removed"
         },
         "queue": {
             "title": "Queue",
@@ -630,6 +638,8 @@
             "unknownMember": "Requested by a member",
             "plusOthers": "+{count} more",
             "yourNote": "Your note: {note}",
+            "removalPending": "Leaves the library {days} days after it's added, unless someone +1s it",
+            "removalDate": "Leaves the library {date}, unless someone +1s it",
             "unknownTitle": "Movie #{id}"
         },
         "outcomes": {
@@ -639,6 +649,7 @@
             "unfollowed": "Removed your +1.",
             "cancelled": "Request cancelled.",
             "handed_over": "Request cancelled. Someone who +1'd it has taken it over.",
+            "kept": "It stays in the library.",
             "already_requested": "You've already requested this.",
             "already_following": "You've already +1'd this.",
             "available": "This is already available.",

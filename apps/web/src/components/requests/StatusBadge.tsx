@@ -13,6 +13,7 @@ const TONE: Record<RequestStatus, string> = {
     failed: "bg-red-500/15 text-red-700 dark:text-red-400",
     declined: "bg-red-500/15 text-red-700 dark:text-red-400",
     cancelled: "bg-surface-subtle text-muted",
+    removed: "bg-surface-subtle text-muted",
 };
 
 /** Members wait for a proposal to be approved; for the admin it's a suggestion to act on. */

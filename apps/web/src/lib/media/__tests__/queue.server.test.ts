@@ -65,6 +65,11 @@ beforeEach(() => {
 describe("getQueue", () => {
     it.each([
         { code: "42703", message: "column media_request.detail_code does not exist" },
+        { code: "42703", message: "column media_request.remove_after_days does not exist" },
+        {
+            code: "PGRST204",
+            message: "Could not find the 'remove_at' column of 'media_request' in the schema cache",
+        },
         { code: "42703", message: "column media_request.detail_args does not exist" },
         {
             code: "PGRST204",
@@ -152,6 +157,22 @@ describe("getQueue", () => {
         });
         expect(queue.find((item) => item.id === 2)?.detail).toBeNull();
     });
+    it("tells a temporary title, with its date once scheduled, and lists removed ones as history", async () => {
+        Object.assign(db.tables.media_request[0], { remove_after_days: 30, remove_at: null });
+        Object.assign(db.tables.media_request[2], {
+            remove_after_days: 30,
+            remove_at: "2026-11-16T10:00:00Z",
+        });
+        db.tables.media_request.push(req(7, 107, ME, "removed", "2026-10-07"));
+
+        const byId = new Map((await getQueue(client(), ME)).map((q) => [q.id, q]));
+        expect(byId.get(1)?.removal).toEqual({ days: 30, at: null });
+        expect(byId.get(3)?.removal).toEqual({ days: 30, at: "2026-11-16T10:00:00Z" });
+        expect(byId.get(2)?.removal).toBeNull();
+        expect(byId.get(7)?.status).toBe("removed");
+        expect((await getQueue(client(), ME, { admin: true })).some((q) => q.id === 7)).toBe(true);
+    });
+
     it("includes cancelled requests for the admin queue only", async () => {
         const queue = await getQueue(client(), ME, { admin: true });
         expect(queue.find((item) => item.id === 5)?.status).toBe("cancelled");

@@ -6,6 +6,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getOwnMembership } from "@/lib/media/membership.server";
 import { getMovie } from "@/lib/media/tmdb.server";
 import {
+    REMOVE_AFTER_DAYS,
     requestExtrasSchema,
     requestIdSchema,
     tmdbIdSchema,
@@ -54,14 +55,20 @@ export async function requestMovie(
         p_media_type: "movie",
         p_tmdb_id: id.data,
         p_weekly_quota: member.weeklyQuota,
-        // Only with a note, so plain requests also work while the database catches up.
+        // Only when given, so plain requests also work while the database catches up.
         ...(extra.data.note && { p_note: extra.data.note }),
+        ...(extra.data.temporary && { p_remove_after_days: REMOVE_AFTER_DAYS }),
     });
 }
 
 /** Cancel your own request, handing it to the earliest eligible follower if there is one. */
 export async function cancelRequest(requestId: number): Promise<RequestActionResult> {
     return changeRequest("media_request_cancel", requestId);
+}
+
+/** Keep your requested title in the library after all. */
+export async function keepRequest(requestId: number): Promise<RequestActionResult> {
+    return changeRequest("media_request_keep", requestId);
 }
 
 /** Take back your "+1". */
@@ -91,6 +98,7 @@ async function writeRequest(
         case "cancelled":
         case "handed_over":
         case "unfollowed":
+        case "kept":
             return done(outcome);
         case "already_requested":
         case "already_following":

@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { describeDetail } from "@/lib/media/detail";
+import { describeRemoval } from "@/lib/media/removal";
 import { Poster } from "@/components/requests/Poster";
 import { RequestControls } from "@/components/requests/RequestControls";
 import { StatusBadge } from "@/components/requests/StatusBadge";
@@ -35,7 +36,9 @@ export function QueueList({
 function QueueRow({ item }: { item: QueueItem }): ReactElement {
     const t = useTranslations("requests.queue");
     const tDetail = useTranslations("requests.detail");
-    const detail = describeDetail(item, tDetail, useLocale(), "member");
+    const locale = useLocale();
+    const detail = describeDetail(item, tDetail, locale, "member");
+    const removal = describeRemoval(item, t, locale);
     const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
     const note = item.notes.find((n) => n.author.isYou);
 
@@ -64,6 +67,7 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
                     </span>
                 </p>
                 {detail && <p className="text-muted text-xs">{detail}</p>}
+                {removal && <p className="text-muted text-xs">{removal}</p>}
                 {note && (
                     <p className="text-muted text-xs break-words">
                         {t("yourNote", { note: note.text })}
@@ -73,7 +77,12 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
             <RequestControls
                 tmdbId={item.tmdbId}
                 title={title}
-                request={{ id: item.id, status: item.status, role: item.role }}
+                request={{
+                    id: item.id,
+                    status: item.status,
+                    role: item.role,
+                    removal: item.removal,
+                }}
             />
         </li>
     );

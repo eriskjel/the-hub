@@ -29,6 +29,7 @@ const item: QueueItem = {
     statusDetail: null,
     requester: null,
     notes: [],
+    removal: null,
     followerCount: 0,
     role: null,
     createdAt: "2026-10-13T20:00:00Z",
@@ -78,6 +79,21 @@ it.each(["wanted", "approved"] as const)(
         }
     }
 );
+
+it("offers keeping a temporary title, even while it's available", () => {
+    vi.mocked(adminRequestAction).mockReturnValueOnce(new Promise(() => {}));
+    const removal = { days: 30, at: "2026-11-16T10:32:00Z" };
+    render(<QueueControls item={{ ...item, status: "available", removal }} title="A movie" />);
+    openMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Keep A movie in the library" }));
+    expect(adminRequestAction).toHaveBeenCalledWith(7, "keep", item.updatedAt);
+});
+
+it("offers no keeping for a title that stays anyway", () => {
+    const removal = { days: 30, at: null };
+    render(<QueueControls item={{ ...item, status: "available", removal }} title="A movie" />);
+    expect(screen.queryByRole("button")).toBeNull();
+});
 
 it("moves marking available into the menu while the admin chooses an option", () => {
     render(<QueueControls item={proposal} title="A movie" choosing />);

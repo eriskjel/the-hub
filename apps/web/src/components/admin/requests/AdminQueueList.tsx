@@ -8,6 +8,7 @@ import type { QueueItem, RequestOption } from "@/lib/media/queue.server";
 import type { Locale } from "@/i18n/routing";
 import { cn } from "@/utils/cn";
 import { describeDetail } from "@/lib/media/detail";
+import { describeRemoval } from "@/lib/media/removal";
 
 export async function AdminQueueList({
     items,
@@ -59,6 +60,7 @@ export async function AdminQueueList({
             <ul className="divide-border divide-y">
                 {items.map((item) => {
                     const detail = describeDetail(item, tDetail, locale, "admin");
+                    const removal = describeRemoval(item, t, locale);
                     const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
                     const requester = item.requester?.name
                         ? t("requestedBy", { name: item.requester.name })
@@ -95,6 +97,7 @@ export async function AdminQueueList({
                                                 {detail}
                                             </p>
                                         )}
+                                        {removal && <p className="text-muted text-sm">{removal}</p>}
                                         {item.notes.map((note, i) => (
                                             <p
                                                 key={i}

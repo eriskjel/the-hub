@@ -11,6 +11,7 @@ export const REQUEST_STATUSES = [
     "failed",
     "declined",
     "cancelled",
+    "removed",
 ] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
@@ -27,6 +28,11 @@ export const OPEN_STATUSES: readonly RequestStatus[] = [
 export const CANCELLABLE_STATUSES: readonly RequestStatus[] = ["wanted", "proposed"];
 
 export const isOpenStatus = (s: RequestStatus) => OPEN_STATUSES.includes(s);
+/** Removal is still ahead: the title is wanted or in the library. */
+export const isKeepable = (s: RequestStatus) => isOpenStatus(s) || s === "available";
+
+/** How long a temporary title stays after it's added. */
+export const REMOVE_AFTER_DAYS = 30;
 export const isCancellable = (s: RequestStatus) => CANCELLABLE_STATUSES.includes(s);
 
 /** Quota: requests a member created in the last 7 days, not counting cancelled ones. */
@@ -50,6 +56,8 @@ export const requestExtrasSchema = z.object({
         .max(NOTE_MAX_LENGTH)
         .transform((note) => note || undefined)
         .optional(),
+    /** Remove the title REMOVE_AFTER_DAYS after it's added, unless someone +1s it. */
+    temporary: z.boolean().optional(),
 });
 export type RequestExtras = z.input<typeof requestExtrasSchema>;
 
@@ -72,6 +80,7 @@ export type RequestOutcome =
     | "unfollowed"
     | "cancelled"
     | "handed_over"
+    | "kept"
     | "already_requested"
     | "already_following"
     | "available"
