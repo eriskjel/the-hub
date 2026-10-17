@@ -32,9 +32,11 @@ export async function AdminQueueList({
     /** Draws attention to the count while the list has items. */
     highlight?: boolean;
 }) {
-    const t = await getTranslations({ locale, namespace: "requests.queue" });
-    const tAdmin = await getTranslations({ locale, namespace: "admin.requests" });
-    const tDetail = await getTranslations({ locale, namespace: "requests.detail" });
+    const [t, tAdmin, tDetail] = await Promise.all([
+        getTranslations({ locale, namespace: "requests.queue" }),
+        getTranslations({ locale, namespace: "admin.requests" }),
+        getTranslations({ locale, namespace: "requests.detail" }),
+    ]);
     const header: ReactNode = (
         <>
             <h2 className="font-semibold">{heading}</h2>

@@ -14,10 +14,23 @@ set local role media_worker;
 update public.media_request set detail_code = 'future_code', detail_args = '{"label":"Name"}', status_detail = 'Fallback'
     where tmdb_id = 930001;
 do $$
-declare bad jsonb; code text;
+declare bad jsonb; code text; boundary jsonb;
 begin
     assert (select detail_code = 'future_code' and detail_args = '{"label":"Name"}'::jsonb
               from public.media_request where tmdb_id = 930001), 'worker can write and read future codes';
+    boundary := jsonb_build_object('label', repeat('x', 4096 - octet_length('{"label": ""}'::jsonb::text)));
+    assert octet_length(boundary::text) = 4096;
+    update public.media_request set detail_code = repeat('a', 40), detail_args = boundary where tmdb_id = 930001;
+    assert (select octet_length(detail_args::text) = 4096 and char_length(detail_code) = 40
+              from public.media_request where tmdb_id = 930001), 'maximum code length and exact byte limit accepted';
+    begin
+        update public.media_request set detail_args = jsonb_build_object('label', (boundary->>'label') || 'x') where tmdb_id = 930001;
+        raise exception 'accepted 4097 bytes';
+    exception when check_violation then null;
+    end;
+    update public.media_request set detail_code = 'paused', detail_args = '{}' where tmdb_id = 930001;
+    assert (select detail_args = '{}'::jsonb from public.media_request where tmdb_id = 930001), 'empty arguments accepted';
+    update public.media_request set detail_code = 'future_code', detail_args = '{"label":"Name"}' where tmdb_id = 930001;
     foreach bad in array array['null'::jsonb, '[]'::jsonb, '"text"'::jsonb, '{"n":1}'::jsonb,
                                '{"n":null}'::jsonb, '{"n":{}}'::jsonb, '{"n":[]}'::jsonb,
                                jsonb_build_object('label', repeat('x', 4096))] loop
@@ -48,6 +61,11 @@ end $$;
 
 reset role;
 do $$ begin
+    assert not has_function_privilege('authenticated', 'public.media_detail_args_valid(jsonb)', 'EXECUTE'),
+        'members have no validator RPC permission';
+    assert not has_function_privilege('anon', 'public.media_detail_args_valid(jsonb)', 'EXECUTE');
+    assert has_function_privilege('media_worker', 'public.media_detail_args_valid(jsonb)', 'EXECUTE');
+    assert has_function_privilege('service_role', 'public.media_detail_args_valid(jsonb)', 'EXECUTE');
     assert not has_column_privilege('authenticated', 'public.media_request', 'detail_code', 'UPDATE');
     assert not has_column_privilege('authenticated', 'public.media_request', 'detail_args', 'UPDATE');
     assert not has_column_privilege('anon', 'public.media_request', 'detail_code', 'SELECT');
@@ -72,7 +90,11 @@ begin
         update public.media_request
            set status = 'proposed', detail_code = 'suggested', detail_args = '{"label":"Old"}', status_detail = 'Old'
          where tmdb_id = 930001 returning * into r;
-        perform public.media_request_admin_update(r.id, intent, r.updated_at);
+        assert public.media_request_admin_update(r.id, intent, r.updated_at) =
+            case intent when 'requeue' then 'requeued' when 'decline' then 'declined' else 'available' end,
+            format('%s reports success', intent);
+        assert (select status = case intent when 'requeue' then 'wanted' when 'decline' then 'declined' else 'available' end
+                  from public.media_request where id = r.id), format('%s updates status', intent);
         assert (select detail_code is null and detail_args is null and status_detail is null
                   from public.media_request where id = r.id), format('%s clears all detail fields', intent);
     end loop;

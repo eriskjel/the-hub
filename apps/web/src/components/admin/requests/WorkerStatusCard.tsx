@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { workerState, type WorkerStatus } from "@/lib/media/admin";
 import { ProcessingToggle } from "@/components/admin/requests/QueueControls";
 import type { Locale } from "@/i18n/routing";
+import { dateLocale } from "@/i18n/format";
 
 export async function WorkerStatusCard({
     worker,
@@ -13,7 +14,7 @@ export async function WorkerStatusCard({
     const t = await getTranslations({ locale, namespace: "admin.requests.worker" });
     const status = workerState(worker);
     const lastRun = worker.lastRunAt
-        ? new Intl.DateTimeFormat(locale === "no" ? "nb-NO" : "en-GB", {
+        ? new Intl.DateTimeFormat(dateLocale(locale), {
               dateStyle: "medium",
               timeStyle: "short",
               timeZone: "Europe/Oslo",

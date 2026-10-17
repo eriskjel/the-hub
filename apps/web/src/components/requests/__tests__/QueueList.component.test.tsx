@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
 import en from "@/messages/en.json";
 import no from "@/messages/no.json";
@@ -30,8 +30,11 @@ const item = (id: number, status: QueueItem["status"], statusDetail: string): Qu
 });
 
 beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-17T12:00:00Z"));
     setIntl({ locale: "en", messages: en });
 });
+afterEach(() => vi.useRealTimers());
 
 it("leaves a proposal's details to the admin and shows other status notes", () => {
     render(

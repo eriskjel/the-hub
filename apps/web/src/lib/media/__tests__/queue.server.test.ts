@@ -63,6 +63,82 @@ beforeEach(() => {
 });
 
 describe("getQueue", () => {
+    it.each([
+        { code: "42703", message: "column media_request.detail_code does not exist" },
+        { code: "42703", message: "column media_request.detail_args does not exist" },
+        {
+            code: "PGRST204",
+            message:
+                "Could not find the 'detail_code' column of 'media_request' in the schema cache",
+        },
+        {
+            code: "PGRST204",
+            message:
+                "Could not find the 'detail_args' column of 'media_request' in the schema cache",
+        },
+    ])("uses the old select when detail columns are unavailable: $message", async (error) => {
+        db.tables.media_request[0].status_detail = "Legacy English";
+        const selections: string[] = [];
+        const from = db.from.bind(db);
+        vi.spyOn(db, "from").mockImplementation((table) => {
+            const query = from(table);
+            const select = query.select.bind(query);
+            vi.spyOn(query, "select").mockImplementation((columns, options) => {
+                if (table === "media_request") {
+                    selections.push(columns ?? "*");
+                    if (columns?.includes("detail_code") || columns?.includes("detail_args")) {
+                        db.failNext(table, "select", error);
+                    }
+                }
+                return select(columns, options);
+            });
+            return query;
+        });
+        const queue = await getQueue(client(), ME);
+        expect(queue.find((item) => item.id === 1)).toMatchObject({
+            statusDetail: "Legacy English",
+            detail: null,
+        });
+        expect(queue.some((item) => item.id === 5)).toBe(false);
+        expect(selections).toHaveLength(4);
+        expect(
+            selections.filter(
+                (columns) => !columns.includes("detail_code") && !columns.includes("detail_args")
+            )
+        ).toHaveLength(2);
+    });
+
+    it.each([
+        { code: "42501", message: "permission denied for table media_request" },
+        { code: "42703", message: "column media_request.requested_by does not exist" },
+        {
+            code: "PGRST204",
+            message: "Could not find the 'detail_code' column of 'other_table' in the schema cache",
+        },
+        { code: "PGRST200", message: "Could not find a relationship in the schema cache" },
+    ])("does not mask unrelated database errors: $message", async (error) => {
+        db.failNext("media_request", "select", error);
+        await expect(getQueue(client(), ME)).rejects.toThrow(error.message);
+    });
+
+    it("propagates an error from the legacy retry", async () => {
+        db.failNext("media_request", "select", {
+            code: "42703",
+            message: "column media_request.detail_code does not exist",
+        });
+        // The second section succeeds, then the first section's retry fails.
+        db.beforeNext("media_request", "select", () => {
+            db.beforeNext("media_request", "select", () => {
+                db.beforeNext("media_request", "select", () =>
+                    db.failNext("media_request", "select", {
+                        code: "42501",
+                        message: "retry denied",
+                    })
+                );
+            });
+        });
+        await expect(getQueue(client(), ME)).rejects.toThrow("retry denied");
+    });
     it("reads structured details alongside the legacy fallback", async () => {
         Object.assign(db.tables.media_request[0], {
             detail_code: "waiting_release",

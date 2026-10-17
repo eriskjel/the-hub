@@ -21,6 +21,8 @@ Write `status_detail`, `detail_code` and `detail_args` in the same update:
 - `detail_args` is a flat object of strings, at most 4096 bytes when rendered as
   JSONB text. Current argument values are at most 300 UTF-16 code units, matching
   the worker's clipping and the hub's validation. Use `{}` for no arguments.
+  Readers discard extra keys on known codes, so services can add values without
+  replacing a valid translation with its fallback.
 - Clear code and arguments together to SQL `NULL`; JSON `null` is not valid.
 - Values are plain text, never HTML or translation templates. Labels, release
   names and cut names retain their original spelling.
@@ -61,13 +63,19 @@ text; they cannot crash the queue. No fallback text means no detail line.
 `next` is an ISO timestamp including seconds and `Z` or an explicit offset. Format
 it in `Europe/Oslo`, using `nb-NO` for `no` and `en-GB` for `en`. For example,
 `2026-10-17T12:00:00Z` becomes `lør. 17. okt.` or `Sat 17 Oct`.
+Dates outside the current Oslo year include their year, for example `12. feb. 2027`.
+The registry declares which fields are dates, and formatters are reused across rows.
 
 ## Transitions and rollout
 
-1. Merge the hub migration and renderer first. Apply the migration before deploying
-   the renderer, which selects the new columns. Use **Push migrations to dev** for
+1. Merge the hub migration and renderer first. Use **Push migrations to dev** for
    the preview environment, and verify production migration completion before the
-   worker deployment. Existing rows continue to use their English text.
+   worker deployment. If the renderer deploys before the new columns are available,
+   it retries the old select and shows existing English text. Permission errors and
+   unrelated missing columns still fail normally. The next request attempts the new
+   columns again, so translations start working once the schema is ready.
+   Apply the follow-up validator-permission migration too; it removes member access
+   to the validator on databases that already applied the first migration.
 2. Deploy the worker that writes all three fields. Its database CI must use a hub
    revision containing the migration. A new search clears previous details;
    claiming an approval sets `release` and its chosen label, replacing retry errors.
@@ -88,3 +96,11 @@ new codes describing an earlier outcome. The additive migration stays installed.
 Validate both locales, legacy rows, unknown codes, malformed arguments, literal
 markup values, Oslo date boundaries, worker grants, and transition/lease races.
 Do not infer codes by parsing historical English sentences.
+
+`supabase/tests/media_requests/check-mutations.sh` verifies that deliberately
+removing the quota check or detail clearing fails the behavioral tests. Function
+overrides run after all migrations and their idempotency pass; a later definition
+cannot repair a mutation before the tests see it. The existing
+`TRANSITION_MIGRATION`, `ADMIN_QUEUE_MIGRATION` and `WORKER_ACCESS_MIGRATION`
+switches now apply their SQL last. `FUNCTION_OVERRIDES` accepts other function
+overrides. Prefer small overrides of current functions over historical schema files.

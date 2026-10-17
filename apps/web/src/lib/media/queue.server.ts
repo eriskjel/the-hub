@@ -8,6 +8,23 @@ import type { RequestDetail } from "./detail";
 
 /** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
+const LEGACY_COLUMNS =
+    "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)";
+const DETAIL_COLUMNS = `${LEGACY_COLUMNS}, detail_code, detail_args` as const;
+
+function missingDetailColumns(error: { code: string; message: string } | null): boolean {
+    if (!error) return false;
+    return (
+        (error.code === "42703" &&
+            /^column (?:public\.)?media_request\.(?:detail_code|detail_args) does not exist$/.test(
+                error.message
+            )) ||
+        (error.code === "PGRST204" &&
+            /^Could not find the '(?:detail_code|detail_args)' column of 'media_request' in the schema cache$/.test(
+                error.message
+            ))
+    );
+}
 
 type Section = {
     statuses: readonly RequestStatus[];
@@ -73,17 +90,25 @@ export async function getQueue(
     options: { admin?: boolean } = {}
 ): Promise<QueueItem[]> {
     const results = await Promise.all(
-        (options.admin ? ADMIN_SECTIONS : MEMBER_SECTIONS).map(({ statuses, orderBy, ascending }) =>
-            supabase
-                .from("media_request")
-                .select(
-                    "id, tmdb_id, status, status_detail, detail_code, detail_args, requested_by, created_at, updated_at, media_request_follower(user_id)"
-                )
-                .eq("media_type", "movie")
-                .in("status", statuses)
-                .order(orderBy, { ascending })
-                .order("id", { ascending })
-                .limit(QUEUE_LIMIT)
+        (options.admin ? ADMIN_SECTIONS : MEMBER_SECTIONS).map(
+            async ({ statuses, orderBy, ascending }) => {
+                const query = (details: boolean) => {
+                    const table = supabase.from("media_request");
+                    const selection = details
+                        ? table.select(DETAIL_COLUMNS)
+                        : table.select(LEGACY_COLUMNS);
+                    return selection
+                        .eq("media_type", "movie")
+                        .in("status", statuses)
+                        .order(orderBy, { ascending })
+                        .order("id", { ascending })
+                        .limit(QUEUE_LIMIT);
+                };
+                const result = await query(true);
+                // App and migration deployments can finish in either order. Retry only
+                // the missing additive fields; permission and other errors still fail.
+                return missingDetailColumns(result.error) ? await query(false) : result;
+            }
         )
     );
     const error = results.find((r) => r.error)?.error;

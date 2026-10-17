@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createTranslator } from "next-intl";
-import { vi } from "vitest";
 import en from "@/messages/en.json";
 import no from "@/messages/no.json";
 import { describeDetail, DETAIL_CODES, type DetailCode } from "../detail";
@@ -33,7 +32,8 @@ function render(
     args: unknown,
     audience: "member" | "admin" = "admin",
     locale = "no",
-    status: "wanted" | "proposed" | "available" = "wanted"
+    status: "wanted" | "proposed" | "available" = "wanted",
+    now = new Date("2026-10-17T12:00:00Z")
 ) {
     const t = createTranslator({
         locale,
@@ -47,7 +47,8 @@ function render(
         { status, statusDetail: "Legacy English", detail: code === null ? null : { code, args } },
         t,
         locale,
-        audience
+        audience,
+        now
     );
 }
 
@@ -92,17 +93,54 @@ it.each([
     expect(render("no_releases", { next })).toContain(expected);
 });
 
+it.each([null, [], "label", {}, { label: 42 }, { label: "" }, { label: "x".repeat(301) }])(
+    "falls back on malformed arguments: %j",
+    (args) => {
+        expect(render("release", args, "member")).toBe("Legacy English");
+    }
+);
+
+it.each(Object.keys(examples) as DetailCode[])("ignores future fields on %s", (code) => {
+    expect(render(code, { ...examples[code], future: "new value" })).toBe(
+        render(code, examples[code])
+    );
+});
+
+it("strips extra fields before passing values to translations", () => {
+    const t = vi.fn(() => "Label");
+    describeDetail(
+        {
+            status: "available",
+            statusDetail: "Fallback",
+            detail: { code: "release", args: { label: "Label", future: "ignored" } },
+        },
+        t,
+        "no",
+        "member"
+    );
+    expect(t).toHaveBeenCalledExactlyOnceWith("release", { label: "Label" });
+});
+
 it.each([
-    null,
-    [],
-    "label",
-    {},
-    { label: 42 },
-    { label: "" },
-    { label: "x".repeat(301) },
-    { label: "ok", extra: "unexpected" },
-])("falls back on malformed arguments: %j", (args) => {
-    expect(render("release", args, "member")).toBe("Legacy English");
+    ["no", "2027-02-12", "Venter på digital utgivelse 12. feb. 2027"],
+    ["en", "2027-02-12", "Waiting for the digital release, 12 Feb 2027"],
+    ["no", "2025-02-12", "Venter på digital utgivelse 12. feb. 2025"],
+])("includes a different year in %s for %s", (locale, date, expected) => {
+    expect(render("waiting_release", { date }, "member", locale)).toBe(expected);
+});
+
+it("uses the current Oslo year, even while UTC is still in the previous year", () => {
+    const now = new Date("2026-12-31T23:30:00Z");
+    expect(render("waiting_release", { date: "2027-02-12" }, "member", "no", "wanted", now)).toBe(
+        "Venter på digital utgivelse 12. feb."
+    );
+    expect(
+        render("waiting_release", { date: "2026-12-31" }, "member", "no", "wanted", now)
+    ).toContain("31. des. 2026");
+    expect(
+        render("no_releases", { next: "2026-12-31T23:30:00Z" }, "member", "no", "wanted", now)
+    ).not.toContain("2027");
+    expect(render("no_releases", { next: "2026-12-31T23:30:00Z" })).toContain("2027");
 });
 
 it.each(["2026-02-30", "2026-13-01", "tomorrow", "2026-11-12T00:00:00Z"])(
