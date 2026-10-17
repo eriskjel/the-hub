@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { setIntl } from "@/tests/testUtils";
 import en from "@/messages/en.json";
@@ -158,4 +158,23 @@ it("starts a collapsed list closed, showing its heading and count", async () => 
     const details = container.querySelector("details");
     expect(details).not.toHaveAttribute("open");
     expect(details?.querySelector("summary")).toHaveTextContent("Available1");
+});
+
+it("starts any other list open, and stays folded across a refresh", async () => {
+    const searching: QueueItem = { ...proposal, status: "searching", statusDetail: null };
+    const inProgress = async (items: QueueItem[]) =>
+        AdminQueueList({ items, heading: "In progress", empty: "Nothing", locale: "en" });
+    const { container, rerender } = render(await inProgress([searching]));
+
+    const details = container.querySelector("details")!;
+    expect(details).toHaveAttribute("open");
+    expect(screen.getByText("A movie")).toBeVisible();
+
+    fireEvent.click(details.querySelector("summary")!);
+    expect(details).not.toHaveAttribute("open");
+
+    // The page's refresh renders the list again with new rows; the admin's fold stays.
+    rerender(await inProgress([searching, { ...searching, id: 8, title: "Another movie" }]));
+    expect(details).not.toHaveAttribute("open");
+    expect(details.querySelector("summary")).toHaveTextContent("In progress2");
 });
