@@ -28,6 +28,7 @@ const proposal: QueueItem = {
     detail: null,
     statusDetail: "Needs a choice: no release from a listed group",
     requester: { name: "Member", isYou: false },
+    notes: [],
     followerCount: 0,
     role: null,
     createdAt: "2026-10-13T20:00:00Z",
@@ -177,4 +178,26 @@ it("starts any other list open, and stays folded across a refresh", async () => 
     rerender(await inProgress([searching, { ...searching, id: 8, title: "Another movie" }]));
     expect(details).not.toHaveAttribute("open");
     expect(details.querySelector("summary")).toHaveTextContent("In progress2");
+});
+
+it("shows every note with its author", async () => {
+    render(
+        await AdminQueueList({
+            items: [
+                {
+                    ...proposal,
+                    notes: [
+                        { author: { name: "Fredrik", isYou: false }, text: "The extended cut" },
+                        { author: { name: null, isYou: false }, text: "Theatrical is fine" },
+                    ],
+                },
+            ],
+            heading: "Needs you",
+            empty: "Nothing",
+            locale: "en",
+        })
+    );
+
+    expect(screen.getByText("Note from Fredrik: The extended cut")).toBeInTheDocument();
+    expect(screen.getByText("Note from a member: Theatrical is fine")).toBeInTheDocument();
 });

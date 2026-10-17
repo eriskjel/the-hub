@@ -50,6 +50,14 @@ function type(text: string) {
 
 const row = (title: string) => screen.getByText(title).closest("li") as HTMLElement;
 
+/** Requests a title through its dialog, with a note if given. */
+function request(title: string, note?: string) {
+    fireEvent.click(within(row(title)).getByRole("button"));
+    if (note)
+        fireEvent.change(screen.getByLabelText("Note (optional)"), { target: { value: note } });
+    fireEvent.click(screen.getByRole("button", { name: "Send request" }));
+}
+
 beforeEach(() => {
     vi.clearAllMocks();
     fetchMock = vi.fn(async () => Response.json({ results: RESULTS }));
@@ -111,10 +119,10 @@ describe("RequestSearch", () => {
         type("inter");
         await screen.findByText("Movie 1");
 
-        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+        request("Movie 1");
 
         await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Requested."));
-        expect(requestMovie).toHaveBeenCalledWith(1);
+        expect(requestMovie).toHaveBeenCalledWith(1, { note: "" });
         await waitFor(() => expect(screen.queryByRole("listitem")).toBeNull());
         const input = screen.getByLabelText("Search for a movie");
         expect(input).toHaveValue("");
@@ -127,12 +135,13 @@ describe("RequestSearch", () => {
         type("inter");
         await screen.findByText("Movie 1");
 
-        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+        request("Movie 1");
 
         await waitFor(() =>
             expect(toast.info).toHaveBeenCalledWith("You've already requested this.")
         );
         await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+        expect(screen.queryByRole("dialog")).toBeNull();
         expect(screen.getByText("Movie 1")).toBeInTheDocument();
         expect(screen.getByLabelText("Search for a movie")).toHaveValue("inter");
     });
@@ -146,8 +155,9 @@ describe("RequestSearch", () => {
         vi.useFakeTimers();
         try {
             type("new query");
+            fireEvent.click(within(row("Movie 1")).getByRole("button"));
             await act(async () => {
-                fireEvent.click(within(row("Movie 1")).getByRole("button"));
+                fireEvent.click(screen.getByRole("button", { name: "Send request" }));
                 await vi.advanceTimersByTimeAsync(0);
             });
             expect(screen.getByLabelText("Search for a movie")).toHaveValue("");
@@ -181,13 +191,58 @@ describe("RequestSearch", () => {
         type("inter");
         await screen.findByText("Movie 1");
 
-        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+        request("Movie 1");
 
         await waitFor(() =>
             expect(toast.error).toHaveBeenCalledWith(
                 "You've used this week's requests. You can still +1 others."
             )
         );
+        expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("sends the note with the request", async () => {
+        vi.mocked(requestMovie).mockResolvedValueOnce({ ok: true, outcome: "requested" });
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+        expect(screen.getByRole("dialog")).toHaveTextContent("Request Movie 1");
+        expect(screen.getByLabelText("Note (optional)")).toHaveFocus();
+        request("Movie 1", "The extended cut");
+
+        await waitFor(() =>
+            expect(requestMovie).toHaveBeenCalledWith(1, { note: "The extended cut" })
+        );
+        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    });
+
+    it("keeps the dialog and its note open to try again when the request failed", async () => {
+        vi.mocked(requestMovie).mockRejectedValueOnce(new Error("network"));
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        request("Movie 1", "The extended cut");
+
+        await waitFor(() =>
+            expect(toast.error).toHaveBeenCalledWith("Something went wrong. Try again.")
+        );
+        expect(screen.getByLabelText("Note (optional)")).toHaveValue("The extended cut");
+        expect(screen.getByText("Movie 1")).toBeInTheDocument();
+    });
+
+    it("closes the dialog without requesting", async () => {
+        renderSearch();
+        type("inter");
+        await screen.findByText("Movie 1");
+
+        fireEvent.click(within(row("Movie 1")).getByRole("button"));
+        fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(requestMovie).not.toHaveBeenCalled();
     });
 
     it("says when search isn't working", async () => {

@@ -6,8 +6,10 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getOwnMembership } from "@/lib/media/membership.server";
 import { getMovie } from "@/lib/media/tmdb.server";
 import {
+    requestExtrasSchema,
     requestIdSchema,
     tmdbIdSchema,
+    type RequestExtras,
     type RequestActionResult,
     type RequestError,
     type RequestOutcome,
@@ -24,13 +26,21 @@ type Member = { id: string; weeklyQuota: number | null };
  * or from TMDB. Writes that depend on a row's state are conditional on it.
  */
 
-/** Request a movie, or "+1" it if someone else already has. */
-export async function requestMovie(tmdbId: number): Promise<RequestActionResult> {
+/**
+ * Request a movie, or "+1" it if someone else already has. A note ("the
+ * extended cut") is for the admin, and the worker leaves such a request to them.
+ */
+export async function requestMovie(
+    tmdbId: number,
+    extras: RequestExtras = {}
+): Promise<RequestActionResult> {
     const member = await currentMember();
     if (!member) return fail("not_member");
 
     const id = tmdbIdSchema.safeParse(tmdbId);
     if (!id.success) return fail("not_found");
+    const extra = requestExtrasSchema.safeParse(extras);
+    if (!extra.success) return fail("failed");
 
     try {
         if (!(await getMovie(id.data))) return fail("not_found");
@@ -44,6 +54,8 @@ export async function requestMovie(tmdbId: number): Promise<RequestActionResult>
         p_media_type: "movie",
         p_tmdb_id: id.data,
         p_weekly_quota: member.weeklyQuota,
+        // Only with a note, so plain requests also work while the database catches up.
+        ...(extra.data.note && { p_note: extra.data.note }),
     });
 }
 

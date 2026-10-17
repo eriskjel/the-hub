@@ -28,6 +28,7 @@ const item: QueueItem = {
     detail: null,
     statusDetail: null,
     requester: null,
+    notes: [],
     followerCount: 0,
     role: null,
     createdAt: "2026-10-13T20:00:00Z",

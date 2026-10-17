@@ -23,6 +23,7 @@ const item = (id: number, status: QueueItem["status"], statusDetail: string): Qu
     detail: null,
     statusDetail,
     requester: { name: null, isYou: true },
+    notes: [],
     followerCount: 0,
     role: "requester",
     createdAt: "2026-10-13T20:00:00Z",
@@ -79,4 +80,27 @@ it("renders Norwegian dates, hides admin-only fallbacks and escapes worker value
     expect(screen.queryByText("Admin-only fallback")).toBeNull();
     expect(screen.getByText('<img src=x onerror="alert(1)">')).toBeInTheDocument();
     expect(container.querySelector("[onerror]")).toBeNull();
+});
+
+it("shows your own note under the request", () => {
+    render(
+        <QueryClientProvider client={new QueryClient()}>
+            <QueueList
+                heading="Queue"
+                items={[
+                    {
+                        ...item(1, "wanted", ""),
+                        notes: [{ author: { name: "Me", isYou: true }, text: "The extended cut" }],
+                    },
+                    {
+                        ...item(2, "wanted", ""),
+                        notes: [{ author: { name: "Other", isYou: false }, text: "Not mine" }],
+                    },
+                ]}
+            />
+        </QueryClientProvider>
+    );
+
+    expect(screen.getByText("Your note: The extended cut")).toBeInTheDocument();
+    expect(screen.queryByText(/Not mine/)).toBeNull();
 });

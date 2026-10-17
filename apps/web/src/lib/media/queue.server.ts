@@ -60,11 +60,15 @@ export type QueueItem = {
     detail: RequestDetail | null;
     /** Null when the requester's account was deleted. */
     requester: { name: string | null; isYou: boolean } | null;
+    /** Admins get every note; everyone else only their own. */
+    notes: QueueNote[];
     followerCount: number;
     role: RequestRole;
     createdAt: string;
     updatedAt: string;
 };
+
+export type QueueNote = { author: { name: string | null; isYou: boolean }; text: string };
 
 type Row = {
     id: number;
@@ -89,6 +93,7 @@ export async function getQueue(
     userId: string,
     options: { admin?: boolean } = {}
 ): Promise<QueueItem[]> {
+    const notesRead = getNotes(supabase, options.admin ? null : userId);
     const results = await Promise.all(
         (options.admin ? ADMIN_SECTIONS : MEMBER_SECTIONS).map(
             async ({ statuses, orderBy, ascending }) => {
@@ -114,11 +119,12 @@ export async function getQueue(
     const error = results.find((r) => r.error)?.error;
     if (error) throw new Error(`media queue read failed: ${error.message}`);
     const rows = results.flatMap((r) => r.data ?? []) as Row[];
+    const notes = await notesRead;
 
-    const names = await getNames(
-        supabase,
-        rows.flatMap((r) => (r.requested_by ? [r.requested_by] : []))
-    );
+    const names = await getNames(supabase, [
+        ...rows.flatMap((r) => (r.requested_by ? [r.requested_by] : [])),
+        ...notes.map((n) => n.user_id),
+    ]);
     const movies = await Promise.all(
         rows.map((r) =>
             getMovie(r.tmdb_id).catch((e: Error) => {
@@ -142,6 +148,12 @@ export async function getQueue(
             requester: r.requested_by
                 ? { name: names.get(r.requested_by) ?? null, isYou: r.requested_by === userId }
                 : null,
+            notes: notes
+                .filter((n) => n.request_id === r.id)
+                .map((n) => ({
+                    author: { name: names.get(n.user_id) ?? null, isYou: n.user_id === userId },
+                    text: n.note,
+                })),
             followerCount: r.media_request_follower.length,
             role: r.requested_by === userId ? "requester" : following ? "follower" : null,
             createdAt: r.created_at,
@@ -192,6 +204,25 @@ export async function countWaitingForAdmin(client: SupabaseClient): Promise<numb
         return 0;
     }
     return count ?? 0;
+}
+
+type NoteRow = { request_id: number; user_id: string; note: string };
+
+/**
+ * Notes, oldest first: every note when `userId` is null, else only the user's
+ * own. A note is a nicety; the queue still renders without them.
+ */
+async function getNotes(supabase: SupabaseClient, userId: string | null): Promise<NoteRow[]> {
+    const query = supabase
+        .from("media_request_note")
+        .select("request_id, user_id, note")
+        .order("created_at");
+    const { data, error } = await (userId ? query.eq("user_id", userId) : query);
+    if (error) {
+        console.error("media queue: note read failed:", error.message);
+        return [];
+    }
+    return (data ?? []) as NoteRow[];
 }
 
 async function getNames(supabase: SupabaseClient, ids: string[]): Promise<Map<string, string>> {

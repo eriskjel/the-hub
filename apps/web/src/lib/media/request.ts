@@ -39,6 +39,20 @@ export const SEARCH_MAX_LENGTH = 100;
 export const tmdbIdSchema = z.number().int().positive().max(2_147_483_647);
 export const requestIdSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 
+/** Mirrors mrn_note_length in the database. A blank note is no note. */
+export const NOTE_MAX_LENGTH = 500;
+
+/** What a member can add when requesting a title. */
+export const requestExtrasSchema = z.object({
+    note: z
+        .string()
+        .trim()
+        .max(NOTE_MAX_LENGTH)
+        .transform((note) => note || undefined)
+        .optional(),
+});
+export type RequestExtras = z.input<typeof requestExtrasSchema>;
+
 /** How the signed-in member relates to a request. */
 export type RequestRole = "requester" | "follower" | null;
 

@@ -490,6 +490,8 @@
             "empty": "Nothing here.",
             "options": "Suggestions for {title}",
             "recommended": "Recommended",
+            "note": "Note from {name}: {note}",
+            "noteFromMember": "Note from a member: {note}",
             "actions": {
                 "available": "Mark available",
                 "availableTitle": "Mark {title} available",
@@ -584,6 +586,14 @@
             "failed": "Search isn't working right now. Try again later.",
             "showMore": "Show {count} more"
         },
+        "dialog": {
+            "title": "Request {title}",
+            "note": "Note (optional)",
+            "notePlaceholder": "For example: the extended cut",
+            "noteHelp": "Only you and the admin see the note. With a note, the admin picks the version.",
+            "send": "Send request",
+            "back": "Cancel"
+        },
         "actions": {
             "request": "Request",
             "requestTitle": "Request {title}",
@@ -619,6 +629,7 @@
             "formerMember": "Requested by a former member",
             "unknownMember": "Requested by a member",
             "plusOthers": "+{count} more",
+            "yourNote": "Your note: {note}",
             "unknownTitle": "Movie #{id}"
         },
         "outcomes": {
