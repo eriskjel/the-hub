@@ -545,6 +545,26 @@
         }
     },
     "requests": {
+        "detail": {
+            "paused": "Processing is paused",
+            "waiting_release": "Waiting for the digital release, {date}",
+            "no_releases": "No releases yet, checking again {next}",
+            "only_low_quality": "No suitable releases yet, checking again {next}",
+            "unwanted": "Waiting for someone with access to want it",
+            "search_failed": "Search failed, trying again within the hour",
+            "in_library": "Already in the library",
+            "suggested": "Suggested: {label}",
+            "choice_no_listed_remux": "No remux from a listed group",
+            "choice_4k_missing": "A 4K disc seems to exist, but no listed group has a 4K remux",
+            "choice_cuts": "{group} has several cuts: {cuts}",
+            "choice_ambiguous": "{group} has releases the rules can't tell apart",
+            "choice_sizes": "{group} has versions far apart in size, possibly from different discs",
+            "release": "{label}",
+            "not_cached": "Not available now: {label}. Choose another, or search again later",
+            "choice_unmatched": "Couldn't match the choice, search again",
+            "no_longer_wanted": "Nobody with access wants it anymore",
+            "add_failed": "Adding failed, trying again within the hour"
+        },
         "pageTitle": "Requests",
         "intro": "Ask for a movie. Everyone with access shares one list, and asking for a movie that's already on it adds your +1.",
         "quota": "{used} of {quota} requests used this week",

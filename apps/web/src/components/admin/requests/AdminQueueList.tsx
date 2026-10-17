@@ -7,6 +7,7 @@ import { ChooseOption, QueueControls } from "@/components/admin/requests/QueueCo
 import type { QueueItem, RequestOption } from "@/lib/media/queue.server";
 import type { Locale } from "@/i18n/routing";
 import { cn } from "@/utils/cn";
+import { describeDetail } from "@/lib/media/detail";
 
 export async function AdminQueueList({
     items,
@@ -31,8 +32,11 @@ export async function AdminQueueList({
     /** Draws attention to the count while the list has items. */
     highlight?: boolean;
 }) {
-    const t = await getTranslations({ locale, namespace: "requests.queue" });
-    const tAdmin = await getTranslations({ locale, namespace: "admin.requests" });
+    const [t, tAdmin, tDetail] = await Promise.all([
+        getTranslations({ locale, namespace: "requests.queue" }),
+        getTranslations({ locale, namespace: "admin.requests" }),
+        getTranslations({ locale, namespace: "requests.detail" }),
+    ]);
     const header: ReactNode = (
         <>
             <h2 className="font-semibold">{heading}</h2>
@@ -54,6 +58,7 @@ export async function AdminQueueList({
         ) : (
             <ul className="divide-border divide-y">
                 {items.map((item) => {
+                    const detail = describeDetail(item, tDetail, locale, "admin");
                     const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
                     const requester = item.requester?.name
                         ? t("requestedBy", { name: item.requester.name })
@@ -85,9 +90,9 @@ export async function AdminQueueList({
                                                     ` ${t("plusOthers", { count: String(item.followerCount) })}`}
                                             </span>
                                         </p>
-                                        {item.statusDetail && (
+                                        {detail && (
                                             <p className="text-muted text-sm break-words">
-                                                {item.statusDetail}
+                                                {detail}
                                             </p>
                                         )}
                                     </div>

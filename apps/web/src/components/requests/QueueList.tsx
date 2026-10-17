@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { describeDetail } from "@/lib/media/detail";
 import { Poster } from "@/components/requests/Poster";
 import { RequestControls } from "@/components/requests/RequestControls";
 import { StatusBadge } from "@/components/requests/StatusBadge";
@@ -33,6 +34,8 @@ export function QueueList({
 
 function QueueRow({ item }: { item: QueueItem }): ReactElement {
     const t = useTranslations("requests.queue");
+    const tDetail = useTranslations("requests.detail");
+    const detail = describeDetail(item, tDetail, useLocale(), "member");
     const title = item.title ?? t("unknownTitle", { id: String(item.tmdbId) });
 
     const requester = !item.requester
@@ -59,10 +62,7 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
                             ` ${t("plusOthers", { count: String(item.followerCount) })}`}
                     </span>
                 </p>
-                {/* A proposal's details are for the admin; members see that it waits for approval. */}
-                {item.statusDetail && item.status !== "proposed" && (
-                    <p className="text-muted text-xs">{item.statusDetail}</p>
-                )}
+                {detail && <p className="text-muted text-xs">{detail}</p>}
             </div>
             <RequestControls
                 tmdbId={item.tmdbId}
