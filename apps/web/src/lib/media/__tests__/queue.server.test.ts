@@ -69,7 +69,7 @@ describe("getQueue", () => {
             detail_args: { date: "2026-11-12" },
             status_detail: "Waiting for digital release, 12 Nov",
         });
-        const queue = await getQueue(client(), ME, "no");
+        const queue = await getQueue(client(), ME);
         expect(queue.find((item) => item.id === 1)).toMatchObject({
             detail: { code: "waiting_release", args: { date: "2026-11-12" } },
             statusDetail: "Waiting for digital release, 12 Nov",
