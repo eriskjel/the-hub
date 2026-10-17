@@ -239,6 +239,39 @@ describe("getQueue", () => {
         expect(getMovieMock).toHaveBeenCalledWith(101);
     });
 
+    it("shows members their own notes and admins every note, with the author's name", async () => {
+        db.tables.media_request_note = [
+            { request_id: 2, user_id: OTHER, note: "Theatrical", created_at: "2026-10-01" },
+            { request_id: 2, user_id: ME, note: "The extended cut", created_at: "2026-10-02" },
+            { request_id: 1, user_id: NAMELESS, note: "Any version", created_at: "2026-10-03" },
+        ];
+
+        const mine = new Map((await getQueue(client(), ME)).map((q) => [q.id, q.notes]));
+        expect(mine.get(2)).toEqual([
+            { author: { name: "Me Myself", isYou: true }, text: "The extended cut" },
+        ]);
+        expect(mine.get(1)).toEqual([]);
+
+        const all = new Map((await getQueue(client(), ME, { admin: true })).map((q) => [q.id, q]));
+        expect(all.get(2)?.notes).toEqual([
+            { author: { name: "other", isYou: false }, text: "Theatrical" },
+            { author: { name: "Me Myself", isYou: true }, text: "The extended cut" },
+        ]);
+        expect(all.get(1)?.notes).toEqual([
+            { author: { name: null, isYou: false }, text: "Any version" },
+        ]);
+    });
+
+    it("still renders when notes can't be read", async () => {
+        db.tables.media_request_note = [
+            { request_id: 1, user_id: ME, note: "Lost", created_at: "2026-10-01" },
+        ];
+        db.failNext("media_request_note", "select");
+
+        const queue = await getQueue(client(), ME);
+        expect(queue.find((q) => q.id === 1)?.notes).toEqual([]);
+    });
+
     it("still renders when names can't be read", async () => {
         db.failNext("profiles", "select");
 

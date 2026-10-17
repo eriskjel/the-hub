@@ -67,6 +67,7 @@ as_admin < "$here/rls.test.sql"
 as_admin < "$here/admin_queue.test.sql"
 as_admin < "$here/worker_access.test.sql"
 as_admin < "$here/detail_codes.test.sql"
+as_admin < "$here/notes.test.sql"
 
 # Two calls for the same user at the same time: the second must wait for the
 # first and count it. Without the lock both would see 0 and pass a quota of 1.

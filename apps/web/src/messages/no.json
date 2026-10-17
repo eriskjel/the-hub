@@ -490,6 +490,8 @@
             "empty": "Ingenting her.",
             "options": "Forslag for {title}",
             "recommended": "Anbefalt",
+            "note": "Notat fra {name}: {note}",
+            "noteFromMember": "Notat fra et medlem: {note}",
             "actions": {
                 "available": "Merk tilgjengelig",
                 "availableTitle": "Merk {title} tilgjengelig",
@@ -584,6 +586,14 @@
             "failed": "Søket virker ikke akkurat nå. Prøv igjen senere.",
             "showMore": "Vis {count} til"
         },
+        "dialog": {
+            "title": "Ønsk deg {title}",
+            "note": "Notat (valgfritt)",
+            "notePlaceholder": "For eksempel: den forlengede versjonen",
+            "noteHelp": "Bare du og administratoren ser notatet. Med et notat velger administratoren versjonen.",
+            "send": "Send ønsket",
+            "back": "Avbryt"
+        },
         "actions": {
             "request": "Ønsk",
             "requestTitle": "Ønsk deg {title}",
@@ -619,6 +629,7 @@
             "formerMember": "Ønsket av et tidligere medlem",
             "unknownMember": "Ønsket av et medlem",
             "plusOthers": "+{count} til",
+            "yourNote": "Ditt notat: {note}",
             "unknownTitle": "Film #{id}"
         },
         "outcomes": {

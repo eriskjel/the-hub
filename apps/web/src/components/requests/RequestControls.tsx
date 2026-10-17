@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { useTranslations } from "next-intl";
 import { RequestButton } from "@/components/requests/RequestButton";
+import { RequestDialog } from "@/components/requests/RequestDialog";
 import {
     isCancellable,
     isOpenStatus,
@@ -27,16 +28,7 @@ export function RequestControls({
     const t = useTranslations("requests.actions");
 
     if (!request) {
-        return (
-            <RequestButton
-                action="request"
-                id={tmdbId}
-                label={t("requestTitle", { title })}
-                onChanged={onChanged}
-            >
-                {t("request")}
-            </RequestButton>
-        );
+        return <RequestDialog tmdbId={tmdbId} title={title} onChanged={onChanged} />;
     }
     if (request.role === "requester") {
         return isCancellable(request.status) ? (

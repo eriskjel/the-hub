@@ -25,9 +25,44 @@ const NO_CHANGE: RequestOutcome[] = [
 ];
 
 /**
- * Runs one request action and reports the result in a toast. The action
+ * Runs request actions and reports each result in a toast. The action
  * refreshes the page's queue; open search results are refetched here.
+ * `onChanged` runs after an action changed something (not for errors or
+ * "already done"), `after` after every run.
  */
+export function useRequestAction(onChanged?: () => void) {
+    const t = useTranslations("requests");
+    const queryClient = useQueryClient();
+    const [pending, startTransition] = useTransition();
+
+    const run = (
+        action: () => Promise<RequestActionResult>,
+        after?: (result: RequestActionResult) => void
+    ) =>
+        startTransition(async () => {
+            let result: RequestActionResult;
+            try {
+                result = await action();
+            } catch {
+                result = { ok: false, error: "failed" };
+            }
+            const changed = result.ok && !NO_CHANGE.includes(result.outcome);
+            if (!result.ok) {
+                toast.error(t(`errors.${result.error}`));
+            } else if (changed) {
+                toast.success(t(`outcomes.${result.outcome}`));
+            } else {
+                toast.info(t(`outcomes.${result.outcome}`));
+            }
+            await queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
+            after?.(result);
+            if (changed) onChanged?.();
+        });
+
+    return { pending, run };
+}
+
+/** Runs one request action. */
 export function RequestButton({
     action,
     id,
@@ -46,35 +81,13 @@ export function RequestButton({
     onChanged?: () => void;
     children: ReactNode;
 }): ReactElement {
-    const t = useTranslations("requests");
-    const queryClient = useQueryClient();
-    const [pending, startTransition] = useTransition();
-
-    const run = () =>
-        startTransition(async () => {
-            let result: RequestActionResult;
-            try {
-                result = await ACTIONS[action](id);
-            } catch {
-                result = { ok: false, error: "failed" };
-            }
-            const changed = result.ok && !NO_CHANGE.includes(result.outcome);
-            if (!result.ok) {
-                toast.error(t(`errors.${result.error}`));
-            } else if (changed) {
-                toast.success(t(`outcomes.${result.outcome}`));
-            } else {
-                toast.info(t(`outcomes.${result.outcome}`));
-            }
-            await queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
-            if (changed) onChanged?.();
-        });
+    const { pending, run } = useRequestAction(onChanged);
 
     return (
         <Button
             type="button"
             variant={variant}
-            onClick={run}
+            onClick={() => run(() => ACTIONS[action](id))}
             disabled={pending}
             aria-label={label}
             aria-busy={pending || undefined}

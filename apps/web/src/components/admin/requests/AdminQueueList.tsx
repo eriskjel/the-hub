@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MessageSquareText } from "lucide-react";
 import { Poster } from "@/components/requests/Poster";
 import { StatusBadge } from "@/components/requests/StatusBadge";
 import { ChooseOption, QueueControls } from "@/components/admin/requests/QueueControls";
@@ -95,6 +95,27 @@ export async function AdminQueueList({
                                                 {detail}
                                             </p>
                                         )}
+                                        {item.notes.map((note, i) => (
+                                            <p
+                                                key={i}
+                                                className="bg-surface-subtle flex gap-2 rounded-lg px-3 py-2 text-sm break-words"
+                                            >
+                                                <MessageSquareText
+                                                    aria-hidden
+                                                    className="text-muted mt-0.5 h-4 w-4 shrink-0"
+                                                />
+                                                <span className="min-w-0">
+                                                    {note.author.name
+                                                        ? tAdmin("note", {
+                                                              name: note.author.name,
+                                                              note: note.text,
+                                                          })
+                                                        : tAdmin("noteFromMember", {
+                                                              note: note.text,
+                                                          })}
+                                                </span>
+                                            </p>
+                                        ))}
                                     </div>
                                     <QueueControls item={item} title={title} choosing={choosing} />
                                 </div>
