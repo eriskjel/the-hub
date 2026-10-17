@@ -41,7 +41,7 @@ vi.mock("@/utils/supabase/admin", () => ({
 }));
 vi.mock("@/lib/media/tmdb.server", () => ({ getMovie: getMovieMock }));
 
-import { cancelRequest, requestMovie, unfollowRequest } from "../requests.actions";
+import { cancelRequest, keepRequest, requestMovie, unfollowRequest } from "../requests.actions";
 
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
 
@@ -85,6 +85,7 @@ function setup(rows: { members?: Row[]; requests?: Row[]; followers?: Row[]; use
                 media_request_add: mediaRequestAdd,
                 media_request_cancel: mediaRequestCancel,
                 media_request_unfollow: mediaRequestUnfollow,
+                media_request_keep: mediaRequestKeep,
             },
             defaults: {
                 media_request: {
@@ -190,6 +191,15 @@ function mediaRequestUnfollow(args: Record<string, unknown>, tables: Record<stri
     return tables.media_request_follower.length < before ? "unfollowed" : "changed";
 }
 
+/** Mirrors public.media_request_keep. */
+function mediaRequestKeep(args: Record<string, unknown>, tables: Record<string, Row[]>) {
+    const row = tables.media_request.find((r) => r.id === args.p_request_id);
+    if (!row || row.requested_by !== args.p_user || row.remove_after_days == null) return "changed";
+    row.remove_after_days = null;
+    row.remove_at = null;
+    return "kept";
+}
+
 const requests = () => db.tables.media_request;
 const followers = () => db.tables.media_request_follower;
 
@@ -238,6 +248,16 @@ describe("requestMovie", () => {
         expect(addCalls[0].p_note).toBe("The extended cut");
         expect(addCalls[1]).not.toHaveProperty("p_note");
         expect(addCalls[2]).not.toHaveProperty("p_note");
+    });
+
+    it("asks for removal after the set number of days only when the title is temporary", async () => {
+        await requestMovie(MOVIE, { temporary: true });
+        await requestMovie(MOVIE, { temporary: false });
+        await requestMovie(MOVIE);
+
+        expect(addCalls[0].p_remove_after_days).toBe(30);
+        expect(addCalls[1]).not.toHaveProperty("p_remove_after_days");
+        expect(addCalls[2]).not.toHaveProperty("p_remove_after_days");
     });
 
     it.each(["x".repeat(501), 42])("refuses the note %j", async (note) => {
@@ -564,6 +584,31 @@ describe("cancelRequest", () => {
 
     it.each([0, -3, 1.5, "7"])("rejects the id %j", async (id) => {
         expect(await cancelRequest(id as number)).toEqual({ ok: false, error: "not_found" });
+    });
+});
+
+describe("keepRequest", () => {
+    it("keeps your temporary title", async () => {
+        setup({ requests: [request({ id: 7, requested_by: ME, remove_after_days: 30 })] });
+
+        expect(await keepRequest(7)).toEqual({ ok: true, outcome: "kept" });
+        expect(requests()[0].remove_after_days).toBeNull();
+        expect(refreshMock).toHaveBeenCalledOnce();
+    });
+
+    it("shows the current state when there's nothing to keep", async () => {
+        setup({ requests: [request({ id: 7, requested_by: OTHER, remove_after_days: 30 })] });
+
+        expect(await keepRequest(7)).toEqual({ ok: false, error: "changed" });
+        expect(requests()[0].remove_after_days).toBe(30);
+        expect(refreshMock).toHaveBeenCalledOnce();
+    });
+
+    it("refuses someone without access", async () => {
+        signedIn = null;
+        setup({ requests: [request({ id: 7, requested_by: ME, remove_after_days: 30 })] });
+
+        expect(await keepRequest(7)).toEqual({ ok: false, error: "not_member" });
     });
 });
 

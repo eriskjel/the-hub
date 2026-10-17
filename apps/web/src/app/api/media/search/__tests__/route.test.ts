@@ -93,6 +93,7 @@ describe("GET /api/media/search", () => {
     });
 
     it("marks titles already in the queue and your part in them", async () => {
+        searchMoviesMock.mockResolvedValue([movie(1), movie(2), movie(3), movie(4), movie(5)]);
         setup({
             requests: [
                 { id: 11, media_type: "movie", tmdb_id: 1, status: "wanted", requested_by: ME },
@@ -118,6 +119,14 @@ describe("GET /api/media/search", () => {
                     status: "cancelled",
                     requested_by: OTHER,
                 },
+                // So do removed ones: asking again reopens them.
+                {
+                    id: 16,
+                    media_type: "movie",
+                    tmdb_id: 5,
+                    status: "removed",
+                    requested_by: ME,
+                },
                 // A different media type with the same id is a different title.
                 { id: 15, media_type: "tv", tmdb_id: 3, status: "wanted", requested_by: ME },
             ],
@@ -134,6 +143,7 @@ describe("GET /api/media/search", () => {
             { id: 11, status: "wanted", role: "requester" },
             { id: 12, status: "searching", role: "follower" },
             { id: 13, status: "available", role: null },
+            null,
             null,
         ]);
         expect(results[0]).toMatchObject({

@@ -29,6 +29,7 @@ const proposal: QueueItem = {
     statusDetail: "Needs a choice: no release from a listed group",
     requester: { name: "Member", isYou: false },
     notes: [],
+    removal: null,
     followerCount: 0,
     role: null,
     createdAt: "2026-10-13T20:00:00Z",

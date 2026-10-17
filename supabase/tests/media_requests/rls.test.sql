@@ -409,11 +409,11 @@ rollback;
 -- ---------------------------------------------------------------------------
 \echo '== media_request_add: only the service role may call it'
 do $$ begin
-    assert not has_function_privilege('anon', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE'),
+    assert not has_function_privilege('anon', 'public.media_request_add(uuid, text, int, int, text, int)', 'EXECUTE'),
         'anon must not execute media_request_add';
-    assert not has_function_privilege('authenticated', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE'),
+    assert not has_function_privilege('authenticated', 'public.media_request_add(uuid, text, int, int, text, int)', 'EXECUTE'),
         'authenticated must not execute media_request_add';
-    assert has_function_privilege('service_role', 'public.media_request_add(uuid, text, int, int, text)', 'EXECUTE'),
+    assert has_function_privilege('service_role', 'public.media_request_add(uuid, text, int, int, text, int)', 'EXECUTE'),
         'service_role must execute media_request_add';
 end $$;
 

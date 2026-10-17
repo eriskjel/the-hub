@@ -7,10 +7,11 @@ import { FieldRow, Help, Label } from "@/components/ui/Fields";
 import { Modal } from "@/components/ui/Modal";
 import { useRequestAction } from "@/components/requests/RequestButton";
 import { requestMovie } from "@/lib/media/requests.actions";
-import { NOTE_MAX_LENGTH } from "@/lib/media/request";
+import { NOTE_MAX_LENGTH, REMOVE_AFTER_DAYS } from "@/lib/media/request";
 
 /**
- * Requests a title, with an optional note for the admin. The dialog closes
+ * Requests a title, with an optional note for the admin, and optionally only
+ * for a while (REMOVE_AFTER_DAYS once it's added). The dialog closes
  * once the request is answered, and stays open to try again if it failed.
  */
 export function RequestDialog({
@@ -26,6 +27,7 @@ export function RequestDialog({
     const t = useTranslations("requests");
     const [open, setOpen] = useState(false);
     const [note, setNote] = useState("");
+    const [temporary, setTemporary] = useState(false);
     const { pending, run } = useRequestAction(onChanged);
     const noteId = useId();
     const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -53,7 +55,7 @@ export function RequestDialog({
                         onSubmit={(e) => {
                             e.preventDefault();
                             run(
-                                () => requestMovie(tmdbId, { note }),
+                                () => requestMovie(tmdbId, { note, temporary }),
                                 (result) =>
                                     (result.ok || result.error !== "failed") && setOpen(false)
                             );
@@ -74,6 +76,24 @@ export function RequestDialog({
                             />
                             <Help id={`${noteId}-help`}>{t("dialog.noteHelp")}</Help>
                         </FieldRow>
+                        <div className="space-y-0.5">
+                            <label className="flex items-start gap-2.5 text-sm font-medium">
+                                <input
+                                    type="checkbox"
+                                    checked={temporary}
+                                    onChange={(e) => setTemporary(e.target.checked)}
+                                    aria-describedby={`${noteId}-temporary`}
+                                    className="accent-primary mt-0.5 h-4 w-4 shrink-0"
+                                />
+                                {t("dialog.temporary", { days: String(REMOVE_AFTER_DAYS) })}
+                            </label>
+                            <p
+                                id={`${noteId}-temporary`}
+                                className="text-muted-subtle pl-6.5 text-xs"
+                            >
+                                {t("dialog.temporaryHelp")}
+                            </p>
+                        </div>
                         <div className="flex justify-end gap-2">
                             <Button
                                 type="button"

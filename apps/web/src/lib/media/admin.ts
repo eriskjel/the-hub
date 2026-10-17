@@ -1,18 +1,36 @@
-import type { RequestStatus } from "@/lib/media/request";
+import { isKeepable, type RequestStatus } from "@/lib/media/request";
 
-export type AdminRequestIntent = "decline" | "requeue" | "available";
+export type AdminRequestIntent = "decline" | "requeue" | "available" | "keep";
 export type AdminMediaResult =
     | {
           ok: true;
-          outcome: "declined" | "requeued" | "available" | "approved" | "paused" | "resumed";
+          outcome:
+              | "declined"
+              | "requeued"
+              | "available"
+              | "approved"
+              | "kept"
+              | "paused"
+              | "resumed";
       }
     | { ok: false; error: "changed" | "not_allowed" | "failed" };
 
 /** Waiting for an admin: a proposal to act on, or a search that gave up. */
 export const NEEDS_ADMIN_STATUSES: readonly RequestStatus[] = ["proposed", "failed"];
 
-/** Mirrors the state transitions allowed by media_request_admin_update. */
-export function adminRequestIntents(status: RequestStatus): AdminRequestIntent[] {
+/**
+ * Mirrors the state transitions allowed by media_request_admin_update. A
+ * temporary title can also be kept while its removal is still ahead.
+ */
+export function adminRequestIntents(
+    status: RequestStatus,
+    temporary = false
+): AdminRequestIntent[] {
+    const keep: AdminRequestIntent[] = temporary && isKeepable(status) ? ["keep"] : [];
+    return [...statusIntents(status), ...keep];
+}
+
+function statusIntents(status: RequestStatus): AdminRequestIntent[] {
     switch (status) {
         case "wanted":
         case "proposed":
@@ -21,6 +39,7 @@ export function adminRequestIntents(status: RequestStatus): AdminRequestIntent[]
             return ["available", "decline", "requeue"];
         case "declined":
         case "cancelled":
+        case "removed":
             return ["available", "requeue"];
         default:
             return [];

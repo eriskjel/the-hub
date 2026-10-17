@@ -8,10 +8,12 @@ import {
     type RequestRole,
     type RequestStatus,
 } from "@/lib/media/request";
+import { removalAhead } from "@/lib/media/removal";
 
 /**
  * What the member can do with a title: request it, "+1" it, take the "+1"
- * back, or cancel their own request. Used by search results and the queue.
+ * back, cancel their own request, or keep a temporary one. Used by search
+ * results and the queue.
  */
 export function RequestControls({
     tmdbId,
@@ -21,7 +23,13 @@ export function RequestControls({
 }: {
     tmdbId: number;
     title: string;
-    request: { id: number; status: RequestStatus; role: RequestRole } | null;
+    request: {
+        id: number;
+        status: RequestStatus;
+        role: RequestRole;
+        /** Only the queue knows; search results leave it out. */
+        removal?: { at: string | null } | null;
+    } | null;
     /** Called after an action here changed something. */
     onChanged?: () => void;
 }): ReactElement | null {
@@ -31,17 +39,35 @@ export function RequestControls({
         return <RequestDialog tmdbId={tmdbId} title={title} onChanged={onChanged} />;
     }
     if (request.role === "requester") {
-        return isCancellable(request.status) ? (
-            <RequestButton
-                action="cancel"
-                id={request.id}
-                variant="ghost"
-                label={t("cancelTitle", { title })}
-                onChanged={onChanged}
-            >
-                {t("cancel")}
-            </RequestButton>
-        ) : null;
+        const keep = removalAhead(request.status, request.removal);
+        const cancel = isCancellable(request.status);
+        if (!keep && !cancel) return null;
+        return (
+            <div className="flex shrink-0 items-center gap-1.5">
+                {keep && (
+                    <RequestButton
+                        action="keep"
+                        id={request.id}
+                        variant="ghost"
+                        label={t("keepTitle", { title })}
+                        onChanged={onChanged}
+                    >
+                        {t("keep")}
+                    </RequestButton>
+                )}
+                {cancel && (
+                    <RequestButton
+                        action="cancel"
+                        id={request.id}
+                        variant="ghost"
+                        label={t("cancelTitle", { title })}
+                        onChanged={onChanged}
+                    >
+                        {t("cancel")}
+                    </RequestButton>
+                )}
+            </div>
+        );
     }
     if (request.role === "follower") {
         return (
@@ -56,7 +82,9 @@ export function RequestControls({
             </RequestButton>
         );
     }
-    return isOpenStatus(request.status) ? (
+    // A +1 on a title that's about to leave the library keeps it.
+    const leaving = request.status === "available" && removalAhead(request.status, request.removal);
+    return isOpenStatus(request.status) || leaving ? (
         <RequestButton
             action="request"
             id={tmdbId}

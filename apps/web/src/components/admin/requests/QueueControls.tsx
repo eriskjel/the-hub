@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Ban, Check, CircleCheck, Ellipsis, RotateCcw, type LucideIcon } from "lucide-react";
+import { Ban, Check, CircleCheck, Ellipsis, Pin, RotateCcw, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import {
@@ -18,6 +18,7 @@ import {
     type AdminRequestIntent,
 } from "@/lib/media/admin";
 import type { QueueItem } from "@/lib/media/queue.server";
+import { removalAhead } from "@/lib/media/removal";
 import { cn } from "@/utils/cn";
 
 function useAdminUpdate() {
@@ -40,6 +41,7 @@ const INTENT_ICONS: Record<AdminRequestIntent, LucideIcon> = {
     available: CircleCheck,
     requeue: RotateCcw,
     decline: Ban,
+    keep: Pin,
 };
 
 /**
@@ -80,7 +82,7 @@ export function QueueControls({
         };
     }, [open]);
 
-    const intents = adminRequestIntents(item.status);
+    const intents = adminRequestIntents(item.status, removalAhead(item.status, item.removal));
     if (!intents.length) return null;
     const primary: AdminRequestIntent | null =
         NEEDS_ADMIN_STATUSES.includes(item.status) && !choosing ? "available" : null;

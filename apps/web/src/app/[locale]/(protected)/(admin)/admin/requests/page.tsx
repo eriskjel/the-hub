@@ -64,7 +64,9 @@ export default async function AdminRequestsPage({
                 collapsed
             />
             <AdminQueueList
-                items={queue.filter((item) => ["declined", "cancelled"].includes(item.status))}
+                items={queue.filter((item) =>
+                    ["declined", "cancelled", "removed"].includes(item.status)
+                )}
                 heading={t("closed")}
                 empty={t("empty")}
                 locale={locale}

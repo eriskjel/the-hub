@@ -10,17 +10,18 @@ import type { RequestDetail } from "./detail";
 const QUEUE_LIMIT = 200;
 const LEGACY_COLUMNS =
     "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)";
-const DETAIL_COLUMNS = `${LEGACY_COLUMNS}, detail_code, detail_args` as const;
+const DETAIL_COLUMNS =
+    `${LEGACY_COLUMNS}, detail_code, detail_args, remove_after_days, remove_at` as const;
 
 function missingDetailColumns(error: { code: string; message: string } | null): boolean {
     if (!error) return false;
     return (
         (error.code === "42703" &&
-            /^column (?:public\.)?media_request\.(?:detail_code|detail_args) does not exist$/.test(
+            /^column (?:public\.)?media_request\.(?:detail_code|detail_args|remove_after_days|remove_at) does not exist$/.test(
                 error.message
             )) ||
         (error.code === "PGRST204" &&
-            /^Could not find the '(?:detail_code|detail_args)' column of 'media_request' in the schema cache$/.test(
+            /^Could not find the '(?:detail_code|detail_args|remove_after_days|remove_at)' column of 'media_request' in the schema cache$/.test(
                 error.message
             ))
     );
@@ -35,7 +36,11 @@ type Section = {
 /** Open work in the order it's worked, then the newest history. */
 const MEMBER_SECTIONS: Section[] = [
     { statuses: OPEN_STATUSES, orderBy: "created_at", ascending: true },
-    { statuses: ["available", "failed", "declined"], orderBy: "created_at", ascending: false },
+    {
+        statuses: ["available", "failed", "declined", "removed"],
+        orderBy: "created_at",
+        ascending: false,
+    },
 ];
 
 /**
@@ -44,7 +49,11 @@ const MEMBER_SECTIONS: Section[] = [
  */
 const ADMIN_SECTIONS: Section[] = [
     { statuses: OPEN_STATUSES, orderBy: "created_at", ascending: true },
-    { statuses: ["failed", "declined", "cancelled"], orderBy: "updated_at", ascending: false },
+    {
+        statuses: ["failed", "declined", "cancelled", "removed"],
+        orderBy: "updated_at",
+        ascending: false,
+    },
     { statuses: ["available"], orderBy: "updated_at", ascending: false },
 ];
 
@@ -62,6 +71,11 @@ export type QueueItem = {
     requester: { name: string | null; isYou: boolean } | null;
     /** Admins get every note; everyone else only their own. */
     notes: QueueNote[];
+    /**
+     * A temporary title: removed `days` after it's added, unless someone +1s
+     * it. `at` is set once the worker has scheduled it. Null when it stays.
+     */
+    removal: { days: number; at: string | null } | null;
     followerCount: number;
     role: RequestRole;
     createdAt: string;
@@ -77,6 +91,8 @@ type Row = {
     status_detail: string | null;
     detail_code: string | null;
     detail_args: unknown;
+    remove_after_days?: number | null;
+    remove_at?: string | null;
     requested_by: string | null;
     created_at: string;
     updated_at: string;
@@ -148,6 +164,9 @@ export async function getQueue(
             status: r.status,
             statusDetail: r.status_detail,
             detail: r.detail_code ? { code: r.detail_code, args: r.detail_args } : null,
+            removal: r.remove_after_days
+                ? { days: r.remove_after_days, at: r.remove_at ?? null }
+                : null,
             requester: r.requested_by
                 ? { name: names.get(r.requested_by) ?? null, isYou: r.requested_by === userId }
                 : null,
