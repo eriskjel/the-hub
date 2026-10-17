@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
     NEEDS_ADMIN_STATUSES,
     adminRequestIntents,
+    canChooseOptions,
     workerState,
     type WorkerStatus,
 } from "../admin";
@@ -16,11 +17,11 @@ const worker: WorkerStatus = {
 };
 
 it("protects active processing and available titles from admin changes", () => {
-    for (const status of ["searching", "approved", "downloading", "available"] as const) {
+    for (const status of ["searching", "downloading", "available"] as const) {
         expect(adminRequestIntents(status)).toEqual([]);
     }
     for (const status of REQUEST_STATUSES.filter((s) =>
-        ["wanted", "proposed", "failed", "declined", "cancelled"].includes(s)
+        ["wanted", "proposed", "approved", "failed", "declined", "cancelled"].includes(s)
     )) {
         expect(adminRequestIntents(status)).toContain("requeue");
         expect(adminRequestIntents(status)).toContain("available");
@@ -39,6 +40,13 @@ it("tells a manual pause, a missing heartbeat and an update older than an hour a
     expect(
         workerState({ ...worker, lastRunAt: new Date(now - 60 * 60 * 1000 - 1).toISOString() }, now)
     ).toBe("stale");
+});
+
+it("offers choosing an option only when the worker adds what is chosen", () => {
+    expect(canChooseOptions({ ...worker, mode: "review" })).toBe(true);
+    expect(canChooseOptions({ ...worker, mode: "auto" })).toBe(true);
+    expect(canChooseOptions({ ...worker, mode: "dry" })).toBe(false);
+    expect(canChooseOptions({ ...worker, mode: null })).toBe(false);
 });
 
 it("lets every request that waits for the admin be marked available", () => {

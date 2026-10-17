@@ -13,6 +13,7 @@ vi.mock("next-intl/server", async () => {
 });
 vi.mock("@/lib/admin/mediaQueue.actions", () => ({
     adminRequestAction: vi.fn(),
+    approveRequestOption: vi.fn(),
     setProcessingPaused: vi.fn(),
 }));
 
@@ -64,6 +65,50 @@ it("shows a proposal's options with the worker's pick marked", async () => {
     expect(rows[0]).toHaveTextContent("Recommended");
     expect(rows[0]).toHaveTextContent("listed group");
     expect(rows[1]).not.toHaveTextContent("Recommended");
+});
+
+it("lets the admin choose each option when the worker adds what is chosen", async () => {
+    const options = new Map([
+        [
+            7,
+            [
+                { rank: 1, label: "Group A · 2160p · 50 GB", reason: null },
+                { rank: 2, label: "Group B · 1080p · 20 GB", reason: null },
+            ],
+        ],
+    ]);
+    const list = async (canChoose: boolean, items = [proposal]) =>
+        render(
+            await AdminQueueList({
+                items,
+                options,
+                canChoose,
+                heading: "Needs you",
+                empty: "Nothing",
+                locale: "en",
+            })
+        );
+
+    const { unmount } = await list(true);
+    const rows = within(screen.getByRole("list", { name: "Suggestions for A movie" })).getAllByRole(
+        "listitem"
+    );
+    expect(
+        within(rows[1]).getByRole("button", { name: "Choose Group B · 1080p · 20 GB for A movie" })
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Choose / })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Mark A movie available" })).toBeNull();
+    unmount();
+
+    // In a preview nothing would be added, and without options there is nothing to choose.
+    const { unmount: unmountPreview } = await list(false);
+    expect(screen.queryByRole("button", { name: /^Choose / })).toBeNull();
+    expect(screen.getByRole("button", { name: "Mark A movie available" })).toBeInTheDocument();
+    unmountPreview();
+
+    await list(true, [{ ...proposal, id: 8 }]);
+    expect(screen.queryByRole("button", { name: /^Choose / })).toBeNull();
+    expect(screen.getByRole("button", { name: "Mark A movie available" })).toBeInTheDocument();
 });
 
 it("starts a collapsed list closed, showing its heading and count", async () => {

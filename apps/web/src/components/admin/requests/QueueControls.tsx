@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { Ban, Check, CircleCheck, Ellipsis, RotateCcw, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
-import { adminRequestAction, setProcessingPaused } from "@/lib/admin/mediaQueue.actions";
+import {
+    adminRequestAction,
+    approveRequestOption,
+    setProcessingPaused,
+} from "@/lib/admin/mediaQueue.actions";
 import {
     NEEDS_ADMIN_STATUSES,
     adminRequestIntents,
@@ -40,9 +44,18 @@ const INTENT_ICONS: Record<AdminRequestIntent, LucideIcon> = {
 
 /**
  * A request waiting for the admin gets one main action; everything else the
- * status allows is an override in the row's menu.
+ * status allows is an override in the row's menu. When the admin chooses
+ * among the proposed options instead, every action here is an override.
  */
-export function QueueControls({ item, title }: { item: QueueItem; title: string }) {
+export function QueueControls({
+    item,
+    title,
+    choosing = false,
+}: {
+    item: QueueItem;
+    title: string;
+    choosing?: boolean;
+}) {
     const t = useTranslations("admin.requests.actions");
     const { pending, run } = useAdminUpdate();
     const [open, setOpen] = useState(false);
@@ -69,9 +82,8 @@ export function QueueControls({ item, title }: { item: QueueItem; title: string 
 
     const intents = adminRequestIntents(item.status);
     if (!intents.length) return null;
-    const primary: AdminRequestIntent | null = NEEDS_ADMIN_STATUSES.includes(item.status)
-        ? "available"
-        : null;
+    const primary: AdminRequestIntent | null =
+        NEEDS_ADMIN_STATUSES.includes(item.status) && !choosing ? "available" : null;
     const overrides = intents.filter((intent) => intent !== primary);
     // Any action closes the menu, and its trigger stays disabled until the save ends.
     const act = (intent: AdminRequestIntent) => {
@@ -141,6 +153,35 @@ export function QueueControls({ item, title }: { item: QueueItem; title: string 
                 )}
             </div>
         </div>
+    );
+}
+
+/** Approves one proposed option, which the worker then adds. */
+export function ChooseOption({
+    item,
+    rank,
+    label,
+    title,
+}: {
+    item: QueueItem;
+    rank: number;
+    label: string;
+    title: string;
+}) {
+    const t = useTranslations("admin.requests.actions");
+    const { pending, run } = useAdminUpdate();
+    return (
+        <Button
+            type="button"
+            variant={rank === 1 ? "primary" : "secondary"}
+            disabled={pending}
+            aria-busy={pending || undefined}
+            aria-label={t("chooseTitle", { label, title })}
+            onClick={() => run(() => approveRequestOption(item.id, rank, item.updatedAt))}
+            className="shrink-0 self-center"
+        >
+            {t("choose")}
+        </Button>
     );
 }
 

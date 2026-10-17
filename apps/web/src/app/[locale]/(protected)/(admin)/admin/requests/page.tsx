@@ -4,7 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getQueue, getRequestOptions } from "@/lib/media/queue.server";
 import { getWorkerStatus } from "@/lib/media/worker.server";
 import { isOpenStatus } from "@/lib/media/request";
-import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
+import { NEEDS_ADMIN_STATUSES, canChooseOptions } from "@/lib/media/admin";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
 import { WorkerStatusCard } from "@/components/admin/requests/WorkerStatusCard";
 import { AdminQueueList } from "@/components/admin/requests/AdminQueueList";
@@ -44,6 +44,7 @@ export default async function AdminRequestsPage({
             <AdminQueueList
                 items={needsYou}
                 options={options}
+                canChoose={canChooseOptions(worker)}
                 heading={t("needsYou")}
                 empty={t("needsYouEmpty")}
                 locale={locale}

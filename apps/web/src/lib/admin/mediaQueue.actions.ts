@@ -28,6 +28,28 @@ export async function adminRequestAction(
     });
 }
 
+const approveSchema = z.object({
+    requestId: requestIdSchema,
+    rank: z.number().int().min(1).max(3),
+    updatedAt: z.string().datetime({ offset: true }),
+});
+
+/** Approves one of the proposed options; the worker then adds it. */
+export async function approveRequestOption(
+    requestId: number,
+    rank: number,
+    updatedAt: string
+): Promise<AdminMediaResult> {
+    await requireAdmin();
+    const parsed = approveSchema.safeParse({ requestId, rank, updatedAt });
+    if (!parsed.success) return { ok: false, error: "not_allowed" };
+    return write("media_request_admin_approve", {
+        p_request_id: parsed.data.requestId,
+        p_rank: parsed.data.rank,
+        p_expected_updated_at: parsed.data.updatedAt,
+    });
+}
+
 export async function setProcessingPaused(
     paused: boolean,
     expectedPaused: boolean
@@ -51,6 +73,7 @@ async function write(fn: string, args: Record<string, unknown>): Promise<AdminMe
         case "declined":
         case "requeued":
         case "available":
+        case "approved":
         case "paused":
         case "resumed":
             refresh();

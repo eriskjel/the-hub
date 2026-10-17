@@ -2,7 +2,10 @@ import type { RequestStatus } from "@/lib/media/request";
 
 export type AdminRequestIntent = "decline" | "requeue" | "available";
 export type AdminMediaResult =
-    | { ok: true; outcome: "declined" | "requeued" | "available" | "paused" | "resumed" }
+    | {
+          ok: true;
+          outcome: "declined" | "requeued" | "available" | "approved" | "paused" | "resumed";
+      }
     | { ok: false; error: "changed" | "not_allowed" | "failed" };
 
 /** Waiting for an admin: a proposal to act on, or a search that gave up. */
@@ -13,6 +16,7 @@ export function adminRequestIntents(status: RequestStatus): AdminRequestIntent[]
     switch (status) {
         case "wanted":
         case "proposed":
+        case "approved":
         case "failed":
             return ["available", "decline", "requeue"];
         case "declined":
@@ -29,6 +33,11 @@ export type WorkerStatus = {
     lastRunAt: string | null;
     detail: string | null;
 };
+
+/** Choosing an option only leads somewhere once the worker adds what is chosen. */
+export function canChooseOptions(worker: WorkerStatus): boolean {
+    return worker.mode === "review" || worker.mode === "auto";
+}
 
 export type WorkerState = "paused" | "notStarted" | "stale" | "running";
 

@@ -8,7 +8,11 @@ const { requireAdmin, createAdmin, rpc, refresh } = vi.hoisted(() => ({
 vi.mock("@/lib/auth/requireAdmin.server", () => ({ requireAdmin }));
 vi.mock("@/utils/supabase/admin", () => ({ createAdminClient: createAdmin }));
 vi.mock("next/cache", () => ({ refresh }));
-import { adminRequestAction, setProcessingPaused } from "../mediaQueue.actions";
+import {
+    adminRequestAction,
+    approveRequestOption,
+    setProcessingPaused,
+} from "../mediaQueue.actions";
 
 const revision = "2026-10-13T20:00:00.123456+00:00";
 beforeEach(() => {
@@ -58,14 +62,41 @@ it.each([
     expect(createAdmin).not.toHaveBeenCalled();
 });
 
-it.each([() => adminRequestAction(7, "requeue", revision), () => setProcessingPaused(true, false)])(
-    "checks admin access before creating a privileged client",
-    async (action) => {
-        requireAdmin.mockRejectedValueOnce(new Error("denied"));
-        await expect(action()).rejects.toThrow("denied");
-        expect(createAdmin).not.toHaveBeenCalled();
-    }
-);
+it("approves the chosen option against the displayed revision", async () => {
+    rpc.mockResolvedValueOnce({ data: "approved", error: null });
+    expect(await approveRequestOption(7, 2, revision)).toEqual({ ok: true, outcome: "approved" });
+    expect(rpc).toHaveBeenCalledWith("media_request_admin_approve", {
+        p_request_id: 7,
+        p_rank: 2,
+        p_expected_updated_at: revision,
+    });
+    expect(refresh).toHaveBeenCalledOnce();
+});
+
+it.each([
+    [0, 1, revision],
+    [7, 0, revision],
+    [7, 4, revision],
+    [7, 1.5, revision],
+    [7, "1", revision],
+    [7, 1, "bad-date"],
+])("validates the approval %j before writing", async (id, rank, date) => {
+    expect(await approveRequestOption(id, rank as number, date)).toEqual({
+        ok: false,
+        error: "not_allowed",
+    });
+    expect(createAdmin).not.toHaveBeenCalled();
+});
+
+it.each([
+    () => adminRequestAction(7, "requeue", revision),
+    () => approveRequestOption(7, 1, revision),
+    () => setProcessingPaused(true, false),
+])("checks admin access before creating a privileged client", async (action) => {
+    requireAdmin.mockRejectedValueOnce(new Error("denied"));
+    await expect(action()).rejects.toThrow("denied");
+    expect(createAdmin).not.toHaveBeenCalled();
+});
 
 it("passes only pause values, preserving heartbeat fields", async () => {
     rpc.mockResolvedValueOnce({ data: "paused", error: null });

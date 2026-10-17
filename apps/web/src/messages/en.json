@@ -497,10 +497,13 @@
                 "declineTitle": "Decline {title}",
                 "requeue": "Search again",
                 "requeueTitle": "Search again for {title}",
-                "more": "More actions for {title}"
+                "more": "More actions for {title}",
+                "choose": "Choose",
+                "chooseTitle": "Choose {label} for {title}"
             },
             "outcomes": {
                 "available": "Marked available.",
+                "approved": "Chosen. It will be added shortly.",
                 "declined": "Request declined.",
                 "requeued": "Queued for a new search.",
                 "paused": "Processing paused.",

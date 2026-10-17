@@ -497,10 +497,13 @@
                 "declineTitle": "Avslå {title}",
                 "requeue": "Søk på nytt",
                 "requeueTitle": "Søk etter {title} på nytt",
-                "more": "Flere valg for {title}"
+                "more": "Flere valg for {title}",
+                "choose": "Velg",
+                "chooseTitle": "Velg {label} for {title}"
             },
             "outcomes": {
                 "available": "Merket tilgjengelig.",
+                "approved": "Valgt. Filmen legges til om litt.",
                 "declined": "Ønsket er avslått.",
                 "requeued": "Sendt til nytt søk.",
                 "paused": "Behandlingen er satt på pause.",
