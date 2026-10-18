@@ -10,7 +10,13 @@ const { getMovieMock } = vi.hoisted(() => ({ getMovieMock: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/media/tmdb.server", () => ({ getMovie: getMovieMock }));
 
-import { countWaitingForAdmin, getQueue, getRequestOptions } from "../queue.server";
+import {
+    countWaitingForAdmin,
+    getQueue,
+    getRequestOptions,
+    sortByStage,
+    type QueueItem,
+} from "../queue.server";
 
 let db: FakeDb;
 const client = () => db as unknown as SupabaseClient;
@@ -433,5 +439,63 @@ describe("countWaitingForAdmin", () => {
         db.failNext("media_request", "select");
 
         expect(await countWaitingForAdmin(client())).toBe(0);
+    });
+});
+
+describe("sortByStage", () => {
+    const item = (
+        id: number,
+        status: QueueItem["status"],
+        detail: QueueItem["detail"] = null
+    ): QueueItem => ({
+        id,
+        tmdbId: id,
+        title: `Movie ${id}`,
+        year: null,
+        posterPath: null,
+        status,
+        statusDetail: null,
+        detail,
+        requester: null,
+        notes: [],
+        removal: null,
+        followerCount: 0,
+        role: null,
+        createdAt: "2026-10-01T00:00:00Z",
+        updatedAt: "2026-10-01T00:00:00Z",
+    });
+    const release = (date: unknown) => ({ code: "waiting_release", args: { date } });
+
+    it("puts what's closest to done first and films not out yet last, soonest first", () => {
+        const oldestFirst = [
+            item(1, "wanted", release("2027-01-01")),
+            item(2, "wanted"),
+            item(3, "proposed"),
+            item(4, "wanted", release("2026-11-12")),
+            item(5, "searching"),
+            item(6, "approved"),
+            item(7, "wanted", { code: "no_releases", args: { next: "2026-10-20T00:00:00Z" } }),
+            item(8, "downloading"),
+            item(9, "proposed"),
+        ];
+        expect(sortByStage(oldestFirst).map((i) => i.id)).toEqual([8, 6, 5, 3, 9, 2, 7, 4, 1]);
+        expect(oldestFirst[0].id).toBe(1);
+    });
+
+    it.each([42, "tomorrow", "2026-02-30", "2026-02-29", "2026-13-01", "2026-1-01"])(
+        "keeps a malformed release date %j in line with the other waiting requests",
+        (date) => {
+            const items = [item(1, "wanted", release(date)), item(2, "wanted")];
+            expect(sortByStage(items).map((i) => i.id)).toEqual([1, 2]);
+        }
+    );
+
+    it("orders valid leap-day releases by date after other waiting requests", () => {
+        const items = [
+            item(1, "wanted", release("2028-03-01")),
+            item(2, "wanted", release("2028-02-29")),
+            item(3, "wanted"),
+        ];
+        expect(sortByStage(items).map((i) => i.id)).toEqual([3, 2, 1]);
     });
 });

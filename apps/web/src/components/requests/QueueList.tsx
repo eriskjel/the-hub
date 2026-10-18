@@ -6,6 +6,7 @@ import { Poster } from "@/components/requests/Poster";
 import { RequestControls } from "@/components/requests/RequestControls";
 import { StatusBadge } from "@/components/requests/StatusBadge";
 import type { QueueItem } from "@/lib/media/queue.server";
+import { cn } from "@/utils/cn";
 
 export function QueueList({
     heading,
@@ -23,7 +24,7 @@ export function QueueList({
             {items.length === 0 ? (
                 <p className="text-muted text-sm">{empty}</p>
             ) : (
-                <ul className="divide-border divide-y">
+                <ul className="divide-border -mx-2 divide-y">
                     {items.map((item) => (
                         <QueueRow key={item.id} item={item} />
                     ))}
@@ -50,8 +51,14 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
             ? t("requestedBy", { name: item.requester.name })
             : t("unknownMember");
 
+    // The rows "Mine" shows stand out in the full list too.
     return (
-        <li className="flex items-center gap-3 py-2">
+        <li
+            className={cn(
+                "flex items-center gap-3 px-2 py-2",
+                item.role && "bg-primary/5 shadow-[inset_3px_0_0_var(--color-primary)]"
+            )}
+        >
             <Poster path={item.posterPath} />
             <div className="min-w-0 flex-1 space-y-0.5">
                 <p className="text-foreground truncate font-medium">
@@ -61,10 +68,17 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
                 <p className="text-muted flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <StatusBadge status={item.status} />
                     <span>
-                        {requester}
+                        <span
+                            className={cn(item.role === "requester" && "text-primary font-medium")}
+                        >
+                            {requester}
+                        </span>
                         {item.followerCount > 0 &&
                             ` ${t("plusOthers", { count: String(item.followerCount) })}`}
                     </span>
+                    {item.role === "follower" && (
+                        <span className="text-primary font-medium">{t("yourPlusOne")}</span>
+                    )}
                 </p>
                 {detail && <p className="text-muted text-xs">{detail}</p>}
                 {removal && <p className="text-muted text-xs">{removal}</p>}

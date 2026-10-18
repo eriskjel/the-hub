@@ -16,7 +16,10 @@ const TONE: Record<RequestStatus, string> = {
     removed: "bg-surface-subtle text-muted",
 };
 
-/** Members wait for a proposal to be approved; for the admin it's a suggestion to act on. */
+/**
+ * Members wait for a proposal to be approved; for the admin it's a suggestion to act on.
+ * Once the admin has chosen a release, members just see it being added.
+ */
 export function StatusBadge({
     status,
     admin = false,
@@ -25,9 +28,16 @@ export function StatusBadge({
     admin?: boolean;
 }): ReactElement {
     const t = useTranslations("requests.status");
+    const label = admin
+        ? status === "proposed"
+            ? "proposedAdmin"
+            : status
+        : status === "approved"
+          ? "downloading"
+          : status;
     return (
         <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", TONE[status])}>
-            {t(admin && status === "proposed" ? "proposedAdmin" : status)}
+            {t(label)}
         </span>
     );
 }

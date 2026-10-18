@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
-import type { RequestDetail } from "./detail";
+import { calendarDate, DETAIL_CODES, type RequestDetail } from "./detail";
 
 /** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
@@ -33,7 +33,7 @@ type Section = {
     ascending: boolean;
 };
 
-/** Open work in the order it's worked, then the newest history. */
+/** Open work oldest first (the page groups it by stage), then the newest history. */
 const MEMBER_SECTIONS: Section[] = [
     { statuses: OPEN_STATUSES, orderBy: "created_at", ascending: true },
     {
@@ -182,6 +182,32 @@ export async function getQueue(
             updatedAt: r.updated_at,
         };
     });
+}
+
+const STAGES: readonly RequestStatus[] = [
+    "downloading",
+    "approved",
+    "searching",
+    "proposed",
+    "wanted",
+];
+
+/**
+ * Members' open queue, closest to done first: being added, waiting for the
+ * admin, then in line. Films that aren't out yet come last, soonest first.
+ * Within a stage the order is kept (oldest first).
+ */
+export function sortByStage(items: QueueItem[]): QueueItem[] {
+    const releaseDate = (item: QueueItem) => {
+        if (item.status !== "wanted" || item.detail?.code !== "waiting_release") return null;
+        const args = DETAIL_CODES.waiting_release.args.safeParse(item.detail.args);
+        return args.success && calendarDate(args.data.date) ? args.data.date : null;
+    };
+    const stage = (item: QueueItem) =>
+        releaseDate(item) === null ? STAGES.indexOf(item.status) : STAGES.length;
+    return [...items].sort(
+        (a, b) => stage(a) - stage(b) || (releaseDate(a) ?? "").localeCompare(releaseDate(b) ?? "")
+    );
 }
 
 /** A release the worker proposed. Rank 1 is its pick. */
