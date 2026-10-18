@@ -5,6 +5,7 @@ import { setIntl } from "@/tests/testUtils";
 import en from "@/messages/en.json";
 import no from "@/messages/no.json";
 import { QueueList } from "../QueueList";
+import { StatusBadge } from "../StatusBadge";
 import type { QueueItem } from "@/lib/media/queue.server";
 
 vi.mock("@/lib/media/requests.actions", () => ({
@@ -47,6 +48,7 @@ it("leaves a proposal's details to the admin and shows other status notes", () =
                 items={[
                     item(1, "proposed", "Suggested: Group · 2160p · 50 GB"),
                     item(2, "wanted", "Waiting for digital release, 12 Nov"),
+                    item(3, "approved", "Group B · 1080p · 20 GB"),
                 ]}
             />
         </QueryClientProvider>
@@ -55,6 +57,14 @@ it("leaves a proposal's details to the admin and shows other status notes", () =
     expect(screen.getByText("Awaiting admin approval")).toBeInTheDocument();
     expect(screen.queryByText("Suggested: Group · 2160p · 50 GB")).toBeNull();
     expect(screen.getByText("Waiting for digital release, 12 Nov")).toBeInTheDocument();
+    // Once the admin has chosen, members just see it being added.
+    expect(screen.getByText("Being added")).toBeInTheDocument();
+    expect(screen.queryByText("Approved")).toBeNull();
+});
+
+it("keeps the precise status for the admin", () => {
+    render(<StatusBadge status="approved" admin />);
+    expect(screen.getByText("Approved")).toBeInTheDocument();
 });
 
 it("renders Norwegian dates, hides admin-only fallbacks and escapes worker values", () => {
@@ -146,4 +156,34 @@ it("shows your own note under the request", () => {
 
     expect(screen.getByText("Your note: The extended cut")).toBeInTheDocument();
     expect(screen.queryByText(/Not mine/)).toBeNull();
+});
+
+it("marks the rows you requested or +1'd", () => {
+    render(
+        <QueryClientProvider client={new QueryClient()}>
+            <QueueList
+                heading="Queue"
+                items={[
+                    item(1, "wanted", ""),
+                    {
+                        ...item(2, "wanted", ""),
+                        requester: { name: "Other", isYou: false },
+                        role: "follower",
+                    },
+                    {
+                        ...item(3, "wanted", ""),
+                        requester: { name: "Other", isYou: false },
+                        role: null,
+                    },
+                ]}
+            />
+        </QueryClientProvider>
+    );
+    const row = (title: string) => screen.getByText(title).closest("li") as HTMLElement;
+
+    expect(row("Movie 1")).toHaveClass("bg-primary/5");
+    expect(row("Movie 2")).toHaveClass("bg-primary/5");
+    expect(row("Movie 2")).toHaveTextContent("You gave it +1");
+    expect(row("Movie 3")).not.toHaveClass("bg-primary/5");
+    expect(row("Movie 3")).not.toHaveTextContent("You gave it +1");
 });

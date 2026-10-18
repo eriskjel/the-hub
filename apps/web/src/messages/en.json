@@ -637,6 +637,7 @@
             "formerMember": "Requested by a former member",
             "unknownMember": "Requested by a member",
             "plusOthers": "+{count} more",
+            "yourPlusOne": "You gave it +1",
             "yourNote": "Your note: {note}",
             "removalPending": "Leaves the library {days} days after it's added, unless someone +1s it",
             "removalDate": "Leaves the library {date}, unless someone +1s it",

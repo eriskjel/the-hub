@@ -637,6 +637,7 @@
             "formerMember": "Ønsket av et tidligere medlem",
             "unknownMember": "Ønsket av et medlem",
             "plusOthers": "+{count} til",
+            "yourPlusOne": "Du har gitt +1",
             "yourNote": "Ditt notat: {note}",
             "removalPending": "Fjernes fra biblioteket {days} dager etter at den er lagt til, med mindre noen gir den +1",
             "removalDate": "Fjernes fra biblioteket {date}, med mindre noen gir den +1",
