@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
-import { DETAIL_CODES, type RequestDetail } from "./detail";
+import { calendarDate, DETAIL_CODES, type RequestDetail } from "./detail";
 
 /** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
@@ -201,7 +201,7 @@ export function sortByStage(items: QueueItem[]): QueueItem[] {
     const releaseDate = (item: QueueItem) => {
         if (item.status !== "wanted" || item.detail?.code !== "waiting_release") return null;
         const args = DETAIL_CODES.waiting_release.args.safeParse(item.detail.args);
-        return args.success ? args.data.date : null;
+        return args.success && calendarDate(args.data.date) ? args.data.date : null;
     };
     const stage = (item: QueueItem) =>
         releaseDate(item) === null ? STAGES.indexOf(item.status) : STAGES.length;

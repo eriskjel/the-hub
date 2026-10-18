@@ -482,8 +482,20 @@ describe("sortByStage", () => {
         expect(oldestFirst[0].id).toBe(1);
     });
 
-    it("keeps a malformed release date in line with the other waiting requests", () => {
-        const items = [item(1, "wanted", release(42)), item(2, "wanted")];
-        expect(sortByStage(items).map((i) => i.id)).toEqual([1, 2]);
+    it.each([42, "tomorrow", "2026-02-30", "2026-02-29", "2026-13-01", "2026-1-01"])(
+        "keeps a malformed release date %j in line with the other waiting requests",
+        (date) => {
+            const items = [item(1, "wanted", release(date)), item(2, "wanted")];
+            expect(sortByStage(items).map((i) => i.id)).toEqual([1, 2]);
+        }
+    );
+
+    it("orders valid leap-day releases by date after other waiting requests", () => {
+        const items = [
+            item(1, "wanted", release("2028-03-01")),
+            item(2, "wanted", release("2028-02-29")),
+            item(3, "wanted"),
+        ];
+        expect(sortByStage(items).map((i) => i.id)).toEqual([3, 2, 1]);
     });
 });
