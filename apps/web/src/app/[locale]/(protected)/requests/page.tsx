@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/routing";
 import { createClient } from "@/utils/supabase/server";
 import { countRecentRequests, getOwnMembership, queueReader } from "@/lib/media/membership.server";
-import { countWaitingForAdmin, getQueue } from "@/lib/media/queue.server";
+import { countWaitingForAdmin, getQueue, sortByStage } from "@/lib/media/queue.server";
 import { isOpenStatus } from "@/lib/media/request";
 import RequestSearch from "@/components/requests/RequestSearch";
 import { QueueRefresh } from "@/components/requests/QueueRefresh";
@@ -57,8 +57,8 @@ export default async function RequestsPage({
     ]);
     const shown = mine ? queue.filter((item) => item.role !== null) : queue;
 
-    // The queue in the order it's worked: oldest first. Everything else, newest first.
-    const open = shown.filter((item) => isOpenStatus(item.status));
+    // The queue closest to done first. Everything else, newest first.
+    const open = sortByStage(shown.filter((item) => isOpenStatus(item.status)));
     const available = shown.filter((item) => item.status === "available");
     const closed = shown.filter((item) => ["failed", "declined", "removed"].includes(item.status));
 
