@@ -4,6 +4,60 @@ import { describeRemoval } from "../removal";
 const t = (key: string, values: Record<string, string>) => `${key} ${JSON.stringify(values)}`;
 const removal = { days: 30, at: "2026-11-15T23:30:00Z" };
 
+it("shows an admin deadline even when several users follow the title", () => {
+    expect(
+        describeRemoval(
+            {
+                status: "available",
+                removal,
+                followerCount: 3,
+                retention: { policy: "remove", days: 30, by: "Erik", eligible: true },
+            },
+            t,
+            "en"
+        )
+    ).toBe('adminRemovalDate {"name":"Erik","date":"16 Nov 2026"}');
+});
+
+it("shows the admin keep decision and distinguishes protected releases", () => {
+    expect(
+        describeRemoval(
+            {
+                status: "available",
+                removal: null,
+                followerCount: 0,
+                retention: { policy: "keep", days: null, by: "Erik", eligible: true },
+            },
+            t,
+            "en"
+        )
+    ).toBe('adminKeep {"name":"Erik"}');
+    expect(
+        describeRemoval(
+            {
+                status: "wanted",
+                removal: null,
+                followerCount: 0,
+                retention: { policy: "keep", days: null, by: null, eligible: null },
+            },
+            t,
+            "en"
+        )
+    ).toBe('adminKeep {"name":"anAdmin {}"}');
+    expect(
+        describeRemoval(
+            {
+                status: "available",
+                removal,
+                followerCount: 0,
+                retention: { policy: "remove", days: 30, by: "Erik", eligible: false },
+            },
+            t,
+            "en"
+        )
+    ).toBe('adminRemovalProtected {"name":"Erik"}');
+});
+
 it("says how long a temporary title stays while it's still wanted", () => {
     expect(describeRemoval({ status: "wanted", removal, followerCount: 0 }, t, "en")).toBe(
         'removalPending {"days":"30"}'

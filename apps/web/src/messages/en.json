@@ -503,7 +503,8 @@
                 "choose": "Choose",
                 "chooseTitle": "Choose {label} for {title}",
                 "keep": "Keep in library",
-                "keepTitle": "Keep {title} in the library"
+                "keepTitle": "Keep {title} in the library",
+                "retention": "Library retention…"
             },
             "outcomes": {
                 "available": "Marked available.",
@@ -512,12 +513,14 @@
                 "declined": "Request declined.",
                 "requeued": "Queued for a new search.",
                 "paused": "Processing paused.",
-                "resumed": "Processing resumed."
+                "resumed": "Processing resumed.",
+                "retention_saved": "Library retention updated."
             },
             "errors": {
                 "changed": "This changed in the meantime. Check the updated list and try again.",
                 "not_allowed": "This action is not available for the current status.",
-                "failed": "Something went wrong. Try again."
+                "failed": "Something went wrong. Try again.",
+                "not_removable": "This movie is not confirmed as safe to remove. Refresh and try again."
             },
             "worker": {
                 "title": "Processing",
@@ -538,6 +541,21 @@
                     "auto": "Automatic",
                     "unknown": "Not reported"
                 }
+            },
+            "retention": {
+                "label": "Library retention",
+                "title": "Library retention for {title}",
+                "requester": "Use requester’s choice",
+                "keep": "Keep in library",
+                "remove": "Remove after…",
+                "days": "Days (1–365)",
+                "preset": "{days} days",
+                "fromNow": "The countdown starts when you save, even if the movie was added earlier.",
+                "fromAvailable": "The countdown starts when the movie becomes available.",
+                "finalSay": "Your choice overrides the requester and every +1. A new request after the movie is removed or cancelled starts without it.",
+                "protected": "Removal is available only for eligible movies added through requests. The worker may still be checking this one.",
+                "save": "Save",
+                "cancel": "Cancel"
             }
         },
         "workspace": "Administration",
@@ -641,7 +659,13 @@
             "yourNote": "Your note: {note}",
             "removalPending": "Leaves the library {days} days after it's added, unless someone +1s it",
             "removalDate": "Leaves the library {date}, unless someone +1s it",
-            "unknownTitle": "Movie #{id}"
+            "unknownTitle": "Movie #{id}",
+            "anAdmin": "An admin",
+            "adminKeep": "{name} decided this stays in the library",
+            "adminRemovalPending": "{name} will remove this {days} days after it's added",
+            "adminRemovalDate": "{name} will remove this {date}, even if someone +1s it",
+            "adminRemovalChecking": "{name} asked for this to be removed. Checking that it can be",
+            "adminRemovalProtected": "{name} asked for this to be removed, but this release can't be removed automatically"
         },
         "outcomes": {
             "requested": "Requested.",

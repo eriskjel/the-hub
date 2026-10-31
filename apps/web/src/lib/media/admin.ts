@@ -10,10 +10,11 @@ export type AdminMediaResult =
               | "available"
               | "approved"
               | "kept"
+              | "retention_saved"
               | "paused"
               | "resumed";
       }
-    | { ok: false; error: "changed" | "not_allowed" | "failed" };
+    | { ok: false; error: "changed" | "not_allowed" | "not_removable" | "failed" };
 
 /** Waiting for an admin: a proposal to act on, or a search that gave up. */
 export const NEEDS_ADMIN_STATUSES: readonly RequestStatus[] = ["proposed", "failed"];

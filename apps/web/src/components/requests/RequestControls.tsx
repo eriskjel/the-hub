@@ -9,6 +9,7 @@ import {
     type RequestStatus,
 } from "@/lib/media/request";
 import { removalAhead } from "@/lib/media/removal";
+import type { Retention } from "@/lib/media/retention";
 
 /**
  * What the member can do with a title: request it, "+1" it, take the "+1"
@@ -29,6 +30,7 @@ export function RequestControls({
         role: RequestRole;
         /** Only the queue knows; search results leave it out. */
         removal?: { at: string | null } | null;
+        retention?: Retention;
     } | null;
     /** Called after an action here changed something. */
     onChanged?: () => void;
@@ -39,7 +41,9 @@ export function RequestControls({
         return <RequestDialog tmdbId={tmdbId} title={title} onChanged={onChanged} />;
     }
     if (request.role === "requester") {
-        const keep = removalAhead(request.status, request.removal);
+        const keep =
+            (!request.retention || request.retention.policy === "requester") &&
+            removalAhead(request.status, request.removal);
         const cancel = isCancellable(request.status);
         if (!keep && !cancel) return null;
         return (

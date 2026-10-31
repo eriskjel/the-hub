@@ -5,6 +5,7 @@ import { getMovie } from "@/lib/media/tmdb.server";
 import { OPEN_STATUSES, type RequestRole, type RequestStatus } from "@/lib/media/request";
 import { NEEDS_ADMIN_STATUSES } from "@/lib/media/admin";
 import { calendarDate, DETAIL_CODES, type RequestDetail } from "./detail";
+import type { Retention } from "./retention";
 
 /** Each section of the queue has its own limit. */
 const QUEUE_LIMIT = 200;
@@ -12,6 +13,8 @@ const LEGACY_COLUMNS =
     "id, tmdb_id, status, status_detail, requested_by, created_at, updated_at, media_request_follower(user_id)";
 const DETAIL_COLUMNS =
     `${LEGACY_COLUMNS}, detail_code, detail_args, remove_after_days, remove_at` as const;
+const RETENTION_COLUMNS =
+    `${DETAIL_COLUMNS}, admin_retention, admin_remove_after_days, retention_changed_by, retention_deadline, removal_eligible` as const;
 
 function missingDetailColumns(error: { code: string; message: string } | null): boolean {
     if (!error) return false;
@@ -76,6 +79,8 @@ export type QueueItem = {
      * it. `at` is set once the worker has scheduled it. Null when it stays.
      */
     removal: { days: number; at: string | null } | null;
+    /** Missing until the retention migration is installed. */
+    retention?: Retention;
     followerCount: number;
     role: RequestRole;
     createdAt: string;
@@ -93,6 +98,11 @@ type Row = {
     detail_args: unknown;
     remove_after_days?: number | null;
     remove_at?: string | null;
+    admin_retention?: "keep" | "remove" | null;
+    admin_remove_after_days?: number | null;
+    retention_changed_by?: string | null;
+    retention_deadline?: string | null;
+    removal_eligible?: boolean | null;
     requested_by: string | null;
     created_at: string;
     updated_at: string;
@@ -112,10 +122,10 @@ export async function getQueue(
     const results = await Promise.all(
         (options.admin ? ADMIN_SECTIONS : MEMBER_SECTIONS).map(
             async ({ statuses, orderBy, ascending }) => {
-                const query = (details: boolean) => {
+                const query = (details: boolean, retention = false) => {
                     const table = supabase.from("media_request");
                     const selection = details
-                        ? table.select(DETAIL_COLUMNS)
+                        ? table.select(retention ? RETENTION_COLUMNS : DETAIL_COLUMNS)
                         : table.select(LEGACY_COLUMNS);
                     return selection
                         .eq("media_type", "movie")
@@ -124,7 +134,16 @@ export async function getQueue(
                         .order("id", { ascending })
                         .limit(QUEUE_LIMIT);
                 };
-                const result = await query(true);
+                let result = await query(true, true);
+                if (
+                    result.error &&
+                    ["42703", "PGRST204"].includes(result.error.code) &&
+                    /\b(admin_retention|admin_remove_after_days|retention_changed_by|retention_deadline|removal_eligible)\b/.test(
+                        result.error.message
+                    )
+                ) {
+                    result = await query(true);
+                }
                 // App and migration deployments can finish in either order. Retry only
                 // the missing additive fields; permission and other errors still fail.
                 return missingDetailColumns(result.error) ? await query(false) : result;
@@ -133,7 +152,7 @@ export async function getQueue(
     );
     const error = results.find((r) => r.error)?.error;
     if (error) throw new Error(`media queue read failed: ${error.message}`);
-    const rows = results.flatMap((r) => r.data ?? []) as Row[];
+    const rows = results.flatMap((r) => (r.data ?? []) as unknown as Row[]);
     const notes = await getNotes(
         supabase,
         rows.map((r) => r.id),
@@ -143,6 +162,7 @@ export async function getQueue(
     const names = await getNames(supabase, [
         ...rows.flatMap((r) => (r.requested_by ? [r.requested_by] : [])),
         ...notes.map((n) => n.user_id),
+        ...rows.flatMap((r) => (r.retention_changed_by ? [r.retention_changed_by] : [])),
     ]);
     const movies = await Promise.all(
         rows.map((r) =>
@@ -165,8 +185,16 @@ export async function getQueue(
             statusDetail: r.status_detail,
             detail: r.detail_code ? { code: r.detail_code, args: r.detail_args } : null,
             removal: r.remove_after_days
-                ? { days: r.remove_after_days, at: r.remove_at ?? null }
+                ? { days: r.remove_after_days, at: r.retention_deadline ?? r.remove_at ?? null }
                 : null,
+            ...(r.admin_retention !== undefined && {
+                retention: {
+                    policy: r.admin_retention ?? "requester",
+                    days: r.admin_remove_after_days ?? null,
+                    by: r.retention_changed_by ? (names.get(r.retention_changed_by) ?? null) : null,
+                    eligible: r.removal_eligible ?? null,
+                },
+            }),
             requester: r.requested_by
                 ? { name: names.get(r.requested_by) ?? null, isYou: r.requested_by === userId }
                 : null,

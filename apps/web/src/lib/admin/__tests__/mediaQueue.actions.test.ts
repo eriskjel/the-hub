@@ -12,6 +12,7 @@ import {
     adminRequestAction,
     approveRequestOption,
     setProcessingPaused,
+    setRequestRetention,
 } from "../mediaQueue.actions";
 
 const revision = "2026-10-13T20:00:00.123456+00:00";
@@ -74,6 +75,53 @@ it("approves the chosen option against the displayed revision", async () => {
     expect(refresh).toHaveBeenCalledOnce();
 });
 
+it("saves approval and the admin override atomically with the authenticated actor", async () => {
+    rpc.mockResolvedValueOnce({ data: "approved", error: null });
+    await approveRequestOption(7, 2, revision, { policy: "remove", days: 30 });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("media_request_approve_with_retention", {
+        p_request_id: 7,
+        p_rank: 2,
+        p_expected_updated_at: revision,
+        p_actor: "admin",
+        p_policy: "remove",
+        p_days: 30,
+    });
+});
+
+it("rejects an invalid retention choice before approving", async () => {
+    expect(await approveRequestOption(7, 2, revision, { policy: "remove", days: 0 })).toEqual({
+        ok: false,
+        error: "not_allowed",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+});
+
+it.each([0, -1, 366, 1.5, NaN])(
+    "rejects an invalid retention duration %s before writing",
+    async (days) => {
+        expect(await setRequestRetention(7, revision, { policy: "remove", days })).toEqual({
+            ok: false,
+            error: "not_allowed",
+        });
+        expect(rpc).not.toHaveBeenCalled();
+    }
+);
+
+it("keeps a title with an authoritative admin policy", async () => {
+    rpc.mockResolvedValueOnce({ data: "retention_saved", error: null });
+    expect(await adminRequestAction(7, "keep", revision)).toEqual({
+        ok: true,
+        outcome: "retention_saved",
+    });
+    expect(rpc).toHaveBeenCalledWith("media_request_set_retention", {
+        p_request_id: 7,
+        p_expected_updated_at: revision,
+        p_actor: "admin",
+        p_policy: "keep",
+        p_days: null,
+    });
+});
+
 it.each([
     [0, 1, revision],
     [7, 0, revision],
@@ -93,6 +141,7 @@ it.each([
     () => adminRequestAction(7, "requeue", revision),
     () => approveRequestOption(7, 1, revision),
     () => setProcessingPaused(true, false),
+    () => setRequestRetention(7, revision, { policy: "keep" }),
 ])("checks admin access before creating a privileged client", async (action) => {
     requireAdmin.mockRejectedValueOnce(new Error("denied"));
     await expect(action()).rejects.toThrow("denied");

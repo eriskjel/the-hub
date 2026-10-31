@@ -19,7 +19,10 @@ import {
 } from "@/lib/media/admin";
 import type { QueueItem } from "@/lib/media/queue.server";
 import { removalAhead } from "@/lib/media/removal";
+import { isKeepable } from "@/lib/media/request";
+import { retentionSchema } from "@/lib/media/retention";
 import { cn } from "@/utils/cn";
+import { RetentionDialog, useApprovalRetention } from "./RetentionControls";
 
 function useAdminUpdate() {
     const t = useTranslations("admin.requests");
@@ -61,6 +64,7 @@ export function QueueControls({
     const t = useTranslations("admin.requests.actions");
     const { pending, run } = useAdminUpdate();
     const [open, setOpen] = useState(false);
+    const [editingRetention, setEditingRetention] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const menuId = useId();
 
@@ -83,7 +87,8 @@ export function QueueControls({
     }, [open]);
 
     const intents = adminRequestIntents(item.status, removalAhead(item.status, item.removal));
-    if (!intents.length) return null;
+    const canRetain = !!item.retention && isKeepable(item.status);
+    if (!intents.length && !canRetain) return null;
     const primary: AdminRequestIntent | null =
         NEEDS_ADMIN_STATUSES.includes(item.status) && !choosing ? "available" : null;
     const overrides = intents.filter((intent) => intent !== primary);
@@ -125,6 +130,19 @@ export function QueueControls({
                         id={menuId}
                         className="border-border bg-surface absolute top-full right-0 z-10 mt-1 w-52 rounded-xl border py-1 shadow-lg"
                     >
+                        {canRetain && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setOpen(false);
+                                    setEditingRetention(true);
+                                }}
+                                className="hover:bg-surface-subtle flex w-full cursor-pointer items-center gap-3 px-4 py-2 text-left text-sm"
+                            >
+                                <Pin aria-hidden className="text-muted h-4 w-4" />
+                                {t("retention")}
+                            </button>
+                        )}
                         {overrides.map((intent) => {
                             const Icon = INTENT_ICONS[intent];
                             return (
@@ -154,6 +172,18 @@ export function QueueControls({
                     </div>
                 )}
             </div>
+            {editingRetention && (
+                <RetentionDialog
+                    item={item}
+                    title={title}
+                    onClose={() => {
+                        setEditingRetention(false);
+                        menuRef.current
+                            ?.querySelector<HTMLButtonElement>("[aria-expanded]")
+                            ?.focus();
+                    }}
+                />
+            )}
         </div>
     );
 }
@@ -172,14 +202,24 @@ export function ChooseOption({
 }) {
     const t = useTranslations("admin.requests.actions");
     const { pending, run } = useAdminUpdate();
+    const retention = useApprovalRetention();
     return (
         <Button
             type="button"
             variant={rank === 1 ? "primary" : "secondary"}
-            disabled={pending}
+            disabled={
+                pending ||
+                (retention !== null && !retentionSchema.safeParse(retention.choice).success)
+            }
             aria-busy={pending || undefined}
             aria-label={t("chooseTitle", { label, title })}
-            onClick={() => run(() => approveRequestOption(item.id, rank, item.updatedAt))}
+            onClick={() =>
+                run(() =>
+                    retention
+                        ? approveRequestOption(item.id, rank, item.updatedAt, retention.choice)
+                        : approveRequestOption(item.id, rank, item.updatedAt)
+                )
+            }
             className="shrink-0 self-center"
         >
             {t("choose")}

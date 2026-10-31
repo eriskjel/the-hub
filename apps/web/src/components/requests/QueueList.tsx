@@ -96,6 +96,7 @@ function QueueRow({ item }: { item: QueueItem }): ReactElement {
                     status: item.status,
                     role: item.role,
                     removal: item.removal,
+                    retention: item.retention,
                 }}
             />
         </li>
