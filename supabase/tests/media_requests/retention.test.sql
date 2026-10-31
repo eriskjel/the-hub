@@ -105,6 +105,15 @@ begin
  assert public.media_request_add(a, 'movie', 990003, null, null, 30) = 'reopened';
  select * into r from public.media_request where id = r.id;
  assert r.admin_retention is null and r.remove_after_days = 30 and r.requester_remove_after_days = 30;
+
+ -- "Mark available" under an admin's decision keeps the requester's own choice.
+ assert public.media_request_add(a, 'movie', 990005, null, null, 30) = 'requested';
+ select * into r from public.media_request where tmdb_id = 990005;
+ assert public.media_request_set_retention(r.id, r.updated_at, admin_id, 'remove', 7) = 'retention_saved';
+ select * into r from public.media_request where id = r.id;
+ assert public.media_request_admin_update(r.id, 'available', r.updated_at) = 'available';
+ select * into r from public.media_request where id = r.id;
+ assert r.remove_after_days = 7 and r.requester_remove_after_days = 30;
 end $$;
 reset role;
 do $$
@@ -118,5 +127,31 @@ begin
   'public.media_request_set_retention(bigint,timestamptz,uuid,text,int)', 'EXECUTE');
  assert not has_function_privilege('authenticated',
   'public.media_request_approve_with_retention(bigint,int,timestamptz,uuid,text,int)', 'EXECUTE');
+end $$;
+
+-- Publishing eligibility alone isn't a change, so the admin page keeps its order.
+-- The removal date it brings for an admin's Remove is one.
+do $$
+declare r public.media_request;
+begin
+ assert public.media_request_add('00000000-0000-0000-0000-0000000000a9', 'movie', 990006, null) = 'requested';
+ select * into r from public.media_request where tmdb_id = 990006;
+ assert public.media_request_set_retention(r.id, r.updated_at, '00000000-0000-0000-0000-0000000000c9',
+  'remove', 30) = 'retention_saved';
+ update public.media_request set status = 'available', fulfilled_at = now() where id = r.id;
+end $$;
+alter table public.media_request disable trigger mr_touch_updated_at;
+update public.media_request set updated_at = now() - interval '1 hour' where tmdb_id = 990006;
+alter table public.media_request enable trigger mr_touch_updated_at;
+update public.media_request set removal_eligible = false where tmdb_id = 990006;
+do $$
+begin
+ assert (select updated_at < now() from public.media_request where tmdb_id = 990006);
+end $$;
+update public.media_request set removal_eligible = true where tmdb_id = 990006;
+do $$
+begin
+ assert (select updated_at = now() and retention_deadline is not null
+           from public.media_request where tmdb_id = 990006);
 end $$;
 rollback;

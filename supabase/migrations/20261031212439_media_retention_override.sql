@@ -60,9 +60,11 @@ begin
         new.retention_changed_by := null;
         new.retention_changed_at := null;
     elsif new.retention_changed_at is not distinct from old.retention_changed_at
-          and (new.remove_after_days is distinct from old.remove_after_days
-               or new.requested_by is distinct from old.requested_by) then
-        -- The requester's Keep, or a hand-over.
+          and (new.requested_by is distinct from old.requested_by
+               or (old.admin_retention is null and new.remove_after_days is distinct from old.remove_after_days)) then
+        -- A hand-over, or the requester's Keep. Under an admin's decision only a
+        -- hand-over changes the requester's choice: "Mark available" clears
+        -- remove_after_days, but the decision sets it again below.
         new.requester_remove_after_days := new.remove_after_days;
     end if;
 
@@ -94,6 +96,25 @@ end;
 $$;
 
 revoke all on function public.media_retention_enforce() from public, anon, authenticated;
+
+-- As in 20261007000000, except that the worker publishing removal_eligible alone
+-- isn't a change: each run would reorder the admin page's available titles and
+-- turn away every open page. A removal date that comes with it is a change:
+-- triggers fire by name, so mr_retention_enforce has set it by now.
+create or replace function public.media_request_touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+    if new.removal_eligible is distinct from old.removal_eligible
+       and to_jsonb(new) - 'removal_eligible' = to_jsonb(old) - 'removal_eligible' then
+        return new;
+    end if;
+    new.updated_at := now();
+    return new;
+end;
+$$;
 
 drop trigger if exists mr_retention_enforce on public.media_request;
 create trigger mr_retention_enforce
