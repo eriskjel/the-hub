@@ -1,7 +1,19 @@
 import { dateLocale } from "@/i18n/format";
-import { isOpenStatus, type RequestStatus } from "./request";
+import { isKeepable, isOpenStatus, type RequestStatus } from "./request";
+import type { Retention } from "./retention";
 
-type Translate = (key: "removalPending" | "removalDate", values: Record<string, string>) => string;
+type Translate = (
+    key:
+        | "anAdmin"
+        | "removalPending"
+        | "removalDate"
+        | "adminKeep"
+        | "adminRemovalPending"
+        | "adminRemovalDate"
+        | "adminRemovalChecking"
+        | "adminRemovalProtected",
+    values: Record<string, string>
+) => string;
 
 /**
  * Whether a temporary title is still due to leave: it's wanted, or the worker
@@ -24,11 +36,37 @@ export function describeRemoval(
         status: RequestStatus;
         removal: { days: number; at: string | null } | null;
         followerCount: number;
+        retention?: Retention;
     },
     t: Translate,
     locale: string
 ): string | null {
     const { removal } = item;
+    const policy = item.retention;
+    // An admin's decision beats the requester's choice and every +1.
+    if (policy && isKeepable(item.status)) {
+        const name = policy.by ?? t("anAdmin", {});
+        if (policy.policy === "keep") return t("adminKeep", { name });
+        if (policy.policy === "remove") {
+            if (item.status === "available" && policy.eligible !== true) {
+                return t(
+                    policy.eligible === false ? "adminRemovalProtected" : "adminRemovalChecking",
+                    { name }
+                );
+            }
+            if (!removal?.at || item.status !== "available")
+                return t("adminRemovalPending", { name, days: String(policy.days) });
+            return t("adminRemovalDate", {
+                name,
+                date: new Intl.DateTimeFormat(dateLocale(locale), {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    timeZone: "Europe/Oslo",
+                }).format(new Date(removal.at)),
+            });
+        }
+    }
     if (!removal || item.followerCount > 0 || !removalAhead(item.status, removal)) return null;
     if (isOpenStatus(item.status) || !removal.at) {
         return t("removalPending", { days: String(removal.days) });

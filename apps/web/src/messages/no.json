@@ -503,7 +503,8 @@
                 "choose": "Velg",
                 "chooseTitle": "Velg {label} for {title}",
                 "keep": "Behold i biblioteket",
-                "keepTitle": "Behold {title} i biblioteket"
+                "keepTitle": "Behold {title} i biblioteket",
+                "retention": "Bevaring i biblioteket…"
             },
             "outcomes": {
                 "available": "Merket tilgjengelig.",
@@ -512,12 +513,14 @@
                 "declined": "Ønsket er avslått.",
                 "requeued": "Sendt til nytt søk.",
                 "paused": "Behandlingen er satt på pause.",
-                "resumed": "Behandlingen er startet igjen."
+                "resumed": "Behandlingen er startet igjen.",
+                "retention_saved": "Bevaring i biblioteket oppdatert."
             },
             "errors": {
                 "changed": "Dette ble endret i mellomtiden. Sjekk den oppdaterte listen og prøv igjen.",
                 "not_allowed": "Denne handlingen er ikke tilgjengelig med gjeldende status.",
-                "failed": "Noe gikk galt. Prøv igjen."
+                "failed": "Noe gikk galt. Prøv igjen.",
+                "not_removable": "Denne filmen er ikke bekreftet som trygg å fjerne. Oppdater og prøv igjen."
             },
             "worker": {
                 "title": "Behandling",
@@ -538,6 +541,21 @@
                     "auto": "Automatisk",
                     "unknown": "Ikke rapportert"
                 }
+            },
+            "retention": {
+                "label": "Bevaring i biblioteket",
+                "title": "Bevaring av {title}",
+                "requester": "Bruk ønskerens valg",
+                "keep": "Behold i biblioteket",
+                "remove": "Fjern etter…",
+                "days": "Dager (1–365)",
+                "preset": "{days} dager",
+                "fromNow": "Nedtellingen starter når du lagrer, selv om filmen ble lagt til tidligere.",
+                "fromAvailable": "Nedtellingen starter når filmen blir tilgjengelig.",
+                "finalSay": "Ditt valg overstyrer ønskeren og alle +1. Et nytt ønske etter at filmen er fjernet eller avbrutt starter uten det.",
+                "protected": "Fjerning er bare tilgjengelig for egnede filmer lagt til gjennom ønsker. Arbeideren kan fortsatt sjekke denne.",
+                "save": "Lagre",
+                "cancel": "Avbryt"
             }
         },
         "workspace": "Administrasjon",
@@ -641,7 +659,13 @@
             "yourNote": "Ditt notat: {note}",
             "removalPending": "Fjernes fra biblioteket {days} dager etter at den er lagt til, med mindre noen gir den +1",
             "removalDate": "Fjernes fra biblioteket {date}, med mindre noen gir den +1",
-            "unknownTitle": "Film #{id}"
+            "unknownTitle": "Film #{id}",
+            "anAdmin": "En administrator",
+            "adminKeep": "{name} har bestemt at denne blir i biblioteket",
+            "adminRemovalPending": "{name} fjerner denne {days} dager etter at den er lagt til",
+            "adminRemovalDate": "{name} fjerner denne {date}, selv om noen gir den +1",
+            "adminRemovalChecking": "{name} har bedt om at denne fjernes. Sjekker at den kan fjernes",
+            "adminRemovalProtected": "{name} har bedt om at denne fjernes, men denne utgivelsen kan ikke fjernes automatisk"
         },
         "outcomes": {
             "requested": "Ønsket.",

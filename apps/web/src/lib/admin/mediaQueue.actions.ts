@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/requireAdmin.server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requestIdSchema } from "@/lib/media/request";
 import type { AdminMediaResult } from "@/lib/media/admin";
+import { retentionSchema, type RetentionChoice } from "@/lib/media/retention";
 
 const updateSchema = z.object({
     requestId: requestIdSchema,
@@ -18,9 +19,18 @@ export async function adminRequestAction(
     intent: string,
     updatedAt: string
 ): Promise<AdminMediaResult> {
-    await requireAdmin();
+    const { user } = await requireAdmin();
     const parsed = updateSchema.safeParse({ requestId, intent, updatedAt });
     if (!parsed.success) return { ok: false, error: "not_allowed" };
+    // "Keep in library" is the admin's decision, which the requester can't undo.
+    if (parsed.data.intent === "keep")
+        return write("media_request_set_retention", {
+            p_request_id: parsed.data.requestId,
+            p_expected_updated_at: parsed.data.updatedAt,
+            p_actor: user.id,
+            p_policy: "keep",
+            p_days: null,
+        });
     return write("media_request_admin_update", {
         p_request_id: parsed.data.requestId,
         p_intent: parsed.data.intent,
@@ -34,19 +44,57 @@ const approveSchema = z.object({
     updatedAt: z.string().datetime({ offset: true }),
 });
 
-/** Approves one of the proposed options; the worker then adds it. */
+const retentionArgs = (choice: RetentionChoice) => ({
+    p_policy: choice.policy,
+    p_days: choice.policy === "remove" ? choice.days : null,
+});
+
+/**
+ * Approves one of the proposed options; the worker then adds it. With a
+ * retention choice, the admin's keep/remove decision is saved with it.
+ */
 export async function approveRequestOption(
     requestId: number,
     rank: number,
-    updatedAt: string
+    updatedAt: string,
+    retention?: RetentionChoice
 ): Promise<AdminMediaResult> {
-    await requireAdmin();
-    const parsed = approveSchema.safeParse({ requestId, rank, updatedAt });
+    const { user } = await requireAdmin();
+    const parsed = approveSchema
+        .extend({ retention: retentionSchema.optional() })
+        .safeParse({ requestId, rank, updatedAt, retention });
     if (!parsed.success) return { ok: false, error: "not_allowed" };
-    return write("media_request_admin_approve", {
+    const args = {
         p_request_id: parsed.data.requestId,
         p_rank: parsed.data.rank,
         p_expected_updated_at: parsed.data.updatedAt,
+    };
+    return parsed.data.retention
+        ? write("media_request_approve_with_retention", {
+              ...args,
+              p_actor: user.id,
+              ...retentionArgs(parsed.data.retention),
+          })
+        : write("media_request_admin_approve", args);
+}
+
+/** Sets whether a title stays in the library, overriding the requester and every +1. */
+export async function setRequestRetention(
+    requestId: number,
+    updatedAt: string,
+    retention: RetentionChoice
+): Promise<AdminMediaResult> {
+    const { user } = await requireAdmin();
+    const parsed = approveSchema
+        .omit({ rank: true })
+        .extend({ retention: retentionSchema })
+        .safeParse({ requestId, updatedAt, retention });
+    if (!parsed.success) return { ok: false, error: "not_allowed" };
+    return write("media_request_set_retention", {
+        p_request_id: parsed.data.requestId,
+        p_expected_updated_at: parsed.data.updatedAt,
+        p_actor: user.id,
+        ...retentionArgs(parsed.data.retention),
     });
 }
 
@@ -75,12 +123,14 @@ async function write(fn: string, args: Record<string, unknown>): Promise<AdminMe
         case "available":
         case "approved":
         case "kept":
+        case "retention_saved":
         case "paused":
         case "resumed":
             refresh();
             return { ok: true, outcome: data };
         case "changed":
         case "not_allowed":
+        case "not_removable":
             refresh();
             return { ok: false, error: data };
         default:

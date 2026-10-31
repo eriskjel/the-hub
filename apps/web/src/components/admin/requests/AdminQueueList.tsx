@@ -9,6 +9,7 @@ import type { Locale } from "@/i18n/routing";
 import { cn } from "@/utils/cn";
 import { describeDetail } from "@/lib/media/detail";
 import { describeRemoval } from "@/lib/media/removal";
+import { RetentionProvider, ApprovalRetention } from "./RetentionControls";
 
 export async function AdminQueueList({
     items,
@@ -70,110 +71,119 @@ export async function AdminQueueList({
                     const proposed = options?.get(item.id) ?? [];
                     const choosing = canChoose && item.status === "proposed" && proposed.length > 0;
                     return (
-                        <li key={item.id} className="flex gap-4 p-5">
-                            <Poster path={item.posterPath} />
-                            <div className="min-w-0 flex-1 space-y-3">
-                                <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div className="min-w-0 grow basis-60 space-y-1">
-                                        <p className="font-medium break-words">
-                                            {title}
-                                            {item.year && (
-                                                <span className="text-muted font-normal">
-                                                    {" "}
-                                                    ({item.year})
-                                                </span>
-                                            )}
-                                        </p>
-                                        <p className="text-muted flex flex-wrap items-center gap-2 text-sm">
-                                            <StatusBadge status={item.status} admin />
-                                            <span>
-                                                {requester}
-                                                {item.followerCount > 0 &&
-                                                    ` ${t("plusOthers", { count: String(item.followerCount) })}`}
-                                            </span>
-                                        </p>
-                                        {detail && (
-                                            <p className="text-muted text-sm break-words">
-                                                {detail}
-                                            </p>
-                                        )}
-                                        {removal && <p className="text-muted text-sm">{removal}</p>}
-                                        {item.notes.map((note, i) => (
-                                            <p
-                                                key={i}
-                                                className="bg-surface-subtle flex gap-2 rounded-lg px-3 py-2 text-sm break-words"
-                                            >
-                                                <MessageSquareText
-                                                    aria-hidden
-                                                    className="text-muted mt-0.5 h-4 w-4 shrink-0"
-                                                />
-                                                <span className="min-w-0">
-                                                    {note.author.name
-                                                        ? tAdmin("note", {
-                                                              name: note.author.name,
-                                                              note: note.text,
-                                                          })
-                                                        : tAdmin("noteFromMember", {
-                                                              note: note.text,
-                                                          })}
-                                                </span>
-                                            </p>
-                                        ))}
-                                    </div>
-                                    <QueueControls item={item} title={title} choosing={choosing} />
-                                </div>
-                                {proposed.length > 0 && (
-                                    <ol
-                                        aria-label={tAdmin("options", { title })}
-                                        className="border-border divide-border divide-y overflow-hidden rounded-xl border text-sm"
-                                    >
-                                        {proposed.map((option) => (
-                                            <li
-                                                key={option.rank}
-                                                className={cn(
-                                                    "flex gap-3 px-3 py-2.5",
-                                                    option.rank === 1 && "bg-primary/5"
+                        <RetentionProvider key={`${item.id}:${item.updatedAt}`} item={item}>
+                            <li className="flex gap-4 p-5">
+                                <Poster path={item.posterPath} />
+                                <div className="min-w-0 flex-1 space-y-3">
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div className="min-w-0 grow basis-60 space-y-1">
+                                            <p className="font-medium break-words">
+                                                {title}
+                                                {item.year && (
+                                                    <span className="text-muted font-normal">
+                                                        {" "}
+                                                        ({item.year})
+                                                    </span>
                                                 )}
-                                            >
-                                                <span
+                                            </p>
+                                            <p className="text-muted flex flex-wrap items-center gap-2 text-sm">
+                                                <StatusBadge status={item.status} admin />
+                                                <span>
+                                                    {requester}
+                                                    {item.followerCount > 0 &&
+                                                        ` ${t("plusOthers", { count: String(item.followerCount) })}`}
+                                                </span>
+                                            </p>
+                                            {detail && (
+                                                <p className="text-muted text-sm break-words">
+                                                    {detail}
+                                                </p>
+                                            )}
+                                            {removal && (
+                                                <p className="text-muted text-sm">{removal}</p>
+                                            )}
+                                            {item.notes.map((note, i) => (
+                                                <p
+                                                    key={i}
+                                                    className="bg-surface-subtle flex gap-2 rounded-lg px-3 py-2 text-sm break-words"
+                                                >
+                                                    <MessageSquareText
+                                                        aria-hidden
+                                                        className="text-muted mt-0.5 h-4 w-4 shrink-0"
+                                                    />
+                                                    <span className="min-w-0">
+                                                        {note.author.name
+                                                            ? tAdmin("note", {
+                                                                  name: note.author.name,
+                                                                  note: note.text,
+                                                              })
+                                                            : tAdmin("noteFromMember", {
+                                                                  note: note.text,
+                                                              })}
+                                                    </span>
+                                                </p>
+                                            ))}
+                                        </div>
+                                        <QueueControls
+                                            item={item}
+                                            title={title}
+                                            choosing={choosing}
+                                        />
+                                    </div>
+                                    {choosing && item.retention && <ApprovalRetention />}
+                                    {proposed.length > 0 && (
+                                        <ol
+                                            aria-label={tAdmin("options", { title })}
+                                            className="border-border divide-border divide-y overflow-hidden rounded-xl border text-sm"
+                                        >
+                                            {proposed.map((option) => (
+                                                <li
+                                                    key={option.rank}
                                                     className={cn(
-                                                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
-                                                        option.rank === 1
-                                                            ? "bg-primary/15 text-primary"
-                                                            : "bg-surface-subtle text-muted"
+                                                        "flex gap-3 px-3 py-2.5",
+                                                        option.rank === 1 && "bg-primary/5"
                                                     )}
                                                 >
-                                                    {option.rank}
-                                                </span>
-                                                <div className="min-w-0 flex-1 space-y-0.5">
-                                                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium break-words">
-                                                        {option.label}
-                                                        {option.rank === 1 && (
-                                                            <span className="bg-primary/15 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
-                                                                {tAdmin("recommended")}
-                                                            </span>
+                                                    <span
+                                                        className={cn(
+                                                            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+                                                            option.rank === 1
+                                                                ? "bg-primary/15 text-primary"
+                                                                : "bg-surface-subtle text-muted"
                                                         )}
-                                                    </p>
-                                                    {option.reason && (
-                                                        <p className="text-muted text-xs break-words">
-                                                            {option.reason}
+                                                    >
+                                                        {option.rank}
+                                                    </span>
+                                                    <div className="min-w-0 flex-1 space-y-0.5">
+                                                        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium break-words">
+                                                            {option.label}
+                                                            {option.rank === 1 && (
+                                                                <span className="bg-primary/15 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+                                                                    {tAdmin("recommended")}
+                                                                </span>
+                                                            )}
                                                         </p>
+                                                        {option.reason && (
+                                                            <p className="text-muted text-xs break-words">
+                                                                {option.reason}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {choosing && (
+                                                        <ChooseOption
+                                                            item={item}
+                                                            rank={option.rank}
+                                                            label={option.label}
+                                                            title={title}
+                                                        />
                                                     )}
-                                                </div>
-                                                {choosing && (
-                                                    <ChooseOption
-                                                        item={item}
-                                                        rank={option.rank}
-                                                        label={option.label}
-                                                        title={title}
-                                                    />
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ol>
-                                )}
-                            </div>
-                        </li>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    )}
+                                </div>
+                            </li>
+                        </RetentionProvider>
                     );
                 })}
             </ul>
